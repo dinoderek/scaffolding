@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260219-01`
 - Title: M1 session recorder screen shell and state model
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-19`
 - Session interaction mode: `interactive (default)`
@@ -97,8 +97,35 @@ Create the first routable screen shell for gym session recording with typed in-m
 
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
-- 
+- Test evidence:
+  - Happy path: `app/__tests__/session-recorder-screen.test.tsx` verifies gym selection from seeded list updates the compact gym button value.
+  - Edge/destructive path: same test verifies manage flow archive/unarchive behavior with archived filtering.
+  - Baseline render: same test verifies compact top row (`Date and Time` + `Gym`) and submit placeholder CTA render.
+  - Modal behavior: same test verifies outside-click dismissal on overlay.
+- Visual/interaction evidence:
+  - Compact metadata UI implemented in `apps/mobile/app/session-recorder.tsx` with date/time and gym selector sharing one row.
+  - Gym selector uses modal modes (`picker`, `manage`, `editor`) where add/edit share minimal input UI and manage rows place name/edit/archive in one line.
+- Contract traceability:
+  - Flow 1 mapped to prefilled date/time input and gym picker selection handlers in `apps/mobile/app/session-recorder.tsx`.
+  - Flow 2 mapped to add/edit/archive/unarchive handlers and assertions in `app/__tests__/session-recorder-screen.test.tsx`.
+- Verification commands run:
+  - `npm run test -- app/__tests__/session-recorder-screen.test.tsx`
+  - `HOME=/tmp EXPO_NO_TELEMETRY=1 npm run lint`
+  - `npm run typecheck`
+  - `npm run test`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- 
+- What changed:
+  - Added routable session recorder screen shell with local in-memory state and typed `Session -> Exercise -> Set` model.
+  - Added compact seeded gym picker UI with modal-based add/edit/archive/unarchive management and outside-click dismissal.
+  - Added route entry point from foundation screen and stack registration for `/session-recorder`.
+  - Added task-specific screen tests for shell render and location interactions.
+- What tests ran:
+  - `npm run test -- app/__tests__/session-recorder-screen.test.tsx`
+  - `HOME=/tmp EXPO_NO_TELEMETRY=1 npm run lint`
+  - `npm run typecheck`
+  - `npm run test`
+- What remains:
+  - Exercise and set add/edit/remove interactions (covered by milestone follow-up task `T-20260219-02`).
+  - Validation and submit confirmation behavior (covered by milestone follow-up task `T-20260219-03`).
