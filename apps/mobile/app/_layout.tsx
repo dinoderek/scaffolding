@@ -7,7 +7,7 @@ import { bootstrapLocalDataLayer } from '@/src/data';
 
 export default function RootLayout() {
   useEffect(() => {
-    bootstrapLocalDataLayer();
+    void bootstrapLocalDataLayer();
   }, []);
 
   return (

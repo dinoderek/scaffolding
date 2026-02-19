@@ -15,14 +15,28 @@ Reason: validates real screen behavior with React Native-friendly tooling.
 3. `Data layer integration tests` against local SQLite schema.
 Reason: catches migration and persistence issues early in an offline-first app.
 
-4. `Backend auth/RLS contract tests`.
+4. `Two-lane local data verification` for SQLite runtime confidence.
+Reason: keep CI feedback fast with deterministic checks while still proving real-device migration and persistence behavior in native Expo runtime.
+
+5. `Backend auth/RLS contract tests`.
 Reason: prevents data-leak/security regressions as backend is introduced.
 
-5. `Maestro` for MVP end-to-end flows.
+6. `Maestro` for MVP end-to-end flows.
 Reason: practical mobile E2E coverage with lower setup cost than heavier alternatives.
 
-6. `Quality gate in CI` (core tests must pass before merge).
+7. `Quality gate in CI` (core tests must pass before merge).
 Reason: keeps AI-generated changes safe and predictable as code volume grows.
+
+## Local data two-lane policy (M2)
+
+- Lane 1 (`CI-safe`):
+  - Run fast checks in `apps/mobile` (`lint`, `typecheck`, `test`) and include targeted data-layer tests that validate migration/bootstrap orchestration and smoke insert/read behavior using deterministic test doubles.
+  - Include migration-generation canary (`npm run db:generate:canary`) to detect schema/migration artifact drift.
+- Lane 2 (`native runtime smoke`):
+  - Run a focused smoke flow on Expo native runtime with real `expo-sqlite`.
+  - Capture concise evidence: runtime environment, steps executed, migration success signal, and smoke write/read success signal.
+- Rule:
+  - Do not treat Lane 1 as a substitute for Lane 2 when validating runtime SQLite behavior; both lanes are required for milestone-level local data confidence.
 
 ## Default testing practice
 
@@ -45,4 +59,3 @@ Reason: ensure visual changes are intentional and reviewed, not silently accepte
 
 5. Use visual diff output as AI iteration input.
 Reason: helps AI make targeted UI fixes and faster design refinements.
-

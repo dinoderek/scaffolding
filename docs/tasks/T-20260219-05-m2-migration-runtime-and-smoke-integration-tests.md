@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260219-05`
 - Title: M2 runtime migrations and smoke persistence integration tests
-- Status: `planned`
+- Status: `in_progress`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-19`
 - Session interaction mode: `interactive (default)`
@@ -83,4 +83,24 @@ Execute migrations through runtime bootstrap, add a minimal smoke write/read pat
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- 
+- What changed:
+  - Implemented runtime migration execution in `apps/mobile/src/data/bootstrap.ts` using `drizzle-orm/expo-sqlite/migrator` with idempotent in-process bootstrap semantics and retry-on-failure behavior.
+  - Added migration runtime config in `apps/mobile/src/data/migrations/index.ts` mapped to current generated smoke migration.
+  - Added minimal smoke persistence API in `apps/mobile/src/data/smoke-records.ts` (`insertSmokeRecord`, `listSmokeRecords`) and exported it via `apps/mobile/src/data/index.ts`.
+  - Updated app bootstrap call in `apps/mobile/app/_layout.tsx` to handle async data-layer bootstrap (`void bootstrapLocalDataLayer()`).
+  - Added Lane 1 integration-style data tests:
+    - `apps/mobile/app/__tests__/local-data-bootstrap.test.ts`
+    - `apps/mobile/app/__tests__/smoke-records.test.ts`
+  - Updated `docs/specs/06-testing-strategy.md` with explicit two-lane local data verification policy.
+- Tests run and outcome:
+  - `npm run test -- local-data-bootstrap.test.ts smoke-records.test.ts` -> pass (`2` suites, `5` tests).
+  - `npm run lint` -> pass.
+  - `npm run typecheck` -> pass.
+  - `npm run test` -> pass (`4` suites, `11` tests).
+  - `npm run db:generate:canary` -> pass (`No schema changes, nothing to migrate`).
+- Lane 2 native runtime smoke status:
+  - Blocked in current execution environment due missing native runtime prerequisites:
+    - `xcrun simctl list devices` failed because Xcode license has not been accepted.
+    - `adb` is not installed/available for Android runtime smoke.
+  - Remaining action to fully close task acceptance:
+    - Run native Expo smoke flow after environment prerequisites are resolved and capture migration + smoke insert/read success signals.
