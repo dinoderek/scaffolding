@@ -11,19 +11,6 @@ This folder is the source of truth for product and technical decisions.
 - `docs/specs/04-ai-development-playbook.md`: AI-first workflow, task hierarchy, and context rules.
 - `docs/specs/05-delivery-plan.md`: Milestones and execution order. (planned)
 - `docs/specs/06-testing-strategy.md`: Top-level testing stack and practices.
-- `docs/specs/07-escalation-policy.md`: Human-in-the-loop escalation rules for blocked execution tasks.
-- `docs/specs/08-ai-brainstorm-playbook.md`: Brainstorming session persona and lean specification workflow.
 - `docs/specs/templates/milestone-spec-template.md`: Template for milestone deep dives.
 - `docs/specs/templates/task-card-template.md`: Template for per-session AI task execution.
-- `docs/specs/templates/escalation-note-template.md`: Template for blocked-task escalation handoff.
 
-## Decision log convention
-
-When a major decision changes:
-
-1. Update the relevant spec.
-2. Add a short note at the bottom:
-   - `Date`
-   - `Decision`
-   - `Reason`
-   - `Impact`

@@ -14,7 +14,6 @@
 - Milestone spec: `docs/specs/milestones/<milestone-id>.md`
 - Architecture (if relevant): `docs/specs/03-technical-architecture.md`
 - Testing strategy: `docs/specs/06-testing-strategy.md`
-- Escalation policy: `docs/specs/07-escalation-policy.md`
 
 ## Objective
 
@@ -79,12 +78,6 @@ If `split`, define cards:
 - `npm run typecheck`
 - `npm run test`
 - Additional gate(s), if any:
-
-## Escalation settings
-
-- Max verify attempts before escalation: `3` (default)
-- Escalation template: `docs/specs/templates/escalation-note-template.md`
-- Escalation file path (if blocked): `docs/tasks/escalations/E-<task-id>-<YYYYMMDD-HHMM>.md`
 
 ## Automated review loop (before human review)
 

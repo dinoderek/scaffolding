@@ -17,7 +17,3 @@ Use template:
 
 - `docs/specs/templates/task-card-template.md`
 
-For blocked execution tasks, store escalation notes in:
-
-- `docs/tasks/escalations/`
-- `docs/specs/templates/escalation-note-template.md`

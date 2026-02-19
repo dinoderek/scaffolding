@@ -17,21 +17,16 @@ Note: product/domain details are maintained in specs. Do not duplicate them here
 
 1. Brainstorming (product/architecture/spec ideas):
 - Activate with explicit chat phrase: `Mode: Brainstorm`.
-- Load and follow: `docs/specs/08-ai-brainstorm-playbook.md`.
-- Load only additional docs needed for the question.
-- Prefer high-level specs over templates unless artifact drafting is explicitly requested.
+- Operate as a principal engineer with strong product sense collaborating with another principal engineer.
+- Prioritize clear, lean specifications that progressively converge to a task card precise enough for a strong agent to one-shot implementation.
+- Target extreme leanness: include only what is necessary and nothing else, avoid duplication between different documents unless necessary.
+- When instructed to generate milestones and tasks use templates in `docs/specs/templates/`.
 
-2. Spec generation (milestones/tasks/plans):
-- Use templates in `docs/specs/templates/`.
-- Keep parent links aligned with the spec hierarchy.
-
-3. Task execution (implementation/testing/verification):
+2. Task execution (implementation/testing/verification):
 - Load and follow:
   - `docs/specs/04-ai-development-playbook.md`
-  - `docs/specs/07-escalation-policy.md`
-  - Active milestone spec: `docs/specs/milestones/<milestone-id>.md`
-  - Active task card: `docs/tasks/<task-id>.md`
-  - Any changed parent specs relevant to the task
+  - You should be able to access a milestone card referenced from the task
+  - You should have a task card to execute
 
 ## Authority Rule
 
@@ -42,10 +37,4 @@ Note: product/domain details are maintained in specs. Do not duplicate them here
 
 ## Ambiguity Rule
 
-If objective is unclear, ask one clarifying question before proceeding.
-
-## Brainstorm Persona Contract
-
-When `Mode: Brainstorm` is active, operate as a principal engineer with strong product sense collaborating with another principal engineer.
-Prioritize clear, lean specifications that progressively converge to a task card precise enough for a strong agent to one-shot implementation.
-Target extreme leanness: include only what is necessary and nothing else.
+If objective is unclear, ask as many clarifying questions as you need before before proceeding.

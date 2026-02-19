@@ -4,27 +4,8 @@
 
 Define the minimum scaffolding required before feature development, and standardize how AI sessions consume project context.
 
-## Session modes
 
-1. `Discussion mode`: brainstorming/spec design only. No code edits, test runs, or merge readiness checks. Output will generally be MD product or technical or task files.
-2. `Execution mode`: buold session. Build code for delivery, runs tests, or validates merge readiness.
-
-Rule: strict gatekeeper checks, verify gates, and escalation rules apply only in `execution mode`.
-
-## Session interaction mode
-
-1. `interactive` (default): human is available for clarifications during execution.
-2. `non_interactive`: human is not available until the session exits.
-
-Source of truth:
-
-1. Explicit chat instruction from the human.
-2. Task card metadata if present.
-3. Default to `interactive` when unspecified.
-
-Conflict rule: if chat instruction and task card metadata differ, follow chat instruction.
-
-## Minimum scaffolding before Feature 1
+## Minimum scaffolding 
 
 1. Project directives/specs exist and are current:
    - `docs/specs/README.md`
@@ -107,8 +88,6 @@ Provide these references at execution start:
 3. Active task card
 4. Any changed parent specs
 
-Strict gatekeeper rule: if any required artifact is missing, do not execute implementation. Mark task `blocked` and follow `docs/specs/07-escalation-policy.md`.
-
 ## Task card rules
 
 1. Task card must include explicit references to:
@@ -147,22 +126,13 @@ Do not mark task complete if any condition is true:
 
 ## Escalation protocol (human-in-the-loop)
 
-Follow `docs/specs/07-escalation-policy.md` for blocked execution sessions.
-
 Required triggers:
 
 1. Critical execution prerequisites are missing -> immediate escalation (no retries).
 2. Mandatory verify gates fail after `3` full verify attempts -> escalate.
 3. Same failure signature repeats for `2` consecutive attempts without a new hypothesis -> escalate early.
 
-Escalation artifact:
-
-1. Write escalation note using `docs/specs/templates/escalation-note-template.md`.
-2. Save note as:
-   - `docs/tasks/escalations/E-<task-id>-<YYYYMMDD-HHMM>.md` when task card exists.
-   - `docs/tasks/escalations/E-UNSCOPED-<YYYYMMDD-HHMM>.md` when no task card exists.
-3. If task card exists, update status to `blocked` and link the escalation file.
-4. Wait for human decision before resuming execution.
+Provide clear information to the human about the failure, what you tried to fix the failure, why the fixes failed and suggest next steps.
 
 ## Change discipline
 
