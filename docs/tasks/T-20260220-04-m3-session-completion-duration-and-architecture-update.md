@@ -33,7 +33,6 @@ Finalize session completion persistence (`completedAt`, materialized `durationSe
 - Update `docs/specs/03-technical-architecture.md` to include:
   - continuous local autosave SLA decisions
   - duration materialization strategy
-  - provenance-forward modeling for future server/group gym/exercise adoption
 
 ### Out of scope
 

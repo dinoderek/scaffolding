@@ -19,7 +19,7 @@
 
 ## Objective
 
-Introduce the first domain-local Drizzle schema and migrations for session recording entities with forward-compatible provenance metadata.
+Introduce the first domain-local Drizzle schema and migrations for session recording entities.
 
 ## Scope
 
@@ -33,9 +33,6 @@ Introduce the first domain-local Drizzle schema and migrations for session recor
 - Model draft/completed session lifecycle fields (`status`, timing fields, duration materialization field).
 - Add relational constraints and indexes for ordered exercise/set rows and cascade behavior.
 - Keep gym names non-unique.
-- Add provenance-ready columns for future server/group adoption:
-  - gym origin fields (scope/source IDs)
-  - exercise origin linkage fields (scope/source IDs)
 - Generate migration artifacts and update runtime migration bundle.
 
 ### Out of scope
@@ -49,9 +46,8 @@ Introduce the first domain-local Drizzle schema and migrations for session recor
 1. Domain schema compiles and replaces smoke-table usage in exported schema index.
 2. `Session -> Exercise -> Set` foreign-key relationships are enforced with deterministic ordering constraints.
 3. `gyms.name` is not unique.
-4. Provenance fields are present for gyms and session exercises, defaulting to local/private origin semantics.
-5. Migration artifacts are generated and runtime migration config is updated in sync.
-6. `npm run db:generate:canary`, `npm run lint`, `npm run typecheck`, and `npm run test` pass in `apps/mobile`.
+4. Migration artifacts are generated and runtime migration config is updated in sync.
+5. `npm run db:generate:canary`, `npm run lint`, `npm run typecheck`, and `npm run test` pass in `apps/mobile`.
 
 ## Testing and verification approach (follow `docs/specs/04-ai-development-playbook.md`)
 
@@ -96,10 +92,8 @@ Introduce the first domain-local Drizzle schema and migrations for session recor
     - `sessions` (`apps/mobile/src/data/schema/sessions.ts`)
     - `session_exercises` (`apps/mobile/src/data/schema/session-exercises.ts`)
     - `exercise_sets` (`apps/mobile/src/data/schema/exercise-sets.ts`)
-  - Added lifecycle and provenance columns:
+  - Added lifecycle columns:
     - `sessions.status`, `sessions.started_at`, `sessions.completed_at`, `sessions.duration_sec`
-    - `gyms.origin_scope_id`, `gyms.origin_source_id`
-    - `session_exercises.origin_scope_id`, `session_exercises.origin_source_id`
   - Added deterministic ordering constraints and relational integrity:
     - unique ordering indexes on `(session_id, order_index)` and `(session_exercise_id, order_index)`
     - FK chain with cascade from `sessions -> session_exercises -> exercise_sets`

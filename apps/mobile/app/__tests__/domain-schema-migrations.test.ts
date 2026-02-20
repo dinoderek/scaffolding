@@ -12,7 +12,7 @@ describe('domain schema and runtime migrations', () => {
     expect(schema).not.toHaveProperty('smokeRecords');
   });
 
-  it('includes session lifecycle, provenance defaults, and deterministic ordering constraints in runtime SQL', () => {
+  it('includes session lifecycle, origin defaults, and deterministic ordering constraints in runtime SQL', () => {
     const migrationSql = Object.values(localRuntimeMigrations.migrations).join('\n');
 
     expect(migrationSql).toContain('CREATE TABLE `gyms`');

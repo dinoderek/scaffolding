@@ -34,7 +34,6 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
   - Immediate flush on lifecycle triggers (blur/route/background) via helper adapters.
   - Dirty-state max flush interval (`10s`) while user remains on screen.
 - Support draft-to-completed session lifecycle with persisted duration.
-- Add forward-compatible provenance fields so gyms/exercises can later be adopted from server/group catalogs without schema redesign.
 
 ## Out of scope
 
@@ -48,7 +47,7 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
 1. Domain schema + migration artifacts for core recorder entities.
 2. Continuous local autosave + draft lifecycle persistence for session recorder state.
 3. Session completion flow that stores `durationSec` for sorting/analysis use cases.
-4. Architecture spec update capturing new local persistence and forward-compatibility decisions.
+4. Architecture spec update capturing new local persistence decisions.
 
 ## Acceptance criteria
 
@@ -56,13 +55,12 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
 2. Draft persistence primitives enforce the autosave SLA defined in this milestone.
 3. A draft session can be resumed via draft load APIs, and lifecycle flush helper contracts exist for later UI integration.
 4. Completing a session persists `completedAt` and materialized `durationSec`.
-5. Forward-compatible provenance fields are present for future server/group-origin gyms and exercises.
-6. `docs/specs/03-technical-architecture.md` is updated with the milestone decisions.
-7. Required quality gates pass in `apps/mobile`: `npm run lint`, `npm run typecheck`, `npm run test`.
+5. `docs/specs/03-technical-architecture.md` is updated with the milestone decisions.
+6. Required quality gates pass in `apps/mobile`: `npm run lint`, `npm run typecheck`, `npm run test`.
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260220-02-m3-domain-schema-and-migrations.md` - define and migrate domain schema, constraints, and provenance-ready columns. (`completed`)
+1. `docs/tasks/T-20260220-02-m3-domain-schema-and-migrations.md` - define and migrate domain schema and constraints. (`completed`)
 2. `docs/tasks/T-20260220-03-m3-continuous-autosave-and-draft-lifecycle.md` - implement recorder autosave SLA and lifecycle flush semantics. (`completed`)
 3. `docs/tasks/T-20260220-04-m3-session-completion-duration-and-architecture-update.md` - complete session finalization/duration persistence and update architecture spec. (`completed`)
 
@@ -70,7 +68,6 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
 
 - Autosave cadence must balance write-amplification vs. data-loss window on mobile lifecycle edges.
 - Draft persistence can conflict with evolving UI state model unless identity/order semantics are stable.
-- Provenance fields introduced now must remain generic enough to fit future group/server adoption models.
 
 ## Decision log
 
@@ -80,9 +77,9 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
 - Impact: Enables resilient offline recording with predictable persistence behavior and lower write churn.
 
 - Date: 2026-02-20
-- Decision: Keep gym names non-unique and add provenance-ready fields for gyms/exercises.
-- Reason: Future group/server adoption needs identity decoupled from user-visible names.
-- Impact: Avoids near-term schema churn when shared catalogs are introduced.
+- Decision: Keep gym names non-unique.
+- Reason: User-visible gym names should not be treated as globally unique identifiers.
+- Impact: Reduces false conflicts and avoids naming-collision issues in local-first recording.
 
 - Date: 2026-02-20
 - Decision: Ship M3 as a UI-decoupled persistence foundation before recorder-screen wiring.
