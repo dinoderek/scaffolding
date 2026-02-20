@@ -19,7 +19,7 @@
 
 ## Objective
 
-Finalize session completion persistence (`completedAt`, materialized `durationSec`) and codify milestone architecture decisions in the top-level architecture spec.
+Finalize session completion persistence (`completedAt`, materialized `durationSec`) and codify milestone architecture decisions in the top-level architecture spec, without wiring to the existing UI yet.
 
 ## Scope
 
@@ -29,6 +29,7 @@ Finalize session completion persistence (`completedAt`, materialized `durationSe
 - Materialize and persist `durationSec` at completion time from `startedAt` and `completedAt`.
 - Ensure completed sessions are queryable/sortable by persisted duration and completion timestamp.
 - Add tests for duration calculation and completion-state transition correctness.
+- Add completion command/helper contracts that are ready for later React Native UI event wiring (but keep this task UI-decoupled).
 - Update `docs/specs/03-technical-architecture.md` to include:
   - continuous local autosave SLA decisions
   - duration materialization strategy
@@ -39,6 +40,7 @@ Finalize session completion persistence (`completedAt`, materialized `durationSe
 - Cloud sync of completed sessions.
 - Group/social leaderboard analytics.
 - Detailed reporting UI.
+- Any direct wiring into `apps/mobile/app/session-recorder.tsx` or existing recorder UI components.
 
 ## Acceptance criteria
 
@@ -46,13 +48,14 @@ Finalize session completion persistence (`completedAt`, materialized `durationSe
 2. Completion is idempotent-safe (no duplicate/invalid completion writes).
 3. Read/query path can sort/filter by `durationSec` and completion timestamps for analysis use cases.
 4. Duration calculation tests cover standard and edge conditions (short sessions, null/missing timing guards).
-5. `docs/specs/03-technical-architecture.md` is updated with M3 decisions and rationale.
-6. `npm run lint`, `npm run typecheck`, and `npm run test` pass in `apps/mobile`.
+5. Completion helper contracts are exposed for future UI hookup without requiring current screen changes.
+6. `docs/specs/03-technical-architecture.md` is updated with M3 decisions and rationale.
+7. `npm run lint`, `npm run typecheck`, and `npm run test` pass in `apps/mobile`.
 
 ## Testing and verification approach (follow `docs/specs/04-ai-development-playbook.md`)
 
 - Planned checks/commands:
-  - targeted completion/duration tests
+  - targeted standalone completion/duration tests (repository/domain level, no screen mount required)
   - `npm run lint`
   - `npm run typecheck`
   - `npm run test`
@@ -63,11 +66,12 @@ Finalize session completion persistence (`completedAt`, materialized `durationSe
 
 - Planned files/areas allowed to change:
   - `apps/mobile/src/data/**`
-  - `apps/mobile/app/session-recorder.tsx` (completion submit wiring only)
+  - `apps/mobile/src/**` (non-UI completion helper modules only)
   - `apps/mobile/app/__tests__/**`
   - `docs/specs/03-technical-architecture.md`
 - Constraints/assumptions:
   - Persisted duration is authoritative for analysis/sort queries; UI can still display live derived duration for in-progress sessions.
+  - Do not wire or modify existing session-recorder UI behavior in this task.
 
 ## Mandatory verify gates
 

@@ -19,58 +19,61 @@
 
 ## Objective
 
-Implement local continuous persistence for the session recorder so user edits are durably saved in draft form under a bounded autosave SLA.
+Implement local continuous persistence primitives for session-recorder draft data so edits are durably saved under a bounded autosave SLA, without wiring to the existing UI yet.
 
 ## Scope
 
 ### In scope
 
-- Create draft session record at first meaningful recorder interaction.
+- Create draft session record at first meaningful recorder interaction via domain/data-layer APIs.
 - Persist recorder mutations through repository/data-layer APIs.
 - Implement autosave SLA:
   - Text edits: debounced write at `3s`.
   - Structural edits (add/remove/reorder/select): immediate transaction.
-  - Immediate flush on screen blur, route change, and app background transition.
+  - Immediate flush on lifecycle triggers (blur/route/background) through helper adapters.
   - Dirty-state max flush interval of `10s` while staying on-screen.
-- Restore draft state when returning to recorder.
-- Add tests for autosave timing and lifecycle flush behavior.
+- Restore draft state when draft load APIs are invoked.
+- Add helper adapters/contracts that map React Native lifecycle events into autosave flush signals (no screen hookup yet).
+- Add standalone tests for autosave timing and lifecycle flush behavior.
 
 ### Out of scope
 
 - Session completion semantics (`completedAt`, `durationSec`) beyond retaining draft state.
 - Sync/outbox/backend propagation.
 - Group adoption UI.
+- Any direct wiring into `apps/mobile/app/session-recorder.tsx` or existing recorder UI components.
 
 ## Acceptance criteria
 
-1. Recorder state changes are persisted according to autosave policy without requiring explicit submit.
+1. Draft state changes are persisted according to autosave policy without requiring explicit submit.
 2. Debounced text writes occur at `3s` cadence and do not write on every keystroke.
 3. Structural actions write immediately in a transaction-safe manner.
-4. Blur/route/background transitions flush dirty state immediately.
+4. Lifecycle trigger helpers (blur/route/background) flush dirty state immediately when invoked.
 5. Dirty state is never older than `10s` during sustained editing.
-6. Closing and reopening recorder restores last persisted draft state.
-7. `npm run lint`, `npm run typecheck`, and `npm run test` pass in `apps/mobile`.
+6. Re-loading a draft restores last persisted draft state through data/domain APIs.
+7. Helper contracts for React Native lifecycle integration are available for later UI wiring.
+8. `npm run lint`, `npm run typecheck`, and `npm run test` pass in `apps/mobile`.
 
 ## Testing and verification approach (follow `docs/specs/04-ai-development-playbook.md`)
 
 - Planned checks/commands:
-  - targeted autosave timing/lifecycle tests (fake timers + lifecycle event mocks)
+  - targeted standalone autosave timing/lifecycle tests (fake timers + lifecycle event mocks, no screen mount required)
   - `npm run lint`
   - `npm run typecheck`
   - `npm run test`
 - Notes:
-  - Include at least one edge case proving no data loss when blur/background occurs before debounce timer fires.
+  - Include at least one edge case proving no data loss when lifecycle flush happens before debounce timer fires.
 
 ## Implementation notes
 
 - Planned files/areas allowed to change:
-  - `apps/mobile/app/session-recorder.tsx`
   - `apps/mobile/src/data/**`
-  - `apps/mobile/components/session-recorder/**`
+  - `apps/mobile/src/**` (non-UI autosave/lifecycle helper modules only)
   - `apps/mobile/app/__tests__/**`
 - Constraints/assumptions:
   - Persist input-compatible values (including partially typed numeric fields) without premature parse failures.
   - Keep the autosave scheduler implementation explicit and testable.
+  - Do not wire or modify existing session-recorder UI behavior in this task.
 
 ## Mandatory verify gates
 
