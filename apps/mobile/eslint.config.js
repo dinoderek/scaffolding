@@ -6,13 +6,5 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ['dist/*'],
-    rules: {
-      'import/no-unresolved': [
-        'error',
-        {
-          ignore: ['^drizzle-orm(?:/.*)?$', '^expo-sqlite$'],
-        },
-      ],
-    },
   },
 ]);
