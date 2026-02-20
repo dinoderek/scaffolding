@@ -1,12 +1,13 @@
 # Maestro iOS Smoke Runbook
 
-This runbook defines the minimal iOS smoke check used for UI-change validation.
+This runbook defines the iOS smoke checks used for UI and local-data runtime validation.
 
 ## Scope
 
 - Platform: iOS simulator only.
-- Flow: `apps/mobile/.maestro/flows/smoke-launch.yaml`.
-- Goal: verify app launch and session recorder screen visibility.
+- Flows:
+  - `apps/mobile/.maestro/flows/smoke-launch.yaml` (UI reachability smoke)
+  - `apps/mobile/.maestro/flows/data-runtime-smoke.yaml` (runtime migration + smoke record insert/read signal)
 
 ## Prerequisites
 
@@ -22,16 +23,29 @@ Run smoke flow:
 npm run test:e2e:ios:smoke
 ```
 
+Run data runtime smoke flow:
+
+```bash
+npm run test:e2e:ios:data-smoke
+```
+
 Run smoke flow with task-aware artifact path:
 
 ```bash
 TASK_ID=T-20260220-01 npm run test:e2e:ios:smoke
 ```
 
+Run data runtime smoke flow with task-aware artifact path:
+
+```bash
+TASK_ID=T-20260220-01 npm run test:e2e:ios:data-smoke
+```
+
 Optional environment variables:
 
 - `TASK_ID`: task identifier for artifact grouping. Default: `ad-hoc`.
 - `IOS_SIM_DEVICE`: simulator device name. Default: `iPhone 17 Pro`.
+- `EXPO_DEV_SERVER_PORT`: Expo dev server port used by smoke scripts. Default: `8082`.
 - `EXPO_START_WAIT_SECONDS`: wait before Maestro starts. Default: `30`.
 
 ## Artifacts
@@ -44,6 +58,8 @@ Expected screenshot files under `maestro-output`:
 
 - `01-app-launch.png`
 - `02-session-recorder-visible.png`
+- `03-data-runtime-smoke-start.png` (when running data smoke flow)
+- `04-data-runtime-smoke-success.png` (when running data smoke flow)
 
 Other outputs:
 
@@ -60,3 +76,5 @@ Other outputs:
    - Increase `EXPO_START_WAIT_SECONDS` and rerun.
 3. Maestro cannot launch:
    - Verify `maestro --version` and ensure Java is installed.
+4. Expo start fails with port conflict:
+   - Set `EXPO_DEV_SERVER_PORT` to a free port and rerun.

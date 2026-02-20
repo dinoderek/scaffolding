@@ -8,7 +8,7 @@ TASK_ID="${TASK_ID:-ad-hoc}"
 EXPO_DEV_SERVER_PORT="${EXPO_DEV_SERVER_PORT:-8082}"
 TIMESTAMP="$(date +"%Y%m%d-%H%M%S")"
 ARTIFACT_ROOT="$APP_DIR/artifacts/maestro/$TASK_ID/$TIMESTAMP"
-FLOW_FILE="$APP_DIR/.maestro/flows/smoke-launch.yaml"
+FLOW_FILE="$APP_DIR/.maestro/flows/data-runtime-smoke.yaml"
 MAESTRO_OUTPUT_DIR="$ARTIFACT_ROOT/maestro-output"
 MAESTRO_DEBUG_DIR="$ARTIFACT_ROOT/maestro-debug"
 EXPO_LOG_FILE="$ARTIFACT_ROOT/expo-start.log"
@@ -43,5 +43,5 @@ maestro test "$FLOW_FILE" \
   --debug-output "$MAESTRO_DEBUG_DIR" \
   --test-output-dir "$MAESTRO_OUTPUT_DIR"
 
-echo "Smoke run complete."
+echo "Data runtime smoke run complete."
 echo "Artifacts: $ARTIFACT_ROOT"

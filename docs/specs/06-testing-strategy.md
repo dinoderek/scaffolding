@@ -58,6 +58,28 @@ Reason: keeps AI-generated changes safe and predictable as code volume grows.
 - Rule:
   - if a task changes user-facing UI, run `npm run test:e2e:ios:smoke` before closeout.
 
+## iOS simulator data smoke policy (Maestro, current stage)
+
+- Purpose:
+  - validate runtime migration + smoke insert/read behavior on real Expo iOS runtime (`expo-sqlite`) when change risk is runtime-sensitive.
+- Command:
+  - `npm run test:e2e:ios:data-smoke`
+- Required when any of these are true:
+  - `apps/mobile/src/data/bootstrap.ts` changes.
+  - `apps/mobile/src/data/migrations/**` changes.
+  - `apps/mobile/drizzle/**` migration artifacts or schema outputs change.
+  - `apps/mobile/package.json` changes include Expo/SQLite/Drizzle dependency updates.
+  - milestone/release closeout requires fresh native runtime data evidence.
+- Optional (recommended) when:
+  - data-layer behavior changes are low risk and local runtime confidence is desired before handoff.
+- Usually not required when:
+  - changes are limited to data-repository pure logic that does not alter runtime migration/bootstrap wiring and Lane 1 checks are green.
+- Evidence expectations:
+  - include command result and screenshot paths from `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`.
+  - required screenshots for data smoke flow:
+    - `03-data-runtime-smoke-start`
+    - `04-data-runtime-smoke-success`
+
 ## Planned next phase (UI quality and appearance)
 
 1. Add visual regression testing for critical screens/components.

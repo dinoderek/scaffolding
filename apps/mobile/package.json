@@ -12,7 +12,8 @@
     "test": "jest",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:generate:canary": "npm run db:generate",
-    "test:e2e:ios:smoke": "./scripts/maestro-ios-smoke.sh"
+    "test:e2e:ios:smoke": "./scripts/maestro-ios-smoke.sh",
+    "test:e2e:ios:data-smoke": "./scripts/maestro-ios-data-smoke.sh"
   },
   "dependencies": {
     "@react-navigation/native": "^7.1.8",

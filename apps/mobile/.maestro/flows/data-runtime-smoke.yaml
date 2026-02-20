@@ -1,0 +1,11 @@
+appId: host.exp.Exponent
+---
+- assertVisible:
+    id: "home-foundation-ready"
+- takeScreenshot: "03-data-runtime-smoke-start"
+- tapOn:
+    id: "run-data-runtime-smoke-button"
+- assertVisible: "Data runtime smoke: success"
+- assertVisible:
+    id: "data-runtime-smoke-last-value"
+- takeScreenshot: "04-data-runtime-smoke-success"

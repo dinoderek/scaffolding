@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260219-05`
 - Title: M2 runtime migrations and smoke persistence integration tests
-- Status: `in_progress`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-19`
 - Session interaction mode: `interactive (default)`
@@ -92,15 +92,31 @@ Execute migrations through runtime bootstrap, add a minimal smoke write/read pat
     - `apps/mobile/app/__tests__/local-data-bootstrap.test.ts`
     - `apps/mobile/app/__tests__/smoke-records.test.ts`
   - Updated `docs/specs/06-testing-strategy.md` with explicit two-lane local data verification policy.
+  - Added minimal iOS-native runtime smoke trigger path:
+    - `apps/mobile/src/data/runtime-smoke.ts` (`runLocalDataRuntimeSmoke`)
+    - `apps/mobile/app/index.tsx` runtime smoke trigger/status surface with stable `testID`s for simulator automation
+    - `apps/mobile/.maestro/flows/data-runtime-smoke.yaml`
+    - `apps/mobile/scripts/maestro-ios-data-smoke.sh`
+    - `apps/mobile/package.json` script: `test:e2e:ios:data-smoke`
+  - Hardened iOS Maestro runners against Expo port conflicts by using configurable non-interactive port and explicit simulator deep-link launch:
+    - `apps/mobile/scripts/maestro-ios-smoke.sh`
+    - `apps/mobile/scripts/maestro-ios-data-smoke.sh`
 - Tests run and outcome:
   - `npm run test -- local-data-bootstrap.test.ts smoke-records.test.ts` -> pass (`2` suites, `5` tests).
   - `npm run lint` -> pass.
   - `npm run typecheck` -> pass.
   - `npm run test` -> pass (`4` suites, `11` tests).
   - `npm run db:generate:canary` -> pass (`No schema changes, nothing to migrate`).
-- Lane 2 native runtime smoke status:
-  - Blocked in current execution environment due missing native runtime prerequisites:
-    - `xcrun simctl list devices` failed because Xcode license has not been accepted.
-    - `adb` is not installed/available for Android runtime smoke.
-  - Remaining action to fully close task acceptance:
-    - Run native Expo smoke flow after environment prerequisites are resolved and capture migration + smoke insert/read success signals.
+  - `TASK_ID=T-20260220-DB-SMOKE npm run test:e2e:ios:data-smoke` -> pass (`1/1` flow passed).
+  - `TASK_ID=T-20260220-DB-SMOKE npm run test:e2e:ios:smoke` -> pass (`1/1` flow passed) after shared runner hardening.
+  - `npm run lint` -> pass (post-runner updates).
+  - `npm run typecheck` -> pass (post-runner updates).
+  - `npm run test` -> pass (`5` suites, `13` tests; includes `runtime-smoke.test.ts`).
+- Lane 2 native runtime smoke evidence:
+  - Environment: iOS simulator (`xcrun simctl` available devices).
+  - Flow: `apps/mobile/.maestro/flows/data-runtime-smoke.yaml`.
+  - Success artifact root:
+    - `apps/mobile/artifacts/maestro/T-20260220-DB-SMOKE/20260220-112955/`
+  - Required screenshots captured:
+    - `apps/mobile/artifacts/maestro/T-20260220-DB-SMOKE/20260220-112955/maestro-output/screenshots/03-data-runtime-smoke-start.png`
+    - `apps/mobile/artifacts/maestro/T-20260220-DB-SMOKE/20260220-112955/maestro-output/screenshots/04-data-runtime-smoke-success.png`
