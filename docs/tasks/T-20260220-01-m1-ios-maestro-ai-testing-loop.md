@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260220-01`
 - Title: M1 iOS Maestro AI testing loop setup and documentation
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-20`
 - Session interaction mode: `interactive (default)`
@@ -151,14 +151,27 @@ These decisions are temporary during execution and must be codified in `docs/spe
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
 - Command evidence:
-  - output for lint/typecheck/unit tests
-  - output for Maestro smoke run
+  - `npm run lint` (pass)
+  - `npm run typecheck` (pass)
+  - `npm run test` (pass; 4 suites / 11 tests)
+  - `TASK_ID=T-20260220-01 npm run test:e2e:ios:smoke` (pass; 1/1 flow passed)
 - Visual evidence:
-  - screenshot artifacts under `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`
-  - at minimum one screenshot for each defined checkpoint in testing content specification
+  - screenshot artifacts: `apps/mobile/artifacts/maestro/T-20260220-01/20260220-105052/`
+  - required screenshots captured:
+    - `apps/mobile/artifacts/maestro/T-20260220-01/20260220-105052/maestro-output/screenshots/01-app-launch.png`
+    - `apps/mobile/artifacts/maestro/T-20260220-01/20260220-105052/maestro-output/screenshots/02-session-recorder-visible.png`
 - Contract traceability:
-  - brief mapping from each UX contract flow to the corresponding Maestro flow file and evidence screenshot(s)
+  - UX flow `Smoke launch and entry to session recorder` is implemented by `apps/mobile/.maestro/flows/smoke-launch.yaml`.
+  - `assertVisible: "Milestone 0 foundation ready"` maps to app launch checkpoint (`01-app-launch.png`).
+  - `tapOn open-session-recorder-button` + `assertVisible session-recorder-title` maps to session recorder visibility checkpoint (`02-session-recorder-visible.png`).
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- 
+- Added iOS-only Maestro smoke infrastructure:
+  - Flow: `apps/mobile/.maestro/flows/smoke-launch.yaml`
+  - Scripts: `apps/mobile/scripts/ios-sim-boot.sh`, `apps/mobile/scripts/maestro-ios-smoke.sh`
+  - npm gate: `test:e2e:ios:smoke`
+- Added minimal stable selectors to support deterministic smoke navigation.
+- Added AI runbook docs: `apps/mobile/README-maestro.md` and README integration section.
+- Updated testing policy in `docs/specs/06-testing-strategy.md` to codify Maestro vs Jest split, screenshot requirements, and UI-change smoke gate rule.
+- Updated `.gitignore` to exclude generated Maestro artifacts.

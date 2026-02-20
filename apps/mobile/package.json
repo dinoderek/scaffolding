@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
-    "db:generate:canary": "npm run db:generate"
+    "db:generate:canary": "npm run db:generate",
+    "test:e2e:ios:smoke": "./scripts/maestro-ios-smoke.sh"
   },
   "dependencies": {
     "@react-navigation/native": "^7.1.8",

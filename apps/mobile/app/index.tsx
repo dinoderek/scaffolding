@@ -4,9 +4,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 export default function IndexScreen() {
   return (
     <View style={styles.container}>
-      <Text selectable>Milestone 0 foundation ready</Text>
+      <Text selectable testID="home-foundation-ready">
+        Milestone 0 foundation ready
+      </Text>
       <Link asChild href="/session-recorder">
-        <Pressable accessibilityRole="button" style={styles.button}>
+        <Pressable accessibilityLabel="Open session recorder" accessibilityRole="button" style={styles.button} testID="open-session-recorder-button">
           <Text style={styles.buttonText}>Open Session Recorder</Text>
         </Pressable>
       </Link>

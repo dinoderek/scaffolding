@@ -4,6 +4,8 @@ This file is a quick index for where code and config live in `apps/mobile`.
 
 Human testing workflows and on-device validation steps are documented in:
 - `README_HUMAN_TESTING.md`
+AI iOS smoke testing workflows and artifact conventions are documented in:
+- `README-maestro.md`
 
 ## Directory index
 
@@ -28,3 +30,4 @@ Human testing workflows and on-device validation steps are documented in:
 - `drizzle.config.ts`: Drizzle migration generation config.
 - `.gitignore`: Git ignore rules for generated/local files.
 - `README_HUMAN_TESTING.md`: Human testing guide and development loops.
+- `README-maestro.md`: AI iOS smoke runbook for Maestro.

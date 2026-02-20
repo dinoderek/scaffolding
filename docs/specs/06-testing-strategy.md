@@ -43,6 +43,21 @@ Reason: keeps AI-generated changes safe and predictable as code volume grows.
 - Every feature should include at least one success-path test and one offline/error-path test.
 - During execution sessions, run a targeted test or gate after each meaningful change, then run full `lint + typecheck + test` before task closeout.
 
+## iOS UI smoke policy (Maestro, current stage)
+
+- Jest/React Native Testing Library remains the default for component logic, state transitions, and CI-safe assertions.
+- Maestro is used for simulator/device-integrated UI smoke checks that confirm core screens are reachable and visibly intact.
+- Current required Maestro coverage is a single iOS smoke flow:
+  - app launch visible state
+  - session recorder visible state
+- Required screenshots for smoke flow:
+  - `01-app-launch`
+  - `02-session-recorder-visible`
+- Screenshot capture is automated by the Maestro flow and stored under:
+  - `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`
+- Rule:
+  - if a task changes user-facing UI, run `npm run test:e2e:ios:smoke` before closeout.
+
 ## Planned next phase (UI quality and appearance)
 
 1. Add visual regression testing for critical screens/components.

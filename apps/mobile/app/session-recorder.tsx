@@ -229,8 +229,10 @@ export default function SessionRecorderScreen() {
   const editorInputValue = state.editingLocationId ? state.editingLocationName : state.pendingLocationName;
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Session Recorder</Text>
+    <ScrollView contentContainerStyle={styles.content} testID="session-recorder-screen">
+      <Text accessibilityLabel="Session recorder title" style={styles.title} testID="session-recorder-title">
+        Session Recorder
+      </Text>
 
       <View style={styles.section}>
         <View style={styles.topRow}>
