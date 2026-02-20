@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260220-04`
 - Title: M3 session completion duration persistence and architecture decision update
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-20`
 - Session interaction mode: `interactive (default)`
@@ -87,4 +87,24 @@ Finalize session completion persistence (`completedAt`, materialized `durationSe
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- 
+- What changed:
+  - Added standalone completion persistence flow in `apps/mobile/src/data/session-drafts.ts`:
+    - deterministic `durationSec` materialization from `startedAt` and `completedAt`
+    - completion transition update (`draft/active -> completed`)
+    - idempotent-safe completion behavior for already-completed sessions
+  - Added completed-session analysis query support in `apps/mobile/src/data/session-drafts.ts`:
+    - sort/filter by `durationSec`
+    - sort/filter by completion timestamp
+    - optional limit handling
+  - Added completion/duration tests in `apps/mobile/app/__tests__/session-drafts-repository.test.ts`, including short/negative timing guard behavior via duration clamp.
+  - Updated architecture decisions in `docs/specs/03-technical-architecture.md` with:
+    - autosave SLA contract
+    - duration materialization strategy
+    - adapter-based React Native lifecycle integration stance
+- What tests ran:
+  - `npm run test -- draft-autosave-controller.test.ts session-drafts-repository.test.ts` -> pass.
+  - `npm run lint` -> pass.
+  - `npm run typecheck` -> pass.
+  - `npm run test` -> pass (`10` suites, `34` tests).
+- What remains:
+  - Completion submit wiring to the existing recorder UI is intentionally deferred and should be implemented in a follow-up UI-integration task.

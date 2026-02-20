@@ -39,7 +39,11 @@ Rule: each lower level may add detail but must not override or relax parent-leve
 2. Write a milestone spec using `docs/specs/templates/milestone-spec-template.md`.
 3. Break milestone spec into small task cards using `docs/specs/templates/task-card-template.md`.
 4. Execute one task card per AI session (or a tightly related pair only).
-5. Update task status and decision log at end of session.
+5. Update task and milestone docs at end of session:
+   - set task `Status` (`completed` or `blocked`)
+   - fill task `Completion note`
+   - update milestone `Status` and task breakdown item states
+   - update decision log entries when decisions changed
 
 ## Task execution protocol (quality-first)
 
@@ -67,6 +71,8 @@ Use this sequence for every task card:
    - Rule: do not defer all verification to the end; apply targeted checks during development and full gates at closeout.
 6. Closeout:
    - Update task completion note with outcomes and remaining risks.
+   - Update task `Status` in the task card.
+   - Update milestone `Status` + task breakdown state in the milestone card before handoff.
 
 ## Test and implementation session policy
 
@@ -106,6 +112,22 @@ Provide these references at execution start:
    - What changed
    - What tests ran
    - What remains
+4. Task status must be updated in the same session as implementation:
+   - `planned|in_progress -> completed` only when acceptance criteria + required gates are green.
+   - otherwise set `blocked` with explicit reason and next action.
+
+## Status update policy (mandatory)
+
+Before ending any implementation session, AI must update both:
+
+1. Active task card:
+   - `Status`
+   - `Completion note`
+2. Active milestone card:
+   - `Status` (or explicit unchanged rationale if milestone remains open)
+   - task breakdown progress for touched tasks
+
+Rule: do not consider a task done if code is complete but status fields were not updated.
 
 ## Automated feedback loops (before human review)
 

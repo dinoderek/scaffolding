@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260220-03`
 - Title: M3 continuous autosave and draft lifecycle persistence
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-20`
 - Session interaction mode: `interactive (default)`
@@ -88,4 +88,22 @@ Implement local continuous persistence primitives for session-recorder draft dat
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- 
+- What changed:
+  - Added standalone autosave controller with explicit policy support in `apps/mobile/src/session-recorder/draft-autosave.ts`:
+    - text debounce writes (`3s`)
+    - immediate structural-change writes
+    - dirty-state max interval flush (`10s`)
+    - lifecycle-triggered flush support (`screen-blur`, `route-change`, `app-background`)
+  - Added non-UI lifecycle helper adapters in `apps/mobile/src/session-recorder/lifecycle-helpers.ts` to map future React Native events to autosave flush triggers.
+  - Added domain draft persistence repository primitives in `apps/mobile/src/data/session-drafts.ts` and exports in `apps/mobile/src/data/index.ts`:
+    - draft snapshot persistence
+    - latest draft restore API
+    - non-completed-session guardrails for draft writes
+  - Added standalone autosave/lifecycle coverage in `apps/mobile/app/__tests__/draft-autosave-controller.test.ts`.
+- What tests ran:
+  - `npm run test -- draft-autosave-controller.test.ts session-drafts-repository.test.ts` -> pass.
+  - `npm run lint` -> pass.
+  - `npm run typecheck` -> pass.
+  - `npm run test` -> pass (`10` suites, `34` tests).
+- What remains:
+  - Wiring these helpers into `apps/mobile/app/session-recorder.tsx` is intentionally deferred and should be handled in a follow-up UI-integration task.

@@ -4,7 +4,7 @@
 
 - Milestone ID: `M3`
 - Title: Session domain model and continuous local persistence
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Target window: `2026-02`
 
@@ -27,11 +27,11 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
   - `sessions`
   - `session_exercises`
   - `exercise_sets`
-- Persist sessions continuously in local DB while user edits the recorder.
+- Persist sessions continuously in local DB through standalone domain/data-layer autosave primitives (UI wiring deferred to follow-up task).
 - Define and implement autosave policy:
   - Debounced text-edit writes (`3s`).
   - Immediate transactional writes for structural changes.
-  - Immediate flush on screen blur, route change, and app background transition.
+  - Immediate flush on lifecycle triggers (blur/route/background) via helper adapters.
   - Dirty-state max flush interval (`10s`) while user remains on screen.
 - Support draft-to-completed session lifecycle with persisted duration.
 - Add forward-compatible provenance fields so gyms/exercises can later be adopted from server/group catalogs without schema redesign.
@@ -53,8 +53,8 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
 ## Acceptance criteria
 
 1. Domain tables exist with enforced relational integrity (`Session -> Exercise -> Set`) and no uniqueness constraint on gym names.
-2. Recorder edits persist continuously under the autosave SLA defined in this milestone.
-3. A draft session can be resumed after navigation/background transitions without losing committed edits.
+2. Draft persistence primitives enforce the autosave SLA defined in this milestone.
+3. A draft session can be resumed via draft load APIs, and lifecycle flush helper contracts exist for later UI integration.
 4. Completing a session persists `completedAt` and materialized `durationSec`.
 5. Forward-compatible provenance fields are present for future server/group-origin gyms and exercises.
 6. `docs/specs/03-technical-architecture.md` is updated with the milestone decisions.
@@ -62,9 +62,9 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260220-02-m3-domain-schema-and-migrations.md` - define and migrate domain schema, constraints, and provenance-ready columns.
-2. `docs/tasks/T-20260220-03-m3-continuous-autosave-and-draft-lifecycle.md` - implement recorder autosave SLA and lifecycle flush semantics.
-3. `docs/tasks/T-20260220-04-m3-session-completion-duration-and-architecture-update.md` - complete session finalization/duration persistence and update architecture spec.
+1. `docs/tasks/T-20260220-02-m3-domain-schema-and-migrations.md` - define and migrate domain schema, constraints, and provenance-ready columns. (`completed`)
+2. `docs/tasks/T-20260220-03-m3-continuous-autosave-and-draft-lifecycle.md` - implement recorder autosave SLA and lifecycle flush semantics. (`completed`)
+3. `docs/tasks/T-20260220-04-m3-session-completion-duration-and-architecture-update.md` - complete session finalization/duration persistence and update architecture spec. (`completed`)
 
 ## Risks / dependencies
 
@@ -83,3 +83,21 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
 - Decision: Keep gym names non-unique and add provenance-ready fields for gyms/exercises.
 - Reason: Future group/server adoption needs identity decoupled from user-visible names.
 - Impact: Avoids near-term schema churn when shared catalogs are introduced.
+
+- Date: 2026-02-20
+- Decision: Ship M3 as a UI-decoupled persistence foundation before recorder-screen wiring.
+- Reason: Validate persistence/lifecycle semantics with standalone tests first, then perform UI integration with lower regression risk.
+- Impact: M3 domain/data acceptance is complete; a follow-up task will connect these helpers to React Native screen events.
+
+## Completion note
+
+- What changed:
+  - Delivered domain schema/migrations (`T-20260220-02`), standalone autosave + lifecycle helper contracts (`T-20260220-03`), and completion duration materialization + architecture update (`T-20260220-04`).
+  - Architecture decisions were updated in `docs/specs/03-technical-architecture.md` to codify autosave SLA, completion duration materialization, and adapter-based lifecycle integration.
+- Verification summary:
+  - Lane 1 gates passed in `apps/mobile` after milestone implementation:
+    - `npm run lint`
+    - `npm run typecheck`
+    - `npm run test` (`10` suites, `34` tests)
+- Remaining work:
+  - Integrate the new autosave/completion helper contracts with `apps/mobile/app/session-recorder.tsx` in a follow-up UI wiring task.

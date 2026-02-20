@@ -78,4 +78,12 @@ What this session must accomplish.
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- 
+- What changed:
+- What tests ran:
+- What remains:
+
+## Status update checklist (mandatory at closeout)
+
+- Update `Status` to `completed` or `blocked`.
+- Ensure completion note is filled before handoff.
+- Update parent milestone task breakdown/status in the same session.

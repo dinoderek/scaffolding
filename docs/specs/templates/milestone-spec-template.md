@@ -47,3 +47,15 @@ List planned task cards for this milestone.
 ## Risks / dependencies
 
 - 
+
+## Completion note (fill when milestone closes)
+
+- What changed:
+- Verification summary:
+- What remains:
+
+## Status update checklist (mandatory during task closeout)
+
+- Keep milestone `Status` current as tasks progress.
+- Update task breakdown entries to reflect each task state (`planned | in_progress | completed | blocked`).
+- If milestone remains open after a session, record why in the active task completion note.
