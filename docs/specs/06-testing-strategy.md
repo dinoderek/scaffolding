@@ -80,6 +80,28 @@ Reason: keeps AI-generated changes safe and predictable as code volume grows.
     - `03-data-runtime-smoke-start`
     - `04-data-runtime-smoke-success`
 
+## iOS simulator parallel-run policy (Maestro)
+
+- Problem:
+  - parallel local agents can collide on simulator selection and Expo dev-server ports.
+- Enforcement:
+  - iOS Maestro runner scripts must acquire a shared host lock slot before booting simulator / starting Expo.
+  - slot lock root defaults to `/tmp/scaffolding2-maestro-ios-slots`.
+  - default slots are `slot-1,slot-2,slot-3` and each slot gets a deterministic Expo port (`base + slot-index`).
+- Configuration:
+  - `MAESTRO_IOS_SLOT_IDS` (default: `slot-1,slot-2,slot-3`)
+  - `MAESTRO_IOS_SLOT_WAIT_SECONDS` (default: `120`)
+  - `MAESTRO_IOS_SLOT_POLL_SECONDS` (default: `1`)
+  - `MAESTRO_IOS_SLOT_LOCK_ROOT` (default: `/tmp/scaffolding2-maestro-ios-slots`)
+  - `EXPO_DEV_SERVER_BASE_PORT` (default: `8082`)
+  - optional per-slot simulator pools:
+    - `IOS_SIM_DEVICE_POOL` (comma-separated device names)
+    - `IOS_SIM_UDID_POOL` (comma-separated UDIDs; preferred when deterministic mapping is required)
+- Operational rules:
+  - parallel runs are supported up to configured slot count.
+  - if no slot is free before timeout, runner exits non-zero.
+  - manual overrides (`EXPO_DEV_SERVER_PORT`, `IOS_SIM_DEVICE`, `IOS_SIM_UDID`) are allowed but can bypass isolation; use with care in shared-host parallel runs.
+
 ## Planned next phase (UI quality and appearance)
 
 1. Add visual regression testing for critical screens/components.

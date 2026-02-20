@@ -2,6 +2,7 @@
 set -euo pipefail
 
 IOS_SIM_DEVICE="${IOS_SIM_DEVICE:-iPhone 17 Pro}"
+IOS_SIM_UDID="${IOS_SIM_UDID:-}"
 MODE="${1:-boot}"
 
 find_udid() {
@@ -10,7 +11,11 @@ find_udid() {
     | head -n 1
 }
 
-SIM_UDID="$(find_udid)"
+SIM_UDID="$IOS_SIM_UDID"
+
+if [[ -z "$SIM_UDID" ]]; then
+  SIM_UDID="$(find_udid)"
+fi
 
 if [[ -z "$SIM_UDID" ]]; then
   echo "Unable to find iOS simulator device '${IOS_SIM_DEVICE}'." >&2
