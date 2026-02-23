@@ -4,7 +4,7 @@
 
 - Milestone ID: `M4`
 - Title: Session list home screen and local data wiring
-- Status: `planned`
+- Status: `in_progress`
 - Owner: `AI + human reviewer`
 - Target window: `2026-02`
 
@@ -65,8 +65,8 @@ Ship a session list home screen that presents active and completed sessions from
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260220-05-m4-session-list-screen-shell.md` - add session-list route/home UX shell with active-session gating, deleted-visibility control, compact duration display, and disabled completed-row taps.
-2. `docs/tasks/T-20260220-06-m4-session-list-data-wiring-and-soft-delete.md` - wire session-list to local DB queries, enforce one-active list behavior, apply soft-delete-safe data contract, and add the milestone E2E scenario.
+1. `docs/tasks/T-20260220-05-m4-session-list-screen-shell.md` - `in_progress` (implementation + verify gates complete; pending empty-state screenshot evidence and final task closeout).
+2. `docs/tasks/T-20260220-06-m4-session-list-data-wiring-and-soft-delete.md` - `planned`.
 
 ## Risks / dependencies
 

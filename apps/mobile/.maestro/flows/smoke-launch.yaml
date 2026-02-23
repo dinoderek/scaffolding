@@ -1,8 +1,13 @@
 appId: host.exp.Exponent
 ---
 - takeScreenshot: "01-app-launch"
+- assertVisible:
+    id: "session-list-screen"
 - tapOn:
-    id: "open-session-recorder-button"
+    id: "resume-active-session-button"
+    optional: true
+- tapOn:
+    id: "start-session-button"
     optional: true
 - assertVisible:
     id: "session-recorder-screen"

@@ -13,7 +13,8 @@ export default function RootLayout() {
   return (
     <>
       <Stack>
-        <Stack.Screen name="index" options={{ title: 'Foundation' }} />
+        <Stack.Screen name="index" options={{ title: 'Sessions' }} />
+        <Stack.Screen name="session-list" options={{ title: 'Sessions' }} />
         <Stack.Screen name="session-recorder" options={{ title: 'Session Recorder' }} />
       </Stack>
       <StatusBar style="auto" />

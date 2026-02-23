@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260220-05`
 - Title: M4 session list screen shell with active-session gating
-- Status: `planned`
+- Status: `in_progress`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-20`
 - Session interaction mode: `interactive (default)`
@@ -123,9 +123,32 @@ Create the session list screen UI shell as the app home route with active/comple
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
 - Test evidence summary for happy-path + edge-path assertions.
+  - Happy path: `apps/mobile/app/__tests__/session-list-screen.test.tsx` verifies `Start Session` (no active) and `Resume Active` (active exists) gating plus navigation to `/session-recorder`.
+  - Edge path: same test verifies completed rows are disabled and `fireEvent.press` does not trigger navigation.
+  - Deleted visibility + compact duration: same test verifies hidden/deleted history toggle and compact duration tokens (`58m`, `1h 5m`).
 - Screenshot paths for session-list empty/happy-path states.
+  - Happy-path launch (session list visible): `/Users/dinohughes/Projects/scaffolding2/apps/mobile/artifacts/maestro/T-20260220-05/20260223-143137-62605/maestro-output/01-app-launch.png`
+  - Empty-state screenshot: pending (not captured in this session).
 - UX-contract traceability notes.
+  - Flow 1 (`no active`) mapped to `SessionListScreenShell` conditional action panel and `start-session-button` test assertions.
+  - Flow 2 (`active exists`) mapped to `Resume Active`/`Close Active` gating and home-route shell render in `app/__tests__/index.test.tsx`.
+  - Flow 3 (completed row tap) mapped to disabled completed row rendering with absent `onPress` and disabled accessibility state assertions.
+  - Flow 4 (deleted visibility) mapped to `toggle-deleted-sessions-button` state toggle and filtered completed-history rendering.
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- 
+- What changed:
+  - Added `apps/mobile/app/session-list.tsx` session-list home shell with mock active/completed/deleted variants, active-session action gating (`Start` vs `Resume/Close`), deleted-history visibility toggle, compact duration formatting, disabled completed rows, and empty-state UI.
+  - Changed `apps/mobile/app/index.tsx` to render the session-list shell as the home route and updated `apps/mobile/app/_layout.tsx` route titles for `index` and `session-list`.
+  - Added targeted route tests in `apps/mobile/app/__tests__/session-list-screen.test.tsx` and updated `apps/mobile/app/__tests__/index.test.tsx`.
+  - Updated `apps/mobile/.maestro/flows/smoke-launch.yaml` to assert the new home route and open the recorder via `Resume Active` or `Start Session`.
+- What tests ran:
+  - `npm run test -- app/__tests__/session-list-screen.test.tsx`
+  - `npm run test -- app/__tests__/index.test.tsx`
+  - `HOME=/tmp EXPO_NO_TELEMETRY=1 npm run lint`
+  - `npm run typecheck`
+  - `npm run test`
+  - `TASK_ID=T-20260220-05 npm run test:e2e:ios:smoke`
+- What remains:
+  - Capture the task-card-required session-list empty-state screenshot (happy-path screenshot captured via Maestro in this session).
+  - Human review of shell copy/spacing before marking the task `completed`.
