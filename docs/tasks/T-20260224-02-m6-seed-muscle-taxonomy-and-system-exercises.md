@@ -28,7 +28,9 @@ Define and seed the M6 non-editable muscle taxonomy plus an initial set of syste
 - Finalize the v1 muscle taxonomy list for M6 (display names + stable IDs) if minor naming tweaks are needed.
 - Implement taxonomy seed data for the system-defined muscle groups.
 - Define an initial set of system exercises for M6 and seed them.
-- Seed weighted exercise-to-muscle mappings using non-normalized weights.
+- Seed weighted exercise-to-muscle mappings using non-normalized weights, balancing simplicity with evidence quality.
+- Document the studies/sources used to support the taxonomy and exercise-muscle associations/weighting choices.
+- Default to simple weighting conventions (for example, `primary=1.0`, `secondary=0.5`) unless strong study evidence supports more granular weights for specific mappings.
 - Add validation/tests to catch missing taxonomy IDs, duplicate mappings, and invalid weights in seed data.
 - Document the initial system exercise set included in M6.
 
@@ -44,10 +46,11 @@ Define and seed the M6 non-editable muscle taxonomy plus an initial set of syste
 
 1. The M6 taxonomy seed matches the milestone’s v1 taxonomy IDs and is system-defined/non-editable.
 2. An initial system exercise set is seeded and each seeded exercise has at least one muscle mapping.
-3. Compound examples (for example, a chest press pattern) include multiple muscle mappings with non-normalized weights.
-4. Seed validation prevents duplicate `(exercise, muscle_group)` mappings and invalid/missing referenced IDs.
-5. Seeded records can be loaded/verified through the local data layer or seed-loading path used by the app.
-6. The included initial system exercise list is documented in the task completion evidence or linked docs.
+3. Seeded mappings use non-normalized weights and default to simple weighting (`1.0` primary / `0.5` secondary) unless a stronger evidence-based rationale is documented for more granular values.
+4. The taxonomy and seeded exercise-mapping choices are documented with supporting study/source references and rationale.
+5. Seed validation prevents duplicate `(exercise, muscle_group)` mappings and invalid/missing referenced IDs.
+6. Seeded records can be loaded/verified through the local data layer or seed-loading path used by the app.
+7. The included initial system exercise list is documented in the task completion evidence or linked docs.
 
 ## Testing and verification approach
 
@@ -58,6 +61,7 @@ Define and seed the M6 non-editable muscle taxonomy plus an initial set of syste
   - `npm run test` (from `apps/mobile`)
 - Notes:
   - Prefer deterministic seed fixtures and assertions over manual inspection.
+  - Include checks that enforce/flag undocumented granular weights if the task adopts a simple default weighting convention.
 
 ## Implementation notes
 
@@ -68,6 +72,7 @@ Define and seed the M6 non-editable muscle taxonomy plus an initial set of syste
 - Constraints/assumptions:
   - Muscle taxonomy remains non-editable in M6.
   - Keep the initial system exercise set intentionally small/representative; do not optimize for completeness yet.
+  - Prioritize mappings/weights with strong evidence support; prefer simple primary/secondary weighting when evidence is weak or mixed.
   - Use stable IDs consistently across schema, seed data, and UI-facing usage.
 
 ## Mandatory verify gates
@@ -81,7 +86,8 @@ Define and seed the M6 non-editable muscle taxonomy plus an initial set of syste
 
 - Taxonomy seed summary (IDs + labels).
 - Initial system exercise seed summary (exercise count + examples).
-- Mapping examples demonstrating non-normalized weights.
+- Mapping examples demonstrating non-normalized weights (and where applicable, why any granular weight exceeds the default simple ladder).
+- Source/study reference summary supporting taxonomy and mapping choices.
 - Test/gate results summary.
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)

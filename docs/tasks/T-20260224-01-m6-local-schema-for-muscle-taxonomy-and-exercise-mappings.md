@@ -27,10 +27,10 @@ Design and implement the local data schema foundation for a system-defined muscl
 
 - Add local schema tables/entities for:
   - muscle groups (system-defined taxonomy)
-  - exercise definitions (system and user exercises)
+  - exercise definitions (supporting current `system` and `user` exercises, without blocking future imported sources)
   - weighted exercise-to-muscle associations
 - Add schema constraints/indexes for stable IDs, uniqueness, and valid weight values.
-- Define how user vs system exercises are represented in the schema (field(s)/constraints).
+- Define an exercise-origin/source model that supports current `system` and `user` exercises and can later represent additional import sources without a breaking redesign.
 - Add/export schema types and migration(s) in the current local data layer.
 - Add schema-level tests/smoke verification as appropriate for existing project patterns.
 
@@ -45,7 +45,7 @@ Design and implement the local data schema foundation for a system-defined muscl
 ## Acceptance criteria
 
 1. Local schema includes a system-defined muscle-group entity with stable IDs and user-facing names.
-2. Local schema includes an exercise-definition entity that can represent both `system` and `user` exercises.
+2. Local schema includes an exercise-definition entity with an origin/source representation that supports current `system` and `user` exercises and is extensible to future imported sources.
 3. Local schema includes a many-to-many association entity linking exercises to muscle groups with non-normalized weights.
 4. Uniqueness/constraint rules prevent duplicate mappings for the same `(exercise, muscle_group)` pair.
 5. Schema changes are exported through the existing schema index and included in local migrations.
@@ -60,6 +60,7 @@ Design and implement the local data schema foundation for a system-defined muscl
   - `npm run test` (from `apps/mobile`)
 - Notes:
   - Follow existing Drizzle schema + migration verification patterns used in M2/M3 tasks.
+  - If this task establishes reusable schema/migration verification conventions not already documented, capture them in project-level specs/playbook docs rather than only in this task card.
 
 ## Implementation notes
 
@@ -71,6 +72,7 @@ Design and implement the local data schema foundation for a system-defined muscl
 - Constraints/assumptions:
   - Keep the taxonomy system-defined/non-editable at the data-model level for M6.
   - Do not lock a historical mapping snapshot/version strategy in this task unless required by schema shape.
+  - Avoid a schema design that hard-codes exercise origin to only `system|user`; preserve an extensible source/origin model for future imports.
   - Preserve compatibility with current local-first architecture and migration runtime.
 
 ## Mandatory verify gates
