@@ -851,7 +851,7 @@ export default function SessionRecorderScreen() {
       await completeSessionDraft(persisted.sessionId);
       persistedSessionIdRef.current = null;
       hasSessionMutationRef.current = false;
-      router.replace('/session-list');
+      router.dismissTo('/');
     })().catch(() => {
       // Keep recorder screen state available for retry if persistence/complete/navigation fails.
     });

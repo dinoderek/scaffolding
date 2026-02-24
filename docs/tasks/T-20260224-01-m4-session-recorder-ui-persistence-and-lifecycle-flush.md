@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260224-01`
 - Title: M4 session recorder UI persistence wiring with M3 autosave SLA and lifecycle flush integration
-- Status: `in_progress`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-24`
 - Session interaction mode: `interactive (default)`
@@ -135,9 +135,9 @@ Integrate `apps/mobile/app/session-recorder.tsx` with the existing local draft p
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: Wired `session-recorder` UI to local draft persistence using the existing M3 autosave SLA (`3s` text debounce, immediate structural writes, `10s` dirty cap), added best-effort lifecycle flushes (background/inactive + unmount/dispose), restored/resumed latest active draft with stable `sessionId`, refreshed session list on focus, and updated list active-row rendering to show live elapsed duration from `startedAt`. Added local gym upsert integration so active list summary can render selected gym. Updated submit flow to persist + complete and navigate back to the root list, then fixed the nav-stack bug by using `dismissTo('/')` (prevents a stray back button after submit).
+- What tests ran: `npm run typecheck`; `HOME=/tmp EXPO_NO_TELEMETRY=1 npm run lint`; `npm run test -- --runInBand`; `TASK_ID=T-20260224-01 npm run test:e2e:ios:smoke`; targeted Jest regressions including `app/__tests__/session-list-recorder-journey.test.tsx`, `app/__tests__/session-recorder-persistence.test.tsx`, and `app/__tests__/session-recorder-submit.test.tsx` (including submit stack-reset regression for `dismissTo('/')`).
+- What remains: M4 milestone remains open because `T-20260220-05` still needs final empty-state screenshot evidence and closeout. Best-effort app-exit persistence semantics remain intentionally limited to lifecycle flush coverage (no guaranteed process-kill callback on mobile).
 
 ## Status update checklist (mandatory at closeout)
 

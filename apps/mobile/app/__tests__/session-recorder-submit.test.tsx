@@ -16,9 +16,18 @@ jest.mock('@/src/data', () => ({
 
 jest.mock('expo-router', () => {
   const mockReplace = jest.fn();
+  const mockDismissTo = jest.fn();
+  const mockDismissAll = jest.fn();
   return {
-    useRouter: () => ({ replace: mockReplace, push: jest.fn() }),
+    useRouter: () => ({
+      replace: mockReplace,
+      dismissTo: mockDismissTo,
+      dismissAll: mockDismissAll,
+      push: jest.fn(),
+    }),
     __mockReplace: mockReplace,
+    __mockDismissTo: mockDismissTo,
+    __mockDismissAll: mockDismissAll,
   };
 });
 
@@ -30,8 +39,14 @@ const {
   completeSessionDraft: jest.Mock;
 };
 
-const { __mockReplace: mockReplace } = jest.requireMock('expo-router') as {
+const {
+  __mockReplace: mockReplace,
+  __mockDismissTo: mockDismissTo,
+  __mockDismissAll: mockDismissAll,
+} = jest.requireMock('expo-router') as {
   __mockReplace: jest.Mock;
+  __mockDismissTo: jest.Mock;
+  __mockDismissAll: jest.Mock;
 };
 
 describe('SessionRecorderScreen submit cleanup flow', () => {
@@ -39,6 +54,8 @@ describe('SessionRecorderScreen submit cleanup flow', () => {
     mockPersistSessionDraftSnapshot.mockClear();
     mockCompleteSessionDraft.mockClear();
     mockReplace.mockClear();
+    mockDismissTo.mockClear();
+    mockDismissAll.mockClear();
   });
 
   it('allows submit without gym selection', async () => {
@@ -54,8 +71,26 @@ describe('SessionRecorderScreen submit cleanup flow', () => {
     await waitFor(() => {
       expect(mockPersistSessionDraftSnapshot).toHaveBeenCalled();
       expect(mockCompleteSessionDraft).toHaveBeenCalledWith('test-session');
-      expect(mockReplace).toHaveBeenCalledWith('/session-list');
+      expect(mockDismissTo).toHaveBeenCalledWith('/');
     });
+  });
+
+  it('clears the stack back to the root list on submit so the list header has no back button', async () => {
+    render(<SessionRecorderScreen />);
+
+    fireEvent.press(screen.getByText('Log new exercise'));
+    fireEvent.press(screen.getByLabelText('Select exercise Barbell Squat'));
+    fireEvent.changeText(screen.getByLabelText('Weight for exercise 1 set 1'), '225');
+    fireEvent.changeText(screen.getByLabelText('Reps for exercise 1 set 1'), '5');
+    fireEvent.press(screen.getByText('Submit Session'));
+
+    await waitFor(() => {
+      expect(mockPersistSessionDraftSnapshot).toHaveBeenCalled();
+      expect(mockCompleteSessionDraft).toHaveBeenCalledWith('test-session');
+    });
+
+    expect(mockDismissTo).toHaveBeenCalledWith('/');
+    expect(mockDismissAll).not.toHaveBeenCalled();
   });
 
   it('shows incomplete-set modal with go-back and remove-and-submit actions', async () => {
@@ -84,7 +119,7 @@ describe('SessionRecorderScreen submit cleanup flow', () => {
     await waitFor(() => {
       expect(mockPersistSessionDraftSnapshot).toHaveBeenCalled();
       expect(mockCompleteSessionDraft).toHaveBeenCalledWith('test-session');
-      expect(mockReplace).toHaveBeenCalledWith('/session-list');
+      expect(mockDismissTo).toHaveBeenCalledWith('/');
     });
   });
 
@@ -103,7 +138,7 @@ describe('SessionRecorderScreen submit cleanup flow', () => {
     await waitFor(() => {
       expect(mockPersistSessionDraftSnapshot).toHaveBeenCalled();
       expect(mockCompleteSessionDraft).toHaveBeenCalledWith('test-session');
-      expect(mockReplace).toHaveBeenCalledWith('/session-list');
+      expect(mockDismissTo).toHaveBeenCalledWith('/');
     });
   });
 });
