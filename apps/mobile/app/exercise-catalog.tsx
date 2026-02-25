@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { TopLevelTabs } from '@/components/navigation/top-level-tabs';
 import {
+  deleteExerciseCatalogExercise,
   listExerciseCatalogExercises,
   listExerciseCatalogMuscleGroups,
   saveExerciseCatalogExercise,
@@ -10,40 +13,104 @@ import {
   type ExerciseCatalogMuscleGroup,
 } from '@/src/data/exercise-catalog';
 
-type EditableMuscleLinkRow = {
+type EditableSecondaryMuscleRow = {
   rowId: string;
   muscleGroupId: string;
-  weightText: string;
-  role: ExerciseCatalogExerciseMuscleMapping['role'];
 };
 
 type EditorValidationState = {
   nameError: string | null;
-  linksError: string | null;
-  rowErrors: Record<string, string>;
+  primaryMuscleError: string | null;
+  secondaryMusclesError: string | null;
 };
 
-const createRowId = () => `muscle-link-row-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+type MuscleSelectorMode = 'primary' | 'secondary' | null;
 
-const formatWeightText = (weight: number) => `${weight}`;
+const createRowId = () => `muscle-link-row-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const PRIMARY_MUSCLE_WEIGHT = 1;
+const SECONDARY_MUSCLE_WEIGHT = 0.5;
 
 const createBlankValidationState = (): EditorValidationState => ({
   nameError: null,
-  linksError: null,
-  rowErrors: {},
+  primaryMuscleError: null,
+  secondaryMusclesError: null,
 });
 
-const buildEditorRowsFromExercise = (exercise: ExerciseCatalogExercise): EditableMuscleLinkRow[] =>
-  exercise.mappings.map((mapping) => ({
-    rowId: mapping.id || createRowId(),
-    muscleGroupId: mapping.muscleGroupId,
-    weightText: formatWeightText(mapping.weight),
-    role: mapping.role,
-  }));
+const getMuscleDisplayName = (
+  muscleGroupId: string,
+  muscleGroupById: Map<string, ExerciseCatalogMuscleGroup>
+) => muscleGroupById.get(muscleGroupId)?.displayName ?? muscleGroupId;
+
+const pickPrimaryMapping = (exercise: ExerciseCatalogExercise) =>
+  exercise.mappings.find((mapping) => mapping.role === 'primary') ??
+  [...exercise.mappings].sort((left, right) => right.weight - left.weight)[0] ??
+  null;
+
+const buildEditorMuscleSelectionsFromExercise = (
+  exercise: ExerciseCatalogExercise
+): { primaryMuscleGroupId: string | null; secondaryMuscleRows: EditableSecondaryMuscleRow[] } => {
+  const primaryMapping = pickPrimaryMapping(exercise);
+  const primaryMuscleGroupId = primaryMapping?.muscleGroupId ?? null;
+  const seenSecondaryMuscleIds = new Set<string>();
+
+  const secondaryMuscleRows = exercise.mappings
+    .filter((mapping) => mapping.muscleGroupId !== primaryMuscleGroupId)
+    .filter((mapping) => {
+      if (seenSecondaryMuscleIds.has(mapping.muscleGroupId)) {
+        return false;
+      }
+
+      seenSecondaryMuscleIds.add(mapping.muscleGroupId);
+      return true;
+    })
+    .map((mapping) => ({
+      rowId: mapping.id || createRowId(),
+      muscleGroupId: mapping.muscleGroupId,
+    }));
+
+  return {
+    primaryMuscleGroupId,
+    secondaryMuscleRows,
+  };
+};
+
+const formatExerciseMuscleSummary = (
+  exercise: ExerciseCatalogExercise,
+  muscleGroupById: Map<string, ExerciseCatalogMuscleGroup>
+) => {
+  if (exercise.mappings.length === 0) {
+    return 'No muscle links';
+  }
+
+  const primaryMapping = pickPrimaryMapping(exercise);
+
+  if (!primaryMapping) {
+    return 'No muscle links';
+  }
+
+  const secondaryMappings = exercise.mappings.filter((mapping) => mapping.id !== primaryMapping.id);
+  const primaryLabel = getMuscleDisplayName(primaryMapping.muscleGroupId, muscleGroupById);
+
+  if (secondaryMappings.length === 0) {
+    return primaryLabel;
+  }
+
+  if (secondaryMappings.length === 1) {
+    const secondaryLabel = getMuscleDisplayName(secondaryMappings[0].muscleGroupId, muscleGroupById);
+    return `${primaryLabel} · ${secondaryLabel} (s)`;
+  }
+
+  return `${primaryLabel} · ${secondaryMappings.length} secondaries`;
+};
 
 export default function ExerciseCatalogScreen() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditorModalVisible, setIsEditorModalVisible] = useState(false);
+  const [muscleSelectorMode, setMuscleSelectorMode] = useState<MuscleSelectorMode>(null);
+  const [exerciseActionMenuTarget, setExerciseActionMenuTarget] = useState<ExerciseCatalogExercise | null>(null);
+  const [exerciseDeleteTarget, setExerciseDeleteTarget] = useState<ExerciseCatalogExercise | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -52,7 +119,8 @@ export default function ExerciseCatalogScreen() {
   const [exercises, setExercises] = useState<ExerciseCatalogExercise[]>([]);
   const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
   const [exerciseName, setExerciseName] = useState('');
-  const [muscleLinkRows, setMuscleLinkRows] = useState<EditableMuscleLinkRow[]>([]);
+  const [primaryMuscleGroupId, setPrimaryMuscleGroupId] = useState<string | null>(null);
+  const [secondaryMuscleRows, setSecondaryMuscleRows] = useState<EditableSecondaryMuscleRow[]>([]);
   const [validation, setValidation] = useState<EditorValidationState>(createBlankValidationState);
 
   useEffect(() => {
@@ -67,16 +135,10 @@ export default function ExerciseCatalogScreen() {
         setMuscleGroups(loadedMuscleGroups);
         setExercises(loadedExercises);
 
-        if (loadedExercises.length > 0) {
-          const firstExercise = loadedExercises[0];
-          setEditingExerciseId(firstExercise.id);
-          setExerciseName(firstExercise.name);
-          setMuscleLinkRows(buildEditorRowsFromExercise(firstExercise));
-        } else {
-          setEditingExerciseId(null);
-          setExerciseName('');
-          setMuscleLinkRows([]);
-        }
+        setEditingExerciseId(null);
+        setExerciseName('');
+        setPrimaryMuscleGroupId(null);
+        setSecondaryMuscleRows([]);
       })
       .catch(() => {
         if (cancelled) {
@@ -97,88 +159,113 @@ export default function ExerciseCatalogScreen() {
   }, []);
 
   const muscleGroupById = new Map(muscleGroups.map((muscleGroup) => [muscleGroup.id, muscleGroup]));
-  const selectedMuscleIds = new Set(muscleLinkRows.map((row) => row.muscleGroupId));
+  const selectedSecondaryMuscleIds = new Set(secondaryMuscleRows.map((row) => row.muscleGroupId));
+  const availablePrimaryMuscleGroupsForSelector = muscleGroups.filter(
+    (muscleGroup) =>
+      muscleGroup.id === primaryMuscleGroupId || !selectedSecondaryMuscleIds.has(muscleGroup.id)
+  );
+  const availableSecondaryMuscleGroupsForSelector = muscleGroups.filter(
+    (muscleGroup) =>
+      muscleGroup.id !== primaryMuscleGroupId && !selectedSecondaryMuscleIds.has(muscleGroup.id)
+  );
+  const isMuscleSelectorVisible = muscleSelectorMode !== null;
+  const selectorOptions =
+    muscleSelectorMode === 'primary' ? availablePrimaryMuscleGroupsForSelector : availableSecondaryMuscleGroupsForSelector;
+  const selectorTitle = muscleSelectorMode === 'primary' ? 'Select primary muscle' : 'Add secondary muscle';
+  const editorTitle = editingExerciseId ? 'Edit Exercise' : 'Create Exercise';
 
-  const resetValidationAndFeedback = () => {
+  const resetValidationAndErrors = () => {
     setValidation(createBlankValidationState());
     setSaveError(null);
-    setSaveFeedback(null);
   };
 
   const openEditorForExercise = (exercise: ExerciseCatalogExercise) => {
+    const nextSelections = buildEditorMuscleSelectionsFromExercise(exercise);
     setEditingExerciseId(exercise.id);
     setExerciseName(exercise.name);
-    setMuscleLinkRows(buildEditorRowsFromExercise(exercise));
-    resetValidationAndFeedback();
+    setPrimaryMuscleGroupId(nextSelections.primaryMuscleGroupId);
+    setSecondaryMuscleRows(nextSelections.secondaryMuscleRows);
+    resetValidationAndErrors();
+    setSaveFeedback(null);
+    setIsEditorModalVisible(true);
   };
 
   const startNewExercise = () => {
     setEditingExerciseId(null);
     setExerciseName('');
-    setMuscleLinkRows([]);
-    resetValidationAndFeedback();
+    setPrimaryMuscleGroupId(null);
+    setSecondaryMuscleRows([]);
+    resetValidationAndErrors();
+    setSaveFeedback(null);
+    setIsEditorModalVisible(true);
   };
 
-  const addMuscleLink = (muscleGroupId: string) => {
-    if (selectedMuscleIds.has(muscleGroupId)) {
+  const closeEditorModal = () => {
+    if (isSaving) {
       return;
     }
 
-    setMuscleLinkRows((current) => [
+    setMuscleSelectorMode(null);
+    setIsEditorModalVisible(false);
+    setExerciseActionMenuTarget(null);
+    resetValidationAndErrors();
+  };
+
+  const selectPrimaryMuscle = (muscleGroupId: string) => {
+    setPrimaryMuscleGroupId(muscleGroupId);
+    setSecondaryMuscleRows((current) => current.filter((row) => row.muscleGroupId !== muscleGroupId));
+    setValidation((current) => ({
+      ...current,
+      primaryMuscleError: null,
+      secondaryMusclesError: null,
+    }));
+    setMuscleSelectorMode(null);
+    setSaveError(null);
+    setSaveFeedback(null);
+  };
+
+  const addSecondaryMuscle = (muscleGroupId: string) => {
+    if (muscleGroupId === primaryMuscleGroupId || selectedSecondaryMuscleIds.has(muscleGroupId)) {
+      return;
+    }
+
+    setSecondaryMuscleRows((current) => [
       ...current,
       {
         rowId: createRowId(),
         muscleGroupId,
-        weightText: '1.0',
-        role: null,
       },
     ]);
     setValidation((current) => ({
       ...current,
-      linksError: null,
+      secondaryMusclesError: null,
     }));
+    setMuscleSelectorMode(null);
     setSaveError(null);
     setSaveFeedback(null);
   };
 
-  const updateMuscleWeight = (rowId: string, weightText: string) => {
-    setMuscleLinkRows((current) => current.map((row) => (row.rowId === rowId ? { ...row, weightText } : row)));
+  const removeSecondaryMuscle = (rowId: string) => {
+    setSecondaryMuscleRows((current) => current.filter((row) => row.rowId !== rowId));
     setValidation((current) => {
-      if (!current.rowErrors[rowId]) {
+      if (current.secondaryMusclesError === null) {
         return current;
       }
-
-      const nextRowErrors = { ...current.rowErrors };
-      delete nextRowErrors[rowId];
       return {
         ...current,
-        rowErrors: nextRowErrors,
+        secondaryMusclesError: null,
       };
     });
     setSaveError(null);
     setSaveFeedback(null);
   };
 
-  const removeMuscleLink = (rowId: string) => {
-    setMuscleLinkRows((current) => current.filter((row) => row.rowId !== rowId));
-    setValidation((current) => {
-      if (!current.rowErrors[rowId] && current.linksError === null) {
-        return current;
+  const validateEditor = ():
+    | {
+        ok: true;
+        parsedMappings: { muscleGroupId: string; weight: number; role: ExerciseCatalogExerciseMuscleMapping['role'] }[];
       }
-
-      const nextRowErrors = { ...current.rowErrors };
-      delete nextRowErrors[rowId];
-      return {
-        ...current,
-        linksError: null,
-        rowErrors: nextRowErrors,
-      };
-    });
-    setSaveError(null);
-    setSaveFeedback(null);
-  };
-
-  const validateEditor = (): { ok: true; parsedMappings: { muscleGroupId: string; weight: number; role: EditableMuscleLinkRow['role'] }[] } | { ok: false } => {
+    | { ok: false } => {
     const trimmedName = exerciseName.trim();
     const nextValidation = createBlankValidationState();
 
@@ -186,36 +273,40 @@ export default function ExerciseCatalogScreen() {
       nextValidation.nameError = 'Exercise name is required.';
     }
 
-    if (muscleLinkRows.length < 1) {
-      nextValidation.linksError = 'Add at least one linked muscle before saving.';
+    if (!primaryMuscleGroupId) {
+      nextValidation.primaryMuscleError = 'Select a primary muscle before saving.';
     }
 
-    const parsedMappings: { muscleGroupId: string; weight: number; role: EditableMuscleLinkRow['role'] }[] = [];
+    const parsedMappings: { muscleGroupId: string; weight: number; role: ExerciseCatalogExerciseMuscleMapping['role'] }[] = [];
     const seenMuscleIds = new Set<string>();
-    for (const row of muscleLinkRows) {
+
+    if (primaryMuscleGroupId) {
+      seenMuscleIds.add(primaryMuscleGroupId);
+      parsedMappings.push({
+        muscleGroupId: primaryMuscleGroupId,
+        weight: PRIMARY_MUSCLE_WEIGHT,
+        role: 'primary',
+      });
+    }
+
+    for (const row of secondaryMuscleRows) {
       if (seenMuscleIds.has(row.muscleGroupId)) {
-        nextValidation.rowErrors[row.rowId] = 'Duplicate muscle link.';
+        nextValidation.secondaryMusclesError = 'Duplicate secondary muscle.';
         continue;
       }
+
       seenMuscleIds.add(row.muscleGroupId);
-
-      const parsedWeight = Number(row.weightText);
-      if (!Number.isFinite(parsedWeight) || parsedWeight <= 0 || parsedWeight > 10) {
-        nextValidation.rowErrors[row.rowId] = 'Weight must be a number greater than 0 and at most 10.';
-        continue;
-      }
-
       parsedMappings.push({
         muscleGroupId: row.muscleGroupId,
-        weight: parsedWeight,
-        role: row.role,
+        weight: SECONDARY_MUSCLE_WEIGHT,
+        role: 'secondary',
       });
     }
 
     const hasErrors =
       nextValidation.nameError !== null ||
-      nextValidation.linksError !== null ||
-      Object.keys(nextValidation.rowErrors).length > 0;
+      nextValidation.primaryMuscleError !== null ||
+      nextValidation.secondaryMusclesError !== null;
 
     setValidation(nextValidation);
 
@@ -227,7 +318,7 @@ export default function ExerciseCatalogScreen() {
   };
 
   const saveEditor = async () => {
-    resetValidationAndFeedback();
+    resetValidationAndErrors();
 
     const result = validateEditor();
     if (!result.ok) {
@@ -248,8 +339,13 @@ export default function ExerciseCatalogScreen() {
       });
       setEditingExerciseId(savedExercise.id);
       setExerciseName(savedExercise.name);
-      setMuscleLinkRows(buildEditorRowsFromExercise(savedExercise));
+      const nextSelections = buildEditorMuscleSelectionsFromExercise(savedExercise);
+      setPrimaryMuscleGroupId(nextSelections.primaryMuscleGroupId);
+      setSecondaryMuscleRows(nextSelections.secondaryMuscleRows);
       setSaveFeedback(editingExerciseId ? 'Exercise updated.' : 'Exercise created.');
+      setIsEditorModalVisible(false);
+      setMuscleSelectorMode(null);
+      setExerciseActionMenuTarget(null);
     } catch (error) {
       setSaveError(error instanceof Error ? error.message : 'Unable to save exercise.');
     } finally {
@@ -257,200 +353,430 @@ export default function ExerciseCatalogScreen() {
     }
   };
 
+  const deleteExercise = async () => {
+    if (!exerciseDeleteTarget) {
+      return;
+    }
+
+    try {
+      await deleteExerciseCatalogExercise(exerciseDeleteTarget.id);
+      setExercises((current) => current.filter((exercise) => exercise.id !== exerciseDeleteTarget.id));
+      setSaveFeedback(`Deleted ${exerciseDeleteTarget.name}.`);
+
+      if (editingExerciseId === exerciseDeleteTarget.id) {
+        setEditingExerciseId(null);
+        setExerciseName('');
+        setPrimaryMuscleGroupId(null);
+        setSecondaryMuscleRows([]);
+      }
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Unable to delete exercise.');
+    } finally {
+      setExerciseDeleteTarget(null);
+    }
+  };
+
+  const bottomTabs = (
+    <TopLevelTabs
+      activeTab="exercises"
+      onPressSessions={() => router.push('/session-list')}
+      onPressExercises={() => {}}
+    />
+  );
+
   if (isLoading) {
     return (
-      <View style={styles.centeredState}>
-        <Text selectable style={styles.stateText}>
-          Loading exercise catalog…
-        </Text>
+      <View style={styles.screen}>
+        <View style={styles.centeredState}>
+          <Text selectable style={styles.stateText}>
+            Loading exercise catalog…
+          </Text>
+        </View>
+        {bottomTabs}
       </View>
     );
   }
 
   if (loadError) {
     return (
-      <View style={styles.centeredState}>
-        <Text selectable style={styles.errorText}>
-          {loadError}
-        </Text>
+      <View style={styles.screen}>
+        <View style={styles.centeredState}>
+          <Text selectable style={styles.errorText}>
+            {loadError}
+          </Text>
+        </View>
+        {bottomTabs}
       </View>
     );
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-      <View style={styles.section}>
-        <Text selectable style={styles.sectionTitle}>
-          Exercises
-        </Text>
-        <Pressable accessibilityLabel="Create new exercise" style={styles.primaryButton} onPress={startNewExercise}>
+    <View style={styles.screen}>
+      <View style={styles.pinnedTopRegion}>
+        <Pressable
+          accessibilityLabel="Create new exercise"
+          style={styles.primaryButton}
+          onPress={startNewExercise}
+          testID="create-new-exercise-button">
           <Text style={styles.primaryButtonText}>New Exercise</Text>
         </Pressable>
+        {saveFeedback ? (
+          <View style={styles.feedbackCard}>
+            <Text selectable style={styles.successText}>
+              {saveFeedback}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={styles.content}>
         <View style={styles.list}>
           {exercises.map((exercise) => (
-            <Pressable
-              key={exercise.id}
-              accessibilityLabel={`Edit exercise definition ${exercise.name}`}
-              style={[
-                styles.exerciseListRow,
-                exercise.id === editingExerciseId ? styles.exerciseListRowSelected : null,
-              ]}
-              onPress={() => openEditorForExercise(exercise)}>
-              <View style={styles.exerciseListRowTextStack}>
-                <Text numberOfLines={1} style={styles.exerciseListRowTitle}>
-                  {exercise.name}
-                </Text>
-                <Text style={styles.exerciseListRowMeta}>
-                  {exercise.mappings.length} muscle link{exercise.mappings.length === 1 ? '' : 's'}
-                </Text>
-              </View>
-              <Text style={styles.exerciseListRowAction}>Edit</Text>
-            </Pressable>
+            <View key={exercise.id} style={styles.exerciseListRow}>
+              <Pressable
+                accessibilityLabel={`Edit exercise definition ${exercise.name}`}
+                style={styles.exerciseListRowMainPressable}
+                onPress={() => openEditorForExercise(exercise)}>
+                <View style={styles.exerciseListRowTextStack}>
+                  <Text numberOfLines={1} style={styles.exerciseListRowTitle}>
+                    {exercise.name}
+                  </Text>
+                  <Text numberOfLines={1} style={styles.exerciseListRowMuscleSummary}>
+                    {formatExerciseMuscleSummary(exercise, muscleGroupById)}
+                  </Text>
+                </View>
+              </Pressable>
+              <Pressable
+                accessibilityLabel={`Exercise actions ${exercise.name}`}
+                style={styles.exerciseRowKebabButton}
+                onPress={() => setExerciseActionMenuTarget(exercise)}>
+                <Text style={styles.exerciseRowKebabText}>⋮</Text>
+              </Pressable>
+            </View>
           ))}
+
           {exercises.length === 0 ? (
             <Text selectable style={styles.helperText}>
-              No exercises yet. Create one below.
+              No exercises yet. Create one with the button above.
             </Text>
           ) : null}
         </View>
-      </View>
+      </ScrollView>
 
-      <View style={styles.section}>
-        <Text selectable style={styles.sectionTitle}>
-          {editingExerciseId ? 'Edit Exercise' : 'Create Exercise'}
-        </Text>
+      <Modal
+        animationType="slide"
+        transparent
+        visible={isEditorModalVisible}
+        onRequestClose={closeEditorModal}>
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Dismiss exercise editor overlay"
+            style={styles.modalOverlay}
+            onPress={closeEditorModal}
+          />
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeaderRow}>
+              <Text selectable style={styles.modalTitle}>
+                {editorTitle}
+              </Text>
+            </View>
 
-        <Text style={styles.fieldLabel}>Exercise name</Text>
-        <TextInput
-          accessibilityLabel="Exercise definition name"
-          placeholder="Exercise name"
-          style={[styles.input, validation.nameError ? styles.inputError : null]}
-          value={exerciseName}
-          onChangeText={(nextValue) => {
-            setExerciseName(nextValue);
-            if (validation.nameError) {
-              setValidation((current) => ({ ...current, nameError: null }));
-            }
-            setSaveError(null);
-            setSaveFeedback(null);
-          }}
-        />
-        {validation.nameError ? (
-          <Text selectable style={styles.errorText}>
-            {validation.nameError}
-          </Text>
-        ) : null}
-
-        <Text style={styles.fieldLabel}>Add muscle link</Text>
-        <View style={styles.muscleChipGrid}>
-          {muscleGroups.map((muscleGroup) => {
-            const isSelected = selectedMuscleIds.has(muscleGroup.id);
-            return (
-              <Pressable
-                key={muscleGroup.id}
-                accessibilityLabel={`Add muscle link ${muscleGroup.displayName}`}
-                accessibilityState={{ disabled: isSelected }}
-                disabled={isSelected}
-                style={[styles.muscleChip, isSelected ? styles.muscleChipDisabled : styles.muscleChipActive]}
-                onPress={() => addMuscleLink(muscleGroup.id)}>
-                <Text style={[styles.muscleChipText, isSelected ? styles.muscleChipTextDisabled : null]}>
-                  {isSelected ? `${muscleGroup.displayName} added` : muscleGroup.displayName}
+            <ScrollView
+              style={styles.modalScroll}
+              contentInsetAdjustmentBehavior="automatic"
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled">
+              <Text style={styles.fieldLabel}>Exercise name</Text>
+              <TextInput
+                accessibilityLabel="Exercise definition name"
+                autoFocus
+                placeholder="Exercise name"
+                style={[styles.input, validation.nameError ? styles.inputError : null]}
+                value={exerciseName}
+                onChangeText={(nextValue) => {
+                  setExerciseName(nextValue);
+                  if (validation.nameError) {
+                    setValidation((current) => ({ ...current, nameError: null }));
+                  }
+                  setSaveError(null);
+                  setSaveFeedback(null);
+                }}
+              />
+              {validation.nameError ? (
+                <Text selectable style={styles.errorText}>
+                  {validation.nameError}
                 </Text>
+              ) : null}
+
+              <Text style={styles.fieldLabel}>Primary muscle</Text>
+              <Pressable
+                accessibilityLabel="Open primary muscle selector"
+                style={[styles.pickerButton, validation.primaryMuscleError ? styles.inputError : null]}
+                onPress={() => setMuscleSelectorMode('primary')}>
+                <Text
+                  numberOfLines={1}
+                  style={primaryMuscleGroupId ? styles.pickerButtonText : styles.pickerButtonPlaceholder}>
+                  {primaryMuscleGroupId
+                    ? getMuscleDisplayName(primaryMuscleGroupId, muscleGroupById)
+                    : 'Select primary muscle'}
+                </Text>
+                <Text style={styles.pickerButtonChevron}>▾</Text>
               </Pressable>
-            );
-          })}
-        </View>
+              {validation.primaryMuscleError ? (
+                <Text selectable style={styles.errorText}>
+                  {validation.primaryMuscleError}
+                </Text>
+              ) : null}
 
-        {validation.linksError ? (
-          <Text selectable style={styles.errorText}>
-            {validation.linksError}
-          </Text>
-        ) : null}
+              <Text style={styles.fieldLabel}>Secondary muscles</Text>
+              <View style={styles.list}>
+                {secondaryMuscleRows.map((row) => {
+                  const muscleGroup = muscleGroupById.get(row.muscleGroupId);
+                  return (
+                    <View key={row.rowId} style={styles.secondaryMuscleRow}>
+                      <View style={styles.secondaryMuscleRowControls}>
+                        <View style={styles.secondaryMuscleLabelCell}>
+                          <Text numberOfLines={1} style={styles.secondaryMuscleRowTitle}>
+                            {muscleGroup?.displayName ?? row.muscleGroupId}
+                          </Text>
+                          <Text numberOfLines={1} style={styles.secondaryMuscleRowFamily}>
+                            {muscleGroup?.familyName ?? 'Unknown'}
+                          </Text>
+                        </View>
+                        <Pressable
+                          accessibilityLabel={`Remove secondary muscle ${muscleGroup?.displayName ?? row.muscleGroupId}`}
+                          style={styles.removeButton}
+                          onPress={() => removeSecondaryMuscle(row.rowId)}>
+                          <Text style={styles.removeButtonText}>Remove</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  );
+                })}
 
-        <View style={styles.list}>
-          {muscleLinkRows.map((row, index) => {
-            const muscleGroup = muscleGroupById.get(row.muscleGroupId);
-            const rowError = validation.rowErrors[row.rowId];
-            return (
-              <View key={row.rowId} style={styles.muscleLinkRow}>
-                <View style={styles.muscleLinkRowHeader}>
-                  <Text style={styles.muscleLinkRowTitle}>
-                    {muscleGroup?.displayName ?? row.muscleGroupId}
-                  </Text>
-                  <Text style={styles.muscleLinkRowFamily}>{muscleGroup?.familyName ?? 'Unknown'}</Text>
-                </View>
-
-                <View style={styles.muscleLinkRowControls}>
-                  <View style={styles.weightField}>
-                    <Text style={styles.fieldLabel}>Weight</Text>
-                    <TextInput
-                      accessibilityLabel={`Weight for muscle link row ${index + 1}`}
-                      keyboardType="decimal-pad"
-                      placeholder="1.0"
-                      style={[styles.input, rowError ? styles.inputError : null]}
-                      value={row.weightText}
-                      onChangeText={(nextValue) => updateMuscleWeight(row.rowId, nextValue)}
-                    />
-                  </View>
-                  <Pressable
-                    accessibilityLabel={`Remove muscle link ${muscleGroup?.displayName ?? row.muscleGroupId}`}
-                    style={styles.removeButton}
-                    onPress={() => removeMuscleLink(row.rowId)}>
-                    <Text style={styles.removeButtonText}>Remove</Text>
-                  </Pressable>
-                </View>
-
-                {rowError ? (
-                  <Text selectable style={styles.errorText}>
-                    {rowError}
+                {secondaryMuscleRows.length === 0 ? (
+                  <Text selectable style={styles.helperText}>
+                    No secondary muscles selected.
                   </Text>
                 ) : null}
               </View>
-            );
-          })}
+              {validation.secondaryMusclesError ? (
+                <Text selectable style={styles.errorText}>
+                  {validation.secondaryMusclesError}
+                </Text>
+              ) : null}
 
-          {muscleLinkRows.length === 0 ? (
-            <Text selectable style={styles.helperText}>
-              Select at least one muscle group to define this exercise.
-            </Text>
+              <View style={styles.addMuscleLinkRow}>
+                <Pressable
+                  accessibilityLabel="Open secondary muscle selector"
+                  style={styles.addMuscleLinkButton}
+                  onPress={() => setMuscleSelectorMode('secondary')}>
+                  <Text style={styles.addMuscleLinkButtonText}>Add secondary muscle</Text>
+                </Pressable>
+              </View>
+
+              {saveError ? (
+                <Text selectable style={styles.errorText}>
+                  {saveError}
+                </Text>
+              ) : null}
+            </ScrollView>
+
+            <View style={styles.modalFooterRow}>
+              <Pressable style={styles.secondaryButton} onPress={closeEditorModal}>
+                <Text style={styles.secondaryButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Save exercise definition"
+                style={[styles.primaryButton, styles.modalPrimaryButton]}
+                disabled={isSaving}
+                onPress={saveEditor}>
+                <Text style={styles.primaryButtonText}>{isSaving ? 'Saving…' : 'Save Exercise'}</Text>
+              </Pressable>
+            </View>
+
+          </View>
+          {isMuscleSelectorVisible ? (
+            <View style={styles.selectorOverlayLayer}>
+              <Pressable
+                accessibilityLabel="Dismiss muscle link selector overlay"
+                style={styles.selectorOverlayBackdrop}
+                onPress={() => setMuscleSelectorMode(null)}
+              />
+              <View style={styles.selectorOverlayCard}>
+                <View style={styles.modalHeaderRow}>
+                  <Text selectable style={styles.modalTitle}>
+                    {selectorTitle}
+                  </Text>
+                </View>
+
+                <ScrollView contentContainerStyle={styles.selectorList} keyboardShouldPersistTaps="handled">
+                  {selectorOptions.map((muscleGroup) => (
+                    <Pressable
+                      key={muscleGroup.id}
+                      accessibilityLabel={`${
+                        muscleSelectorMode === 'primary' ? 'Select primary muscle' : 'Select secondary muscle'
+                      } ${muscleGroup.displayName}`}
+                      style={styles.selectorListRow}
+                      onPress={() => {
+                        if (muscleSelectorMode === 'primary') {
+                          selectPrimaryMuscle(muscleGroup.id);
+                          return;
+                        }
+
+                        addSecondaryMuscle(muscleGroup.id);
+                      }}>
+                      <View style={styles.selectorListRowTextStack}>
+                        <Text numberOfLines={1} style={styles.selectorListRowTitle}>
+                          {muscleGroup.displayName}
+                        </Text>
+                        <Text numberOfLines={1} style={styles.selectorListRowMeta}>
+                          {muscleGroup.familyName}
+                        </Text>
+                      </View>
+                      <Text style={styles.selectorListRowAction}>
+                        {muscleSelectorMode === 'primary' ? 'Select' : 'Add'}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  {selectorOptions.length === 0 ? (
+                    <Text selectable style={styles.helperText}>
+                      {muscleSelectorMode === 'primary'
+                        ? 'No primary muscle options available.'
+                        : 'All available muscle groups are already selected as primary or secondary.'}
+                    </Text>
+                  ) : null}
+                </ScrollView>
+
+                <Pressable
+                  accessibilityLabel="Close muscle link selector"
+                  style={styles.secondaryButton}
+                  onPress={() => setMuscleSelectorMode(null)}>
+                  <Text style={styles.secondaryButtonText}>Done</Text>
+                </Pressable>
+              </View>
+            </View>
           ) : null}
         </View>
+      </Modal>
 
-        {saveError ? (
-          <Text selectable style={styles.errorText}>
-            {saveError}
-          </Text>
-        ) : null}
-        {saveFeedback ? (
-          <Text selectable style={styles.successText}>
-            {saveFeedback}
-          </Text>
-        ) : null}
+      <Modal
+        animationType="fade"
+        transparent
+        visible={exerciseActionMenuTarget !== null}
+        onRequestClose={() => setExerciseActionMenuTarget(null)}>
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Dismiss exercise action menu overlay"
+            style={styles.modalOverlay}
+            onPress={() => setExerciseActionMenuTarget(null)}
+          />
+          <View style={styles.actionMenuCard}>
+            <Text selectable style={styles.modalTitle}>
+              Exercise Actions
+            </Text>
+            <Text selectable style={styles.helperText}>
+              {exerciseActionMenuTarget?.name ?? 'Exercise'}
+            </Text>
+            <Pressable
+              accessibilityLabel="Edit exercise from actions"
+              style={styles.actionMenuButton}
+              onPress={() => {
+                const target = exerciseActionMenuTarget;
+                setExerciseActionMenuTarget(null);
+                if (target) {
+                  openEditorForExercise(target);
+                }
+              }}>
+              <Text style={styles.actionMenuButtonText}>Edit</Text>
+            </Pressable>
+            <Pressable
+              accessibilityLabel="Delete exercise from actions"
+              style={[styles.actionMenuButton, styles.actionMenuDeleteButton]}
+              onPress={() => {
+                setExerciseDeleteTarget(exerciseActionMenuTarget);
+                setExerciseActionMenuTarget(null);
+              }}>
+              <Text style={styles.actionMenuDeleteButtonText}>Delete</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
-        <Pressable accessibilityLabel="Save exercise definition" style={styles.primaryButton} disabled={isSaving} onPress={saveEditor}>
-          <Text style={styles.primaryButtonText}>{isSaving ? 'Saving…' : 'Save Exercise'}</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={exerciseDeleteTarget !== null}
+        onRequestClose={() => setExerciseDeleteTarget(null)}>
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Dismiss exercise delete modal overlay"
+            style={styles.modalOverlay}
+            onPress={() => setExerciseDeleteTarget(null)}
+          />
+          <View style={styles.deleteModalCard}>
+            <Text selectable style={styles.modalTitle}>
+              Delete Exercise
+            </Text>
+            <Text selectable style={styles.helperText}>
+              Delete {exerciseDeleteTarget?.name ?? 'this exercise'} from the exercise catalog?
+            </Text>
+            <View style={styles.modalFooterRow}>
+              <Pressable style={styles.secondaryButton} onPress={() => setExerciseDeleteTarget(null)}>
+                <Text style={styles.secondaryButtonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                accessibilityLabel="Confirm delete exercise"
+                style={styles.deleteConfirmButton}
+                onPress={() => {
+                  void deleteExercise();
+                }}>
+                <Text style={styles.deleteConfirmButtonText}>Delete</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {bottomTabs}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#f2f4f7',
+    padding: 16,
+    gap: 12,
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    gap: 12,
+    paddingBottom: 12,
+  },
+  pinnedTopRegion: {
+    gap: 8,
+    flexShrink: 0,
+  },
   centeredState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    backgroundColor: '#f7f7f7',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d6dbe2',
+    backgroundColor: '#ffffff',
   },
   stateText: {
     fontSize: 15,
     color: '#333333',
-  },
-  content: {
-    padding: 16,
-    gap: 16,
-    backgroundColor: '#f2f4f7',
   },
   section: {
     borderRadius: 12,
@@ -460,10 +786,13 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 10,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+  feedbackCard: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#bfe3c7',
+    backgroundColor: '#edf9f0',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   fieldLabel: {
     fontSize: 12,
@@ -502,111 +831,315 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#0f5cc0',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 10,
+    paddingHorizontal: 12,
+    minHeight: 42,
   },
   primaryButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  modalPrimaryButton: {
+    flex: 1,
+  },
+  secondaryButton: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#6b7280',
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    minHeight: 42,
+    flex: 1,
+  },
+  secondaryButtonText: {
+    color: '#374151',
+    fontWeight: '600',
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    borderRadius: 8,
+    backgroundColor: '#b3261e',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    minHeight: 42,
+  },
+  deleteConfirmButtonText: {
     color: '#ffffff',
     fontWeight: '700',
   },
   exerciseListRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     borderWidth: 1,
     borderColor: '#d6dbe2',
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
     backgroundColor: '#ffffff',
   },
-  exerciseListRowSelected: {
-    borderColor: '#0f5cc0',
-    backgroundColor: '#eef4ff',
+  exerciseListRowMainPressable: {
+    flex: 1,
   },
   exerciseListRowTextStack: {
     flex: 1,
-    gap: 2,
+    gap: 1,
   },
   exerciseListRowTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#111827',
   },
-  exerciseListRowMeta: {
-    fontSize: 12,
+  exerciseListRowMuscleSummary: {
+    fontSize: 11,
     color: '#4b5563',
+    fontWeight: '600',
   },
-  exerciseListRowAction: {
-    fontSize: 12,
+  exerciseRowKebabButton: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d6dbe2',
+    backgroundColor: '#f8fafc',
+  },
+  exerciseRowKebabText: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#0f5cc0',
+    color: '#475569',
+    lineHeight: 16,
   },
-  muscleChipGrid: {
+  addMuscleLinkRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 8,
   },
-  muscleChip: {
-    borderRadius: 999,
+  addMuscleLinkButton: {
+    borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  muscleChipActive: {
     borderColor: '#0f5cc0',
     backgroundColor: '#ffffff',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    minHeight: 38,
+    justifyContent: 'center',
   },
-  muscleChipDisabled: {
-    borderColor: '#c7ced8',
-    backgroundColor: '#eef2f7',
-  },
-  muscleChipText: {
-    fontSize: 12,
-    fontWeight: '600',
+  addMuscleLinkButtonText: {
     color: '#0f5cc0',
+    fontWeight: '700',
+    fontSize: 12,
   },
-  muscleChipTextDisabled: {
+  pickerButton: {
+    borderWidth: 1,
+    borderColor: '#c7ced8',
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    minHeight: 42,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pickerButtonText: {
+    flex: 1,
+    minWidth: 0,
+    color: '#111827',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  pickerButtonPlaceholder: {
+    flex: 1,
+    minWidth: 0,
     color: '#6b7280',
+    fontSize: 13,
   },
-  muscleLinkRow: {
+  pickerButtonChevron: {
+    color: '#475569',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  secondaryMuscleRow: {
     borderWidth: 1,
     borderColor: '#d6dbe2',
     borderRadius: 10,
     backgroundColor: '#f9fafb',
-    padding: 10,
-    gap: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    gap: 6,
   },
-  muscleLinkRowHeader: {
-    gap: 2,
-  },
-  muscleLinkRowTitle: {
-    fontSize: 14,
+  secondaryMuscleRowTitle: {
+    fontSize: 12,
     fontWeight: '700',
     color: '#111827',
   },
-  muscleLinkRowFamily: {
-    fontSize: 12,
+  secondaryMuscleRowFamily: {
+    fontSize: 11,
     color: '#4b5563',
   },
-  muscleLinkRowControls: {
+  secondaryMuscleRowControls: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 8,
+    alignItems: 'center',
+    gap: 6,
   },
-  weightField: {
+  secondaryMuscleLabelCell: {
     flex: 1,
-    gap: 4,
+    minWidth: 0,
+    gap: 1,
   },
   removeButton: {
     borderRadius: 8,
     backgroundColor: '#b3261e',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 38,
   },
   removeButtonText: {
     color: '#ffffff',
     fontWeight: '700',
+    fontSize: 12,
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 16,
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+  },
+  modalCard: {
+    height: '80%',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#d6dbe2',
+    backgroundColor: '#ffffff',
+    padding: 14,
+    gap: 12,
+  },
+  deleteModalCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#d6dbe2',
+    backgroundColor: '#ffffff',
+    padding: 14,
+    gap: 10,
+  },
+  actionMenuCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#d6dbe2',
+    backgroundColor: '#ffffff',
+    padding: 14,
+    gap: 8,
+  },
+  actionMenuButton: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d6dbe2',
+    backgroundColor: '#ffffff',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    minHeight: 42,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionMenuButtonText: {
+    color: '#1f2937',
+    fontWeight: '700',
+  },
+  actionMenuDeleteButton: {
+    borderColor: '#f3c5c5',
+    backgroundColor: '#fff5f5',
+  },
+  actionMenuDeleteButtonText: {
+    color: '#8a2323',
+    fontWeight: '700',
+  },
+  modalHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  modalScroll: {
+    flex: 1,
+  },
+  modalScrollContent: {
+    gap: 10,
+    paddingBottom: 6,
+  },
+  selectorOverlayLayer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    padding: 12,
+  },
+  selectorOverlayBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.28)',
+    borderRadius: 14,
+  },
+  selectorOverlayCard: {
+    height: '80%',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#d6dbe2',
+    backgroundColor: '#ffffff',
+    padding: 14,
+    gap: 10,
+  },
+  selectorList: {
+    gap: 8,
+    paddingBottom: 4,
+  },
+  selectorListRow: {
+    borderWidth: 1,
+    borderColor: '#d6dbe2',
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectorListRowTextStack: {
+    flex: 1,
+    minWidth: 0,
+    gap: 1,
+  },
+  selectorListRowTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  selectorListRowMeta: {
+    fontSize: 11,
+    color: '#4b5563',
+  },
+  selectorListRowAction: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0f5cc0',
+  },
+  modalFooterRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
 });

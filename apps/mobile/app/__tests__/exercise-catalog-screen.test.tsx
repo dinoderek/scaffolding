@@ -3,26 +3,36 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import ExerciseCatalogScreen from '../exercise-catalog';
 
 import {
+  deleteExerciseCatalogExercise,
   listExerciseCatalogExercises,
   listExerciseCatalogMuscleGroups,
   saveExerciseCatalogExercise,
 } from '@/src/data/exercise-catalog';
 
+jest.mock('expo-router', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+  }),
+}));
+
 jest.mock('@/src/data/exercise-catalog', () => ({
   listExerciseCatalogMuscleGroups: jest.fn(),
   listExerciseCatalogExercises: jest.fn(),
   saveExerciseCatalogExercise: jest.fn(),
+  deleteExerciseCatalogExercise: jest.fn(),
 }));
 
 const mockListMuscleGroups = jest.mocked(listExerciseCatalogMuscleGroups);
 const mockListExercises = jest.mocked(listExerciseCatalogExercises);
 const mockSaveExercise = jest.mocked(saveExerciseCatalogExercise);
+const mockDeleteExercise = jest.mocked(deleteExerciseCatalogExercise);
 
 describe('ExerciseCatalogScreen', () => {
   beforeEach(() => {
     mockListMuscleGroups.mockReset();
     mockListExercises.mockReset();
     mockSaveExercise.mockReset();
+    mockDeleteExercise.mockReset();
 
     mockListMuscleGroups.mockResolvedValue([
       { id: 'chest', displayName: 'Chest', familyName: 'Chest', sortOrder: 0 },
@@ -31,36 +41,51 @@ describe('ExerciseCatalogScreen', () => {
     ]);
   });
 
-  it('creates a new exercise with a muscle link and persists weights', async () => {
+  it('creates a new exercise with primary and secondary muscles', async () => {
     mockListExercises.mockResolvedValue([]);
     mockSaveExercise.mockResolvedValue({
       id: 'custom-ex-1',
       name: 'Incline Press',
-      mappings: [{ id: 'map-1', muscleGroupId: 'chest', weight: 1, role: null }],
+      mappings: [
+        { id: 'map-1', muscleGroupId: 'chest', weight: 1, role: 'primary' },
+        { id: 'map-2', muscleGroupId: 'triceps', weight: 0.5, role: 'secondary' },
+      ],
     });
 
     render(<ExerciseCatalogScreen />);
 
-    await screen.findByText('Create Exercise');
+    await screen.findByLabelText('Create new exercise');
 
+    fireEvent.press(screen.getByLabelText('Create new exercise'));
+    await screen.findByText('Create Exercise');
     fireEvent.changeText(screen.getByLabelText('Exercise definition name'), 'Incline Press');
-    fireEvent.press(screen.getByLabelText('Add muscle link Chest'));
-    fireEvent.changeText(screen.getByLabelText('Weight for muscle link row 1'), '1.0');
+    fireEvent.press(screen.getByLabelText('Open primary muscle selector'));
+    await screen.findByLabelText('Select primary muscle Chest');
+    fireEvent.press(screen.getByLabelText('Select primary muscle Chest'));
+    fireEvent.press(screen.getByLabelText('Open secondary muscle selector'));
+    await screen.findByLabelText('Select secondary muscle Triceps');
+    fireEvent.press(screen.getByLabelText('Select secondary muscle Triceps'));
     fireEvent.press(screen.getByLabelText('Save exercise definition'));
 
     await waitFor(() =>
       expect(mockSaveExercise).toHaveBeenCalledWith({
         id: undefined,
         name: 'Incline Press',
-        mappings: [{ muscleGroupId: 'chest', weight: 1, role: null }],
+        mappings: [
+          { muscleGroupId: 'chest', weight: 1, role: 'primary' },
+          { muscleGroupId: 'triceps', weight: 0.5, role: 'secondary' },
+        ],
       })
     );
 
     expect(screen.getByText('Exercise created.')).toBeTruthy();
     expect(screen.getByText('Incline Press')).toBeTruthy();
+    expect(screen.getByText('Chest · Triceps (s)')).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Open Sessions' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Open Exercises' })).toBeTruthy();
   });
 
-  it('edits an existing exercise by updating a weight and removing a muscle link', async () => {
+  it('edits an existing exercise by changing name and secondary muscles', async () => {
     mockListExercises.mockResolvedValue([
       {
         id: 'sys_barbell_bench_press',
@@ -73,61 +98,109 @@ describe('ExerciseCatalogScreen', () => {
     ]);
     mockSaveExercise.mockResolvedValue({
       id: 'sys_barbell_bench_press',
-      name: 'Barbell Bench Press',
-      mappings: [{ id: 'map-chest', muscleGroupId: 'chest', weight: 0.8, role: 'primary' }],
+      name: 'Bench Press',
+      mappings: [
+        { id: 'map-chest', muscleGroupId: 'chest', weight: 1, role: 'primary' },
+        { id: 'map-delts', muscleGroupId: 'delts_front', weight: 0.5, role: 'secondary' },
+      ],
     });
 
     render(<ExerciseCatalogScreen />);
 
-    await screen.findByDisplayValue('Barbell Bench Press');
+    await screen.findByText('Barbell Bench Press');
+    expect(screen.getByText('Chest · Triceps (s)')).toBeTruthy();
 
-    fireEvent.changeText(screen.getByLabelText('Weight for muscle link row 1'), '0.8');
-    fireEvent.press(screen.getByLabelText('Remove muscle link Triceps'));
+    fireEvent.press(screen.getByLabelText('Exercise actions Barbell Bench Press'));
+    await screen.findByText('Exercise Actions');
+    fireEvent.press(screen.getByLabelText('Edit exercise from actions'));
+    await screen.findByText('Edit Exercise');
+    fireEvent.changeText(screen.getByLabelText('Exercise definition name'), 'Bench Press');
+    fireEvent.press(screen.getByLabelText('Remove secondary muscle Triceps'));
+    fireEvent.press(screen.getByLabelText('Open secondary muscle selector'));
+    await screen.findByLabelText('Select secondary muscle Front Delts');
+    fireEvent.press(screen.getByLabelText('Select secondary muscle Front Delts'));
     fireEvent.press(screen.getByLabelText('Save exercise definition'));
 
     await waitFor(() =>
       expect(mockSaveExercise).toHaveBeenCalledWith({
         id: 'sys_barbell_bench_press',
-        name: 'Barbell Bench Press',
-        mappings: [{ muscleGroupId: 'chest', weight: 0.8, role: 'primary' }],
+        name: 'Bench Press',
+        mappings: [
+          { muscleGroupId: 'chest', weight: 1, role: 'primary' },
+          { muscleGroupId: 'delts_front', weight: 0.5, role: 'secondary' },
+        ],
       })
     );
 
     expect(screen.getByText('Exercise updated.')).toBeTruthy();
-    expect(screen.queryByLabelText('Remove muscle link Triceps')).toBeNull();
+    expect(screen.getByText('Bench Press')).toBeTruthy();
+    expect(screen.getByText('Chest · Front Delts (s)')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Edit exercise definition Bench Press'));
+    await screen.findByText('Edit Exercise');
+    expect(screen.getByDisplayValue('Bench Press')).toBeTruthy();
+    expect(screen.queryByLabelText('Remove secondary muscle Triceps')).toBeNull();
+    expect(screen.getByLabelText('Remove secondary muscle Front Delts')).toBeTruthy();
   });
 
-  it('blocks save when no muscle links are selected', async () => {
+  it('blocks save when no primary muscle is selected', async () => {
     mockListExercises.mockResolvedValue([]);
 
     render(<ExerciseCatalogScreen />);
 
-    await screen.findByText('Create Exercise');
+    await screen.findByLabelText('Create new exercise');
 
+    fireEvent.press(screen.getByLabelText('Create new exercise'));
+    await screen.findByText('Create Exercise');
     fireEvent.changeText(screen.getByLabelText('Exercise definition name'), 'Cable Fly');
     fireEvent.press(screen.getByLabelText('Save exercise definition'));
 
-    expect(screen.getByText('Add at least one linked muscle before saving.')).toBeTruthy();
+    expect(screen.getByText('Select a primary muscle before saving.')).toBeTruthy();
     expect(mockSaveExercise).not.toHaveBeenCalled();
   });
 
-  it('prevents duplicate links and surfaces invalid row weight validation', async () => {
+  it('prevents duplicate secondary links and excludes the selected primary from secondary options', async () => {
     mockListExercises.mockResolvedValue([]);
 
     render(<ExerciseCatalogScreen />);
 
+    await screen.findByLabelText('Create new exercise');
+
+    fireEvent.press(screen.getByLabelText('Create new exercise'));
     await screen.findByText('Create Exercise');
-
     fireEvent.changeText(screen.getByLabelText('Exercise definition name'), 'Press Variation');
-    fireEvent.press(screen.getByLabelText('Add muscle link Chest'));
-    fireEvent.press(screen.getByLabelText('Add muscle link Chest'));
+    fireEvent.press(screen.getByLabelText('Open primary muscle selector'));
+    fireEvent.press(screen.getByLabelText('Select primary muscle Chest'));
 
-    expect(screen.getAllByLabelText(/Weight for muscle link row/i)).toHaveLength(1);
+    fireEvent.press(screen.getByLabelText('Open secondary muscle selector'));
+    expect(screen.queryByLabelText('Select secondary muscle Chest')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Select secondary muscle Triceps'));
 
-    fireEvent.changeText(screen.getByLabelText('Weight for muscle link row 1'), '0');
-    fireEvent.press(screen.getByLabelText('Save exercise definition'));
+    fireEvent.press(screen.getByLabelText('Open secondary muscle selector'));
+    expect(screen.queryByLabelText('Select secondary muscle Triceps')).toBeNull();
+    expect(screen.getByLabelText('Select secondary muscle Front Delts')).toBeTruthy();
+  });
 
-    expect(screen.getByText('Weight must be a number greater than 0 and at most 10.')).toBeTruthy();
-    expect(mockSaveExercise).not.toHaveBeenCalled();
+  it('deletes an exercise from the kebab action flow', async () => {
+    mockListExercises.mockResolvedValue([
+      {
+        id: 'custom-ex-1',
+        name: 'Incline Press',
+        mappings: [{ id: 'map-1', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
+      },
+    ]);
+    mockDeleteExercise.mockResolvedValue(undefined);
+
+    render(<ExerciseCatalogScreen />);
+
+    await screen.findByText('Incline Press');
+    fireEvent.press(screen.getByLabelText('Exercise actions Incline Press'));
+    await screen.findByText('Exercise Actions');
+    fireEvent.press(screen.getByLabelText('Delete exercise from actions'));
+    await screen.findByText('Delete Exercise');
+    fireEvent.press(screen.getByLabelText('Confirm delete exercise'));
+
+    await waitFor(() => expect(mockDeleteExercise).toHaveBeenCalledWith('custom-ex-1'));
+    expect(screen.queryByText('Incline Press')).toBeNull();
   });
 });

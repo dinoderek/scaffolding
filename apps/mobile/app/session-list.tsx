@@ -20,6 +20,7 @@ import {
   persistSessionDraftSnapshot,
   setSessionDeletedState,
 } from '@/src/data';
+import { TopLevelTabs } from '@/components/navigation/top-level-tabs';
 
 export type SessionListItem = {
   id: string;
@@ -616,6 +617,12 @@ export function SessionListScreenShell({
             ) : null}
           </ScrollView>
         </View>
+
+        <TopLevelTabs
+          activeTab="sessions"
+          onPressSessions={() => {}}
+          onPressExercises={() => router.push('/exercise-catalog')}
+        />
       </View>
 
       <Modal

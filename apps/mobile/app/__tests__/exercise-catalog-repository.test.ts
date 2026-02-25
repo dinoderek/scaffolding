@@ -7,6 +7,7 @@ const createMockStore = (): jest.Mocked<ExerciseCatalogStore> => ({
   listMuscleGroups: jest.fn(),
   listExercises: jest.fn(),
   saveExercise: jest.fn(),
+  deleteExercise: jest.fn(),
 });
 
 describe('exercise catalog repository', () => {
@@ -23,8 +24,8 @@ describe('exercise catalog repository', () => {
       id: 'exercise-1',
       name: 'Custom Press',
       mappings: [
-        { id: 'map-1', muscleGroupId: 'chest', weight: 1, role: null },
-        { id: 'map-2', muscleGroupId: 'triceps', weight: 0.5, role: null },
+        { id: 'map-1', muscleGroupId: 'chest', weight: 1, role: 'primary' },
+        { id: 'map-2', muscleGroupId: 'triceps', weight: 0.5, role: 'secondary' },
       ],
     });
 
@@ -42,8 +43,8 @@ describe('exercise catalog repository', () => {
       id: undefined,
       name: 'Custom Press',
       mappings: [
-        { muscleGroupId: 'chest', weight: 1, role: null },
-        { muscleGroupId: 'triceps', weight: 0.5, role: null },
+        { muscleGroupId: 'chest', weight: 1, role: 'primary' },
+        { muscleGroupId: 'triceps', weight: 0.5, role: 'secondary' },
       ],
       now,
     });
@@ -81,6 +82,22 @@ describe('exercise catalog repository', () => {
       })
     ).rejects.toThrow('Invalid muscle weight');
 
+    await expect(
+      repository.saveExercise({
+        name: 'Bench',
+        mappings: [{ muscleGroupId: 'chest', weight: 1.1 }],
+      })
+    ).rejects.toThrow('Invalid muscle weight');
+
     expect(store.saveExercise).not.toHaveBeenCalled();
+  });
+
+  it('deletes an exercise by id', async () => {
+    const store = createMockStore();
+    const repository = createExerciseCatalogRepository(store);
+
+    await repository.deleteExercise('exercise-1');
+
+    expect(store.deleteExercise).toHaveBeenCalledWith({ id: 'exercise-1' });
   });
 });

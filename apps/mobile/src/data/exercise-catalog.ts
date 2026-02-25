@@ -47,6 +47,7 @@ export type ExerciseCatalogStore = {
     }[];
     now: Date;
   }): Promise<ExerciseCatalogExercise>;
+  deleteExercise(input: { id: string }): Promise<void>;
 };
 
 const createLocalId = (prefix: string) =>
@@ -208,6 +209,14 @@ export const createDrizzleExerciseCatalogStore = (): ExerciseCatalogStore => ({
 
     return mapExerciseGraph(exerciseRow, mappingRows);
   },
+  async deleteExercise(input) {
+    const database = await bootstrapLocalDataLayer();
+
+    database
+      .delete(exerciseDefinitions)
+      .where(eq(exerciseDefinitions.id, input.id))
+      .run();
+  },
 });
 
 const assertFiniteDate = (value: Date) => {
@@ -215,6 +224,8 @@ const assertFiniteDate = (value: Date) => {
     throw new Error('now must be a valid Date');
   }
 };
+
+const deriveRoleFromWeight = (weight: number): 'primary' | 'secondary' => (weight > 0.75 ? 'primary' : 'secondary');
 
 export const createExerciseCatalogRepository = (store: ExerciseCatalogStore = createDrizzleExerciseCatalogStore()) => ({
   listMuscleGroups() {
@@ -249,14 +260,14 @@ export const createExerciseCatalogRepository = (store: ExerciseCatalogStore = cr
         throw new Error(`Unknown muscle group: ${mapping.muscleGroupId}`);
       }
 
-      if (!Number.isFinite(mapping.weight) || mapping.weight <= 0 || mapping.weight > 10) {
+      if (!Number.isFinite(mapping.weight) || mapping.weight <= 0 || mapping.weight > 1) {
         throw new Error(`Invalid muscle weight for ${mapping.muscleGroupId}: ${mapping.weight}`);
       }
 
       return {
         muscleGroupId: mapping.muscleGroupId,
         weight: mapping.weight,
-        role: mapping.role ?? null,
+        role: mapping.role ?? deriveRoleFromWeight(mapping.weight),
       };
     });
 
@@ -267,6 +278,14 @@ export const createExerciseCatalogRepository = (store: ExerciseCatalogStore = cr
       now,
     });
   },
+  async deleteExercise(id: string): Promise<void> {
+    const trimmedId = id.trim();
+    if (!trimmedId) {
+      throw new Error('Exercise id is required');
+    }
+
+    await store.deleteExercise({ id: trimmedId });
+  },
 });
 
 const defaultExerciseCatalogRepository = createExerciseCatalogRepository();
@@ -274,3 +293,4 @@ const defaultExerciseCatalogRepository = createExerciseCatalogRepository();
 export const listExerciseCatalogMuscleGroups = defaultExerciseCatalogRepository.listMuscleGroups;
 export const listExerciseCatalogExercises = defaultExerciseCatalogRepository.listExercises;
 export const saveExerciseCatalogExercise = defaultExerciseCatalogRepository.saveExercise;
+export const deleteExerciseCatalogExercise = defaultExerciseCatalogRepository.deleteExercise;
