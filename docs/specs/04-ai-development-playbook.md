@@ -138,6 +138,7 @@ Provide these references at execution start:
 5. `docs/specs/09-project-structure.md` (always load for context; update only when task changes paths/layout/conventions)
 6. `docs/specs/08-ux-delivery-standard.md` (for UI tasks)
 7. `docs/specs/10-api-authn-authz-guidelines.md` (for backend API/auth work and API-consuming integration tasks)
+8. `supabase/session-sync-api-contract.md` (for session sync API work and FE/backend sync integration tasks, when present)
 
 ## Task card rules
 
