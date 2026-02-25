@@ -111,7 +111,7 @@ Decide and lock the backend platform for MVP, stand up a minimal backend that ru
 ## Task breakdown
 
 1. `docs/tasks/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md` - evaluate backend options and finalize architecture decision. (`completed`)
-2. `docs/tasks/T-20260220-08-m5-minimal-backend-local-runtime.md` - scaffold local backend runtime, reset/seed baseline, and backend testing conventions. (`planned`)
+2. `docs/tasks/T-20260220-08-m5-minimal-backend-local-runtime.md` - scaffold local backend runtime, reset/seed baseline, and backend testing conventions. (`completed`)
 3. `docs/tasks/T-20260220-09-m5-backend-deployment-strategy-and-environments.md` - define deployment strategy, environments, and operational safeguards. (`planned`)
 4. `docs/tasks/T-20260220-10-m5-user-auth-authz-and-security-baseline.md` - implement user model, auth/authz rules, and backend hardening baseline. (`planned`)
 5. `docs/tasks/T-20260220-11-m5-sync-api-for-session-domain.md` - implement authenticated sync API for session domain entities with contract tests. (`planned`)
@@ -145,5 +145,12 @@ Decide and lock the backend platform for MVP, stand up a minimal backend that ru
 ## Completion note
 
 - What changed:
+  - `T-20260220-08` completed: added `supabase/` local runtime scaffold (migration + deterministic seed + health Edge Function), backend-local smoke wrappers/tests, and backend runbook/env examples.
+  - Updated project/testing/process docs and templates for Supabase backend local verification conventions, hosted-smoke ownership documentation, and `supabase/` project structure placement.
 - Verification summary:
+  - Local Supabase runtime started successfully (port-offset config `554xx` used to avoid a host collision on default `54322`).
+  - `supabase db reset` (via wrapper) reapplied the baseline migration and deterministic seed.
+  - Health endpoint and seed fixture smokes passed against the local Supabase API surface.
+  - Combined backend-local fast smoke suite passed (`./supabase/scripts/test-fast.sh`).
 - What remains:
+  - Milestone status remains `in_progress`; tasks `T-20260220-09`, `T-20260220-10`, `T-20260220-11`, and `T-20260225-12` are still pending.

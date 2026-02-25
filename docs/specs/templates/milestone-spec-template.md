@@ -32,7 +32,7 @@ Describe the outcome this milestone must achieve.
 2. 
 3. 
 
-Rule (when applicable): if the milestone introduces a new runtime, deployment surface, or test layer, include a deliverable/task to update `docs/specs/04-ai-development-playbook.md`, `docs/specs/06-testing-strategy.md`, and relevant template(s).
+Rule (when applicable): if the milestone introduces a new runtime, deployment surface, or test layer, include a deliverable/task to update `docs/specs/04-ai-development-playbook.md`, `docs/specs/06-testing-strategy.md`, and relevant template(s) and name the owner of hosted/deployed smoke validation if it is deferred.
 
 ## Acceptance criteria
 
@@ -61,4 +61,4 @@ List planned task cards for this milestone.
 
 - Keep milestone `Status` current as tasks progress.
 - Update task breakdown entries to reflect each task state (`planned | in_progress | completed | blocked`).
-- If milestone remains open after a session, record why in the active task completion note.
+- If milestone remains open after a session, record why in the active task completion note and/or milestone completion note (status remains `in_progress`).

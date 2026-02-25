@@ -62,6 +62,7 @@ What this session must accomplish.
 - Planned checks/commands:
 - Test layers covered (for example unit / integration / contract / E2E / hosted smoke):
 - Execution triggers (`always`, file-change-triggered, milestone closeout, release closeout):
+- Hosted/deployed smoke ownership (required for backend/deployment work; name the owning task if deferred):
 - CI/manual posture note (required when CI is absent or partial):
 - Notes:
 
@@ -76,12 +77,14 @@ What this session must accomplish.
 - `npm run lint` (or runtime-appropriate equivalent)
 - `npm run typecheck` (or runtime-appropriate equivalent)
 - `npm run test` (or runtime-appropriate equivalent)
+- If any default gate is `N/A`, document the reason and list the runtime-specific replacement gate(s).
 - Additional gate(s), if any:
 
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
 - 
 - Manual verification summary (required when CI is absent/partial):
+- Deferred/manual hosted checks summary (owner + trigger timing), if applicable:
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 

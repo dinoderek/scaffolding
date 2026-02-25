@@ -24,6 +24,12 @@ Define the canonical repository structure, path ownership, and placement convent
       .maestro/flows/            # Maestro flow definitions (canonical location)
       scripts/                   # Mobile/maestro helper scripts
       artifacts/maestro/         # Maestro output artifacts/screenshots
+  supabase/                      # Supabase backend root (M5 local runtime + backend assets)
+    migrations/                  # Postgres migrations
+    seed.sql                     # Deterministic local seed fixtures
+    functions/                   # Edge Functions (including health smoke endpoint)
+    scripts/                     # Backend local runtime/test wrapper scripts
+    tests/                       # Backend-local smoke/integration test entrypoints
   docs/
     specs/                       # Project/milestone/task process and technical specs
     tasks/                       # Task cards
@@ -40,10 +46,12 @@ Define the canonical repository structure, path ownership, and placement convent
   - owns per-session execution task cards.
 - `docs/brainstorms/`
   - owns non-authoritative ideation notes (helpful context, not source of truth).
+- `supabase/`
+  - owns local Supabase backend config, migrations, seeds, Edge Functions, and backend-local test/runtime wrappers.
 
 ## Agreed structure conventions (M5 additions)
 
-- `supabase/` (planned in M5)
+- `supabase/` (introduced in M5)
   - backend root for local Supabase project assets (migrations, seeds, functions, and backend-local tests).
 - `apps/mobile/.maestro/flows`
   - remains the canonical location for Maestro flow definitions.
@@ -65,4 +73,4 @@ Define the canonical repository structure, path ownership, and placement convent
 ## Known cleanup opportunities (tracked)
 
 - Rationalize mobile test placement currently under `apps/mobile/app/__tests__/` into a dedicated mobile test directory (deferred to a dedicated follow-up task).
-- Standardize repo-level quality gate command wrappers once backend fast-test lanes are added (tracked in M5 follow-up tasking).
+- Standardize repo-level quality gate command wrappers across mobile + backend workspaces (backend `supabase/scripts/test-fast.sh` now exists; broader rationalization remains tracked in M5 follow-up tasking).

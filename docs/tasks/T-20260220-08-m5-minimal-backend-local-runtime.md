@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260220-08`
 - Title: M5 minimal backend local runtime scaffold
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-20`
 - Session interaction mode: `interactive (default)`
@@ -159,5 +159,20 @@ Create the smallest `Supabase`-based backend implementation baseline that runs l
 ## Completion note
 
 - What changed:
+  - Added a minimal `supabase/` backend runtime scaffold with generated `config.toml`, a baseline migration, deterministic `seed.sql`, and a local-only fixture table (`public.dev_fixture_principals`) containing `anonymous`, `user_a`, `user_b`, and `service_role_helper` fixtures.
+  - Added a local Edge Function health endpoint at `supabase/functions/health/index.ts` and shell wrappers under `supabase/scripts/` for startup, reset, DB lint, health smoke, seed smoke, and combined fast backend-local checks.
+  - Added backend runbook/docs in `supabase/README.md` plus local/hosted env example files (`supabase/.env.local.example`, `supabase/.env.hosted.example`, `supabase/functions/.env.local.example`).
+  - Updated `docs/specs/04-ai-development-playbook.md`, `docs/specs/06-testing-strategy.md`, `docs/specs/09-project-structure.md`, and task/milestone templates to codify backend runtime-specific gate handling, hosted-smoke ownership documentation, and `supabase/` structure conventions.
+  - Set this repo’s local Supabase port block to `554xx` in `supabase/config.toml` after a host port collision on `54322`; scripts consume `supabase status -o env`, so wrappers remain portable across configured ports.
 - What tests ran:
+  - `./supabase/scripts/local-runtime-up.sh`
+  - `./supabase/scripts/reset-local.sh`
+  - `./supabase/scripts/smoke-health.sh`
+  - `./supabase/scripts/smoke-seed.sh`
+  - `./supabase/scripts/db-lint-local.sh`
+  - `./supabase/scripts/test-fast.sh`
 - What remains:
+  - `T-20260220-09`: hosted/deployed smoke command path and environment/deployment strategy.
+  - `T-20260220-10`: auth/authz + RLS baseline implementation and contract tests.
+  - `T-20260220-11`: sync API contract implementation/tests for session domain.
+  - `T-20260225-12`: broader quality-gate command rationalization across the repo (mobile + backend).

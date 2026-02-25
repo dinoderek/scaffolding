@@ -35,6 +35,39 @@ Define the minimum scaffolding required before feature development, and standard
 Rule: each lower level must link to its parent(s).
 Rule: each lower level may add detail but must not override or relax parent-level constraints.
 
+## Runtime terminology and gate profiles
+
+Use these definitions when a task says "runtime", "runtime-specific gates", or "runtime-appropriate equivalents".
+
+- `Runtime` (for this playbook):
+  - an execution surface with its own process/toolchain and verification commands (not just a folder).
+  - examples in this repo: Node/TS workspace (`npm` scripts), Expo mobile runtime + Maestro, local `Supabase` stack, `Supabase` Edge Functions (`Deno`), SQL/`pgTAP`, hosted deployment environments.
+- `Runtime-specific gate`:
+  - the smallest repeatable verification command(s) that meaningfully validate the changed runtime when default Node gates are not sufficient or not applicable.
+
+Baseline gate profiles (task cards may tighten these):
+
+1. `Node/TS workspace` (default)
+   - `npm run lint`
+   - `npm run typecheck`
+   - `npm run test`
+2. `Supabase` local backend runtime (`supabase/**`, no backend Node workspace introduced)
+   - local runtime bring-up (`supabase start` or project wrapper)
+   - local migration/reset + seed (`supabase db reset` or project wrapper)
+   - fast DB/schema check (`supabase db lint` and/or `supabase test db` when `pgTAP` exists)
+   - local API/Edge smoke or contract checks (health/auth/RLS/API path as scoped by task)
+3. `Supabase` Edge Functions with custom logic
+   - `Deno` unit tests (`deno test`) for function logic (if present)
+   - `Supabase-local` integration/contract tests against the real gateway/auth context
+4. `Expo` mobile UI/runtime work
+   - `apps/mobile` `lint` + `typecheck` + `test`
+   - Maestro smoke flows when UI/runtime-sensitive changes require them (per `docs/specs/06-testing-strategy.md`)
+5. Hosted/deployed environment changes
+   - relevant local gates for the changed runtime(s)
+   - hosted smoke validation (manual until CI exists; task card must name owner and trigger timing)
+
+Rule: task cards must list the exact gate commands they require; this section only defines baseline expectations.
+
 ## Delivery workflow
 
 1. Select one MVP milestone from `docs/specs/00-mvp-deliverables.md`.
@@ -74,6 +107,7 @@ Use this sequence for every task card:
      - `npm run typecheck`
      - `npm run test`
      - replace/add runtime-specific gates when the task is not Node-only (for example `supabase` CLI checks, `deno test`, `pgTAP`, Maestro smoke commands)
+     - if `lint/typecheck/test` are not applicable for the introduced runtime (for example no Node/TS workspace was added for a `Supabase`-only task), document the `N/A` rationale and run runtime-specific equivalents instead
    - Run task-specific checks if defined.
    - Rule: do not defer all verification to the end; apply targeted checks during development and full gates at closeout.
 6. Closeout:
@@ -116,6 +150,7 @@ Provide these references at execution start:
    - Acceptance criteria
    - Testing and verification approach (commands/checks)
    - test-layer ownership and execution triggers for non-trivial backend/deployment/E2E work
+   - hosted/deployed smoke validation ownership (or explicit task that owns it when deferred)
    - CI/manual verification posture when CI is absent or partial
    - project-structure impact (new paths/conventions or explicit no-structure-change decision)
    - Allowed files/areas
@@ -143,14 +178,14 @@ Rule: if a task makes significant project-structure changes (for example adds/mo
 
 ## Automated feedback loops (before human review)
 
-1. Local verification gates must pass (`lint`, `typecheck`, `test`).
-2. CI verification gates must pass on the branch/PR, if CI is configured.
+1. Local verification gates must pass (`lint`, `typecheck`, `test`, or documented runtime-appropriate equivalents).
+2. CI verification gates must pass on the branch/PR only when CI is configured for the repo/branch; otherwise mark this loop `N/A` and follow the manual/deferred verification posture in `Current CI posture`.
 3. Run an AI self-review pass against:
    - Acceptance criteria coverage
    - Test completeness
    - Offline requirements
    - Security/data access constraints
-4. Human review starts only after loops above are green.
+4. Human review starts only after all applicable loops above are green (`CI` is currently `N/A` until configured).
 
 ## Current CI posture (2026-02-25)
 

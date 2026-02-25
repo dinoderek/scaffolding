@@ -96,11 +96,35 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - if implementation uses custom runtime code (for example Edge Functions), require unit tests plus local integration/contract tests.
   - if implementation is mostly `PostgREST/RPC`, unit-test surface may be small; compensate with stronger DB + local integration/contract coverage.
 
+## Backend local runtime baseline (implemented in `T-20260220-08`)
+
+- Current implemented command path (`supabase/**`):
+  - `./supabase/scripts/local-runtime-up.sh` (starts local stack + local health function serve)
+  - `./supabase/scripts/reset-local.sh` (local migration/bootstrap + deterministic seed)
+  - `./supabase/scripts/db-lint-local.sh` (fast schema lint)
+  - `./supabase/scripts/smoke-health.sh` (health endpoint smoke)
+  - `./supabase/scripts/smoke-seed.sh` (fixture baseline smoke through local REST API)
+  - `./supabase/scripts/test-fast.sh` (combined fast backend-local smoke suite)
+- Current automated backend-local coverage (minimum baseline):
+  - migration/reset/seed flow
+  - deterministic fixture presence (`anonymous`, `user_a`, `user_b`, optional helper fixture)
+  - local Edge health endpoint reachability
+  - local DB schema lint
+- Local Edge-function smoke note:
+  - local Supabase gateway still expects auth headers; health smoke scripts must call the endpoint with the local `ANON_KEY`.
+- `npm run lint` / `typecheck` / `test` posture for this baseline:
+  - no backend Node/TS helper workspace was introduced in `T-20260220-08`, so FE-style `npm` gates are `N/A` here.
+  - runtime-specific Supabase local gates above are the required baseline until a backend workspace/test harness is added.
+- Hosted/deployed smoke command path:
+  - deferred to `T-20260220-09` (manual by default until CI exists).
+
 ## Project structure conventions for testing assets (M5 backend additions)
 
 - `apps/mobile/.maestro/flows` remains the canonical location for Maestro flow definitions.
 - Repo-root `e2e/` is reserved for cross-stack orchestration/tests (strategy documented in M5; implementation may be added later).
 - `supabase/` is the backend root for migrations, seeds, functions, and backend-local test assets.
+- `supabase/scripts/` is the canonical location for backend local runtime/test wrappers.
+- `supabase/tests/` is the canonical location for backend-local smoke/integration test entrypoints until a dedicated helper workspace is introduced.
 - Do not couple backend foundation work to a mobile test-directory refactor (for example moving `apps/mobile/app/__tests__`) unless a dedicated task explicitly scopes that change.
 
 ## iOS UI smoke policy (Maestro, current stage)
