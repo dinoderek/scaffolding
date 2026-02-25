@@ -59,6 +59,8 @@ Define a practical, data-driven exercise metadata model that associates exercise
   - Interpretation: `1.0` represents a full primary-reference contribution for that exercise; multiple muscles may receive meaningful weights without forcing a shared total.
 - The muscle-group taxonomy is `system-defined` and `non-editable` in this milestone.
   - Users may link muscles to exercises where editing is supported, but they may not create/edit muscle-group definitions in M6.
+- For M6 v1 taxonomy, chest is represented as a single group (`chest`) rather than sub-regions.
+  - Reason: avoid false precision in default exercise mappings when sub-region emphasis varies meaningfully by individual and setup.
 - Historical behavior for edited mappings is `TBD`.
   - We have not yet locked whether analytics for past sessions use the mapping at log time or the latest mapping.
 
@@ -71,7 +73,7 @@ Recommended fields (conceptual; schema to be designed in a later task):
 - `exercise_id`
 - `muscle_group_id`
 - `weight` (decimal, non-normalized)
-- `role` (`primary | secondary | stabilizer`) - optional but recommended for UX presets
+- `role` (`primary | secondary | stabilizer`) - optional; M6 system seed data currently uses `primary | secondary` only
 
 Notes:
 
@@ -85,8 +87,7 @@ This is the proposed initial set to balance useful coverage with manageable cust
 
 | Family | Muscle Group (display) | Suggested ID |
 | --- | --- | --- |
-| Chest | Chest (Mid/Sternal) | `chest_sternal` |
-| Chest | Upper Chest (Clavicular) | `chest_upper` |
+| Chest | Chest | `chest` |
 | Shoulders | Front Delts | `delts_front` |
 | Shoulders | Lateral Delts | `delts_lateral` |
 | Shoulders | Rear Delts | `delts_rear` |
@@ -110,7 +111,7 @@ This is the proposed initial set to balance useful coverage with manageable cust
 
 Example: chest press / bench press style movement
 
-- `chest_sternal`: `1.0`
+- `chest`: `1.0`
 - `delts_front`: `0.5`
 - `triceps`: `0.4`
 
@@ -137,7 +138,7 @@ This illustrates the intended `non-normalized` interpretation: contributions are
 Planned task cards for M6 are listed below.
 
 1. `docs/tasks/T-20260224-01-m6-local-schema-for-muscle-taxonomy-and-exercise-mappings.md` - design local schema for exercise definitions, muscle groups, and weighted associations. (`completed`)
-2. `docs/tasks/T-20260224-02-m6-seed-muscle-taxonomy-and-system-exercises.md` - define and seed the non-editable muscle taxonomy plus the initial system exercise mapping set. (`planned`)
+2. `docs/tasks/T-20260224-02-m6-seed-muscle-taxonomy-and-system-exercises.md` - define and seed the non-editable muscle taxonomy plus the initial system exercise mapping set. (`completed`)
 3. `docs/tasks/T-20260224-03-m6-exercise-editing-muscle-linking-ui.md` - implement exercise editing support for linking muscle groups and weights on user-editable exercises. (`planned`)
 4. `docs/tasks/T-20260224-04-m6-historical-mapping-behavior-options.md` - define follow-on decision/options for historical mapping behavior before analytics implementation. (`planned`)
 
@@ -170,15 +171,23 @@ Planned task cards for M6 are listed below.
 - Reason: Reduces scope and preserves consistency while exercise-level mapping UX is being established.
 - Impact: M6 editing work should allow linking existing muscle groups only; taxonomy administration is deferred.
 
+- Date: 2026-02-25
+- Decision: Collapse chest taxonomy from `chest_sternal` + `chest_upper` to a single `chest` group for M6 v1.
+- Reason: Exercise-level chest sub-region defaults create false precision and are not strong enough for a stable starter taxonomy.
+- Impact: Seed data/examples/editor defaults should use `chest`; chest sub-region granularity can be revisited later if justified.
+
 ## Completion note
 
 - What changed:
   - Completed `T-20260224-01` with the local schema foundation for muscle taxonomy, exercise definitions, and exercise-to-muscle weighted mappings.
   - Deferred exercise origin/source modeling and explicit exercise editability flags to a later M6 follow-on decision; current schema assumes exercises are editable.
+  - Completed `T-20260224-02` with seed fixtures, validation, and bootstrap seeding for a non-editable system taxonomy plus an initial system exercise catalog with non-normalized weights.
+  - Simplified v1 defaults to reduce false precision: single `chest` taxonomy group, `primary|secondary` roles only in seeds, and default weight ladder (`1.0` / `0.5`) only.
 - Verification summary:
   - `apps/mobile` lint/typecheck/test passed, including targeted schema/migration coverage and the previously failing session-list test after timer assertion fix.
+  - Added targeted seed validation tests and bootstrap seed integration tests; full `apps/mobile` Jest suite remains green after seed integration.
 - What remains:
-  - Continue with taxonomy/system exercise seeding (`T-20260224-02`) and editor UI work (`T-20260224-03`).
+  - Continue with exercise editing muscle-linking UI (`T-20260224-03`) and historical mapping behavior options (`T-20260224-04`).
 
 ## Status update checklist (mandatory during task closeout)
 

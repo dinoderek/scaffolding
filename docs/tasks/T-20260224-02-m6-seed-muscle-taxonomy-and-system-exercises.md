@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260224-02`
 - Title: M6 seed non-editable muscle taxonomy and initial system exercise mappings
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-24`
 - Session interaction mode: `interactive (default)`
@@ -93,8 +93,28 @@ Define and seed the M6 non-editable muscle taxonomy plus an initial set of syste
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Added `apps/mobile/src/data/exercise-catalog-seeds.ts` with the M6 system seed bundle for muscle taxonomy, system exercises, weighted exercise-to-muscle mappings, source references, and validation helpers.
+  - Implemented deterministic validation for duplicate IDs/mapping pairs, invalid weights, invalid roles, missing exercise docs, and missing/unknown referenced IDs.
+  - Wired idempotent system catalog seeding into `bootstrapLocalDataLayer` after runtime migrations, with retry behavior on seed failures.
+  - Added Jest coverage for seed validation/simplification policy and bootstrap seed integration retry behavior.
+  - Simplified the seed taxonomy/mapping defaults based on review feedback:
+    - collapsed chest sub-groups to a single `chest` muscle group
+    - M6 seed roles use `primary|secondary` only (schema still allows `stabilizer`)
+    - omitted speculative stabilizer/bracing mappings from the starter catalog
+    - trimmed the starter system exercise set to 14 exercises
+  - Seed evidence summary (current M6 starter set):
+    - taxonomy: 19 non-editable muscle groups
+    - system exercises: 14
+    - exercise-muscle mappings: 34 (non-normalized; default ladder only `1.0` / `0.5`)
+    - examples: `Barbell Bench Press -> chest (1.0), delts_front (0.5), triceps (0.5)`; `Barbell Back Squat -> quads (1.0), glutes_max/adductors/spinal_erectors (0.5)`
+  - Source/reference set documented in the seed module includes ExRx exercise anatomy directory plus supporting context/biomechanics references (Schoenfeld 2010, Vigotsky 2018, Escamilla squat/deadlift, Contreras hip thrust).
 - What tests ran:
+  - `npm test -- --runInBand app/__tests__/exercise-catalog-seeds.test.ts app/__tests__/local-data-bootstrap.test.ts` (pass)
+  - `npm run lint` (pass)
+  - `npm run typecheck` (pass)
+  - `npm test -- --runInBand` (pass)
 - What remains:
+  - M6 remains open for exercise editing muscle-linking UI (`T-20260224-03`) and the historical mapping behavior decision/options task (`T-20260224-04`).
 
 ## Status update checklist (mandatory at closeout)
 
