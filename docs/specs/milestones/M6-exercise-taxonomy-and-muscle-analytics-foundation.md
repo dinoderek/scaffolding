@@ -32,7 +32,7 @@ Define a practical, data-driven exercise metadata model that associates exercise
 
 ## Out of scope
 
-- Finalizing historical mapping behavior (`snapshot/versioned/recomputed`) for completed sessions.
+- Implementing historical mapping behavior for completed sessions (policy can be documented; schema/runtime implementation is deferred).
 - Analytics rollups/dashboards or effort-adjusted stimulus scoring (RPE/RIR proximity-to-failure models).
 - Exhaustive exercise catalog seeding.
 - Backend sync/API changes for exercise definitions and muscle mappings.
@@ -50,7 +50,7 @@ Define a practical, data-driven exercise metadata model that associates exercise
 3. Weighting semantics are explicitly defined as `non-normalized` and interpreted consistently.
 4. An initial set of system exercises exists and each included exercise is linked to one or more muscle groups with weights.
 5. Exercise editing supports linking one or more muscle groups with weights for user-editable exercises.
-6. Historical behavior for edits to exercise mappings is explicitly marked `TBD`, with candidate options listed.
+6. Historical behavior policy for completed-session analytics is explicitly narrowed/locked at a high level (reproducible canonical analytics; default target `snapshot at session completion`), with implementation details deferred to the analytics milestone.
 7. The spec is precise enough to support follow-on task cards for schema design, seed data, and UI/editor work.
 
 ## Locked decisions (current)
@@ -61,8 +61,9 @@ Define a practical, data-driven exercise metadata model that associates exercise
   - Users may link muscles to exercises where editing is supported, but they may not create/edit muscle-group definitions in M6.
 - For M6 v1 taxonomy, chest is represented as a single group (`chest`) rather than sub-regions.
   - Reason: avoid false precision in default exercise mappings when sub-region emphasis varies meaningfully by individual and setup.
-- Historical behavior for edited mappings is `TBD`.
-  - We have not yet locked whether analytics for past sessions use the mapping at log time or the latest mapping.
+- Historical behavior for completed-session analytics is `reproducible` (no drift from later mapping edits).
+  - Default implementation target for the first analytics milestone is `snapshot at session completion`.
+  - `Versioned mappings` remains a candidate only if analytics requirements justify added complexity (audit/history UX, concurrent-edit semantics, or large-scale recalculation workflows).
 
 ## Proposed exercise-to-muscle association model (v1)
 
@@ -124,10 +125,10 @@ This illustrates the intended `non-normalized` interpretation: contributions are
 
 ## Open decisions / iteration backlog
 
-- Historical mapping behavior for completed sessions:
-  - `snapshot at log time`
-  - `versioned mappings`
-  - `recompute using latest mapping`
+- Exact implementation shape for historical mapping preservation in the analytics milestone:
+  - concrete snapshot schema (per-session-exercise snapshot rows and required fields)
+  - freeze timing details (`session completion` is the current default)
+  - whether versioned mappings are required based on analytics milestone requirements
 - Whether to lock a standard preset ladder for weights (for example, `1.0`, `0.66`, `0.5`, `0.33`, `0.15`) vs free-form decimals only.
 - Whether to include additional v1 muscle groups such as `tibialis_anterior`, `hip_flexors`, `serratus_anterior`, or `rotator_cuff`.
 - Exercise origin/source model (for example `system`, `user`, imported providers) and whether it needs explicit local schema fields in M6 vs a later milestone.
@@ -141,7 +142,7 @@ Planned task cards for M6 are listed below.
 2. `docs/tasks/T-20260224-02-m6-seed-muscle-taxonomy-and-system-exercises.md` - define and seed the non-editable muscle taxonomy plus the initial system exercise mapping set. (`completed`)
 3. `docs/tasks/T-20260224-03-m6-exercise-editing-muscle-linking-ui.md` - implement exercise editing support for linking muscle groups and weights on user-editable exercises. (`completed`)
 4. `docs/tasks/T-20260224-04-m6-session-recorder-exercise-management-integration.md` - connect session recorder exercise manage/add flows to the persistent exercise catalog editor and refresh recorder selection behavior after return. (`planned`)
-5. `docs/tasks/T-20260224-05-m6-historical-mapping-behavior-options.md` - define follow-on decision/options for historical mapping behavior before analytics implementation. (`planned`)
+5. `docs/tasks/T-20260224-05-m6-historical-mapping-behavior-options.md` - define and narrow/lock the historical mapping behavior policy path before analytics implementation. (`completed`)
 
 ## Risks / dependencies
 
@@ -177,6 +178,11 @@ Planned task cards for M6 are listed below.
 - Reason: Exercise-level chest sub-region defaults create false precision and are not strong enough for a stable starter taxonomy.
 - Impact: Seed data/examples/editor defaults should use `chest`; chest sub-region granularity can be revisited later if justified.
 
+- Date: 2026-02-25
+- Decision: Lock canonical historical analytics behavior for exercise-mapping edits to a reproducible model (no drift from later edits), with `snapshot at session completion` as the default implementation target and `versioned mappings` as an escalation path.
+- Reason: Preserves user trust and analytics reproducibility while avoiding premature versioning complexity in the local-first + future sync architecture.
+- Impact: Future analytics tasks should not use `recompute using latest mapping` for canonical completed-session analytics; they should implement snapshotting by default unless milestone requirements explicitly justify versioning.
+
 ## Completion note
 
 - What changed:
@@ -185,13 +191,13 @@ Planned task cards for M6 are listed below.
   - Completed `T-20260224-02` with seed fixtures, validation, and bootstrap seeding for a non-editable system taxonomy plus an initial system exercise catalog with non-normalized weights.
   - Simplified v1 defaults to reduce false precision: single `chest` taxonomy group, `primary|secondary` roles only in seeds, and default weight ladder (`1.0` / `0.5`) only.
   - Completed `T-20260224-03` with a local exercise-catalog editing route + repository that supports linking seeded/system muscle groups to exercises with non-normalized weights, including add/edit/remove flows and editor validation for missing links, duplicate links, and invalid weights.
+  - Completed `T-20260224-05` (docs-only) by comparing historical mapping behavior options and locking the policy direction for future analytics: reproducible canonical history with `snapshot at session completion` as the default implementation target.
 - Verification summary:
   - `apps/mobile` lint/typecheck/test passed, including targeted schema/migration coverage and the previously failing session-list test after timer assertion fix.
   - Added targeted seed validation tests and bootstrap seed integration tests; full `apps/mobile` Jest suite remains green after seed integration.
   - Added targeted repository + UI interaction tests for exercise muscle-link editing (`exercise-catalog-repository`, `exercise-catalog-screen`) and re-ran full `apps/mobile` Jest suite successfully after the new route/repository work.
 - What remains:
   - Complete session recorder integration for persistent exercise management/editing (`T-20260224-04`).
-  - Complete historical mapping behavior options/decision task (`T-20260224-05`) before downstream analytics implementation work.
 
 ## Status update checklist (mandatory during task closeout)
 

@@ -1,0 +1,232 @@
+# M6 Historical Exercise-Mapping Behavior Options (Brainstorm)
+
+## Purpose
+
+Compare candidate behaviors for how analytics should interpret exercise-to-muscle mappings after a user edits an exercise mapping later.
+
+This brainstorm is intended to support `docs/tasks/T-20260224-05-m6-historical-mapping-behavior-options.md` (the historical-mapping task; note the task is `-05`, not `-04`).
+
+## Decision status (locked)
+
+- Date locked: `2026-02-25`
+- Canonical analytics for completed sessions must be reproducible and must not drift due to later exercise-mapping edits.
+- Default implementation target for the first analytics milestone: `snapshot at session completion`.
+- `Versioned mappings` remains an escalation path if analytics requirements justify the added complexity (audit/history UX, heavy recalculation workflows, or concurrent-edit/version semantics).
+
+## Context / constraints (current)
+
+- M6 locked `non-normalized` exercise-to-muscle weights.
+- M6 intentionally deferred historical behavior for completed sessions.
+- Analytics implementation is out of scope in M6, but this decision affects future schema/API design.
+- Architecture is local-first with planned sync/outbox; avoid decisions that create avoidable sync complexity unless they buy clear product value.
+- Stable muscle-group IDs are expected; display labels may evolve.
+
+## Problem statement
+
+If a user edits the muscle links/weights for an exercise (for example changing `triceps` from `0.5` to `0.3` on a press), what should happen to analytics for already completed sessions that used that exercise?
+
+## Candidate options
+
+1. `Snapshot at log time` (or completion-time freeze)
+- Store the effective mapping used by the completed session.
+- Past analytics read the stored snapshot, not the current exercise definition.
+
+2. `Versioned mappings`
+- Exercise mappings are versioned over time.
+- Completed sessions reference the mapping version in effect when logged/completed.
+
+3. `Recompute using latest mapping`
+- Completed sessions do not preserve historical mapping.
+- Analytics always read the current mapping on the exercise definition.
+
+## Evaluation criteria
+
+- Implementation complexity (local schema + future backend)
+- Storage cost
+- User expectations / trust
+- Analytics reproducibility
+- Migration risk
+- Sync/API complexity
+- Ability to correct bad mappings later
+
+## Compare / contrast summary
+
+| Option | Complexity | Storage | User expectation fit | Reproducibility | Sync/API impact | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| Snapshot | Medium | Medium-high | High | High | Medium | Best v1 balance if stable analytics are desired |
+| Versioned | High | Medium | High | High | High | Strong long-term model, highest design/ops cost |
+| Recompute latest | Low | Low | Low-medium | Low | Low | Fastest, but past analytics drift after edits |
+
+## Detailed tradeoffs
+
+### Option 1: Snapshot at log time (recommended default candidate)
+
+How it works:
+
+- When a session becomes `completed` (or when an exercise instance is finalized), persist the exercise-to-muscle mapping that was effective at that time.
+- Analytics for completed sessions read the snapshot, even if the source exercise mapping later changes.
+
+Pros:
+
+- Matches common user expectation: past workouts should not change unexpectedly.
+- Strong reproducibility for analytics, debugging, and future recalculation audits.
+- Simpler than a full version graph; no version lifecycle rules required.
+- Compatible with local-first/offline behavior (freeze locally at completion, sync later).
+
+Cons:
+
+- Duplicates mapping data across completed sessions (storage growth).
+- Requires new snapshot storage schema and write path during completion/finalization.
+- Bug fixes to a mapping do not automatically back-correct historical analytics (requires explicit repair/rebuild tooling if desired).
+
+High-level schema implications:
+
+- Add a completed-session historical mapping record (likely per logged session exercise, not global exercise definition).
+- Snapshot must include at least:
+  - effective `exercise_definition_id`
+  - `muscle_group_id`
+  - `weight`
+  - optional `role`
+- Consider a session exercise level anchor (for example `session_exercise_id`) so edits to exercise definitions do not affect linkage.
+- Define when snapshot is frozen:
+  - recommended: on session completion (not every in-progress draft change)
+
+Migration/sync risks:
+
+- Future sync payloads increase (completed sessions carry snapshot rows).
+- Need idempotent completion logic so retries do not duplicate snapshots.
+- Backfill needed only if analytics is introduced before snapshot rollout and legacy completed sessions exist.
+
+### Option 2: Versioned mappings
+
+How it works:
+
+- Maintain version history for exercise mappings (for example `exercise_definition_id + version`).
+- A completed session points to the version used at the time.
+
+Pros:
+
+- Reproducible like snapshots.
+- More storage-efficient than per-session snapshots when many sessions share the same mapping version.
+- Supports richer audit/history features later ("what changed and when").
+- Can distinguish mapping corrections from session data changes cleanly.
+
+Cons:
+
+- Highest implementation complexity (version lifecycle, immutability, active version switching, migration rules).
+- Harder sync/conflict model in a local-first system (concurrent edits, version assignment ordering).
+- More API and schema surface area before analytics value is proven.
+- Requires clear policy for system exercise mapping updates vs user exercise mapping edits.
+
+High-level schema implications:
+
+- New versioned mapping tables/entities (header + rows, or version field with immutable rows).
+- Session exercise records need `mapping_version_id` (or equivalent) persisted at completion/log time.
+- Mutation flow must create new versions instead of updating rows in place.
+- Need active/current version pointer for exercise definitions.
+
+Migration/sync risks:
+
+- More complex migrations from current mutable `exercise_muscle_mappings` model.
+- Sync conflicts become semantic (simultaneous edits create multiple candidate versions).
+- Harder to keep local + backend version IDs stable if backend arrives later.
+
+### Option 3: Recompute using latest mapping
+
+How it works:
+
+- Keep only the current exercise mapping on the exercise definition.
+- Analytics for all sessions join against the latest mapping.
+
+Pros:
+
+- Simplest schema and implementation.
+- Minimal storage cost.
+- Easy to apply mapping corrections globally.
+- Lowest sync/API complexity.
+
+Cons:
+
+- Past analytics drift after edits; user may lose trust if history changes unexpectedly.
+- Poor reproducibility for debugging, experiments, and "why did this chart change?" questions.
+- Makes analytics outputs depend on mutable reference data rather than completed session facts.
+
+High-level schema implications:
+
+- No new historical schema needed.
+- Analytics queries join `session -> session_exercise -> current exercise_muscle_mappings`.
+
+Migration/sync risks:
+
+- Few schema risks.
+- Product risk is high if expectations later force a switch to snapshot/versioned after analytics launches.
+
+## Edge cases to decide regardless of option
+
+1. Freeze point for history: first set log, exercise added to session, or session completion.
+- Recommended default: `session completion`.
+
+2. In-progress sessions and edits:
+- If a mapping changes while a session is still in progress, should the session use the latest mapping until completion, or preserve mapping at first use?
+- Recommended default: latest mapping until completion, then freeze.
+
+3. System mapping corrections:
+- If the team fixes a bad system exercise mapping, should historical analytics change automatically?
+- Recommended product posture: no automatic change to completed-session canonical analytics; allow future explicit reprocessing tools if needed.
+
+4. Taxonomy label changes vs ID changes:
+- Label changes are safe (IDs stable).
+- ID removals/merges require explicit migration strategy under any reproducible option.
+
+## Locked decision (from this comparison)
+
+### Policy decision
+
+- Reject `recompute using latest mapping` as the default/canonical historical behavior for completed-session analytics.
+- Prefer a reproducible model for canonical analytics.
+
+### Default implementation target for first analytics milestone
+
+- Use `snapshot at session completion` as the v1 implementation target.
+- Defer full `versioned mappings` unless a near-term requirement emerges for:
+  - mapping audit trails visible to users/admins
+  - efficient global reprocessing across many sessions
+  - explicit "mapping changed on date X" semantics
+
+Why this is the best near-term tradeoff:
+
+- It preserves user trust and analytics stability.
+- It is materially simpler than versioning in a local-first + future sync architecture.
+- It can evolve later toward versioning (snapshot rows can carry optional provenance metadata such as source exercise mapping row IDs / timestamps).
+
+## Recommended decision path / trigger
+
+1. Lock now at the policy level:
+- Canonical analytics for completed sessions must be reproducible and must not drift due to later mapping edits.
+
+2. Defer exact schema shape to analytics kickoff, but narrow the implementation choices to:
+- `snapshot at completion` (default)
+- `versioned mappings` (only if analytics milestone requirements justify extra complexity)
+
+3. Trigger to revisit versioning before implementation:
+- If analytics scope requires mapping change history/audit UI, cross-device concurrent exercise editing, or large-scale recalculation workflows, re-open `versioned mappings`.
+
+## Follow-on task implications (for future task card writers)
+
+- Analytics milestone task should explicitly include:
+  - canonical historical behavior = reproducible
+  - freeze point = session completion (unless changed)
+  - backfill strategy for pre-snapshot completed sessions (if any exist)
+  - sync contract impact for historical mapping snapshots
+- If snapshot is chosen, add a task for historical snapshot schema + completion write-path before analytics rollups.
+- If versioning is chosen, split work into:
+  - versioned mapping schema/model
+  - editor mutation/version lifecycle
+  - session linkage to mapping version
+  - analytics reads
+
+## Open questions (worth answering before locking)
+
+- Do we want a future "recalculate all history with latest mappings" view as an optional non-canonical report?
+- Should completed-session snapshots store only mapping rows, or also copy exercise display name for audit readability?
+- Is there any expected need to edit mappings for system exercises differently than user-created exercises in analytics history?

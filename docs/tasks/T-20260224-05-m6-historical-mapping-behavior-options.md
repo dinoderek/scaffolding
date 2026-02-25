@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260224-05`
 - Title: M6 historical exercise-mapping behavior options and decision prep
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-24`
 - Session interaction mode: `interactive (default)`
@@ -84,8 +84,16 @@ Document the historical behavior options for edited exercise-to-muscle mappings 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Added `docs/brainstorms/M6-Historical-Mapping-Behavior-Options.md` comparing `snapshot`, `versioned`, and `recompute using latest` historical behavior options for edited exercise-to-muscle mappings.
+  - Locked the policy direction in the brainstorm and milestone docs: canonical analytics for completed sessions must be reproducible (no drift from later mapping edits), with `snapshot at session completion` as the default implementation target and `versioned mappings` retained as an escalation path.
+  - Updated `docs/specs/milestones/M6-exercise-taxonomy-and-muscle-analytics-foundation.md` to remove the `TBD` historical behavior wording, reflect the locked policy, and mark this task as completed.
 - What tests ran:
+  - `N/A (docs-only task)`
+  - Editorial consistency pass across touched docs
+  - Link/reference sanity check for milestone/task/brainstorm references
 - What remains:
+  - No code/runtime implementation in this task (by design).
+  - M6 milestone remains open due to pending `T-20260224-04` session recorder integration work.
 
 ## Status update checklist (mandatory at closeout)
 
