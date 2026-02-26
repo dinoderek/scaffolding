@@ -4,7 +4,7 @@
 
 - Milestone ID: `M8`
 - Title: UI guardrails, authoritative UI docs, and convergence refactor
-- Status: `planned`
+- Status: `in_progress`
 - Owner: `AI + human reviewer`
 - Target window: `2026-02` / `2026-03`
 
@@ -33,6 +33,8 @@ Establish a reality-based UI foundation for AI-assisted development by harvestin
 ## Repo discovery baseline (verified before drafting this milestone)
 
 - Baseline only: this section captures draft-time facts and must be refreshed/confirmed at the start of each M8 task that depends on inventories (routes, styling, components, docs paths), with task docs updated if anything changed.
+- Refreshed authoritative baseline (Task `T-20260226-01`): `docs/specs/ui/repo-discovery-baseline.md`
+- UI pattern audit (Task `T-20260226-02`): `docs/specs/ui/ui-pattern-audit.md`
 - Documentation/templates already exist in:
   - `docs/specs/`
   - `docs/specs/templates/`
@@ -155,9 +157,9 @@ Establish a reality-based UI foundation for AI-assisted development by harvestin
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260226-01-m8-ui-repo-discovery-and-inventory-baseline.md` - create the required repo discovery baseline and confirm exact UI/doc/template/navigation/styling facts. (`planned`)
-2. `docs/tasks/T-20260226-02-m8-ui-pattern-audit-doc.md` - produce the UI pattern audit with code references and primitive candidates. (`planned`)
-3. `docs/tasks/T-20260226-03-m8-ui-tokens-and-primitives-foundation.md` - implement tokens source of truth and an initial primitive set derived from the audit. (`planned`)
+1. `docs/tasks/T-20260226-01-m8-ui-repo-discovery-and-inventory-baseline.md` - create the required repo discovery baseline and confirm exact UI/doc/template/navigation/styling facts. (`completed`)
+2. `docs/tasks/T-20260226-02-m8-ui-pattern-audit-doc.md` - produce the UI pattern audit with code references and primitive candidates. (`completed`)
+3. `docs/tasks/T-20260226-03-m8-ui-tokens-and-primitives-foundation.md` - implement tokens source of truth and an initial primitive set derived from the audit. (`completed`)
 4. `docs/tasks/T-20260226-04-m8-ui-guardrail-enforcement.md` - add lightweight UI guardrail enforcement and document exceptions/usage. (`planned`)
 5. `docs/tasks/T-20260226-05-m8-authoritative-ui-docs-bundle.md` - create/update UI docs bundle (`ux-rules`, `screen-map`, `navigation-contract`, `components-catalog`) and register docs path conventions. (`planned`)
 6. `docs/tasks/T-20260226-06-m8-screen-refactor-to-tokens-and-primitives.md` - refactor current user-facing screens to converge on tokens/primitives with regression checks. (`planned`)

@@ -1,11 +1,34 @@
 appId: host.exp.Exponent
 ---
 - assertVisible:
-    id: "home-foundation-ready"
+    id: "session-list-screen"
 - takeScreenshot: "03-data-runtime-smoke-start"
 - tapOn:
-    id: "run-data-runtime-smoke-button"
-- assertVisible: "Data runtime smoke: success"
+    id: "resume-active-session-button"
+    optional: true
+- tapOn:
+    id: "start-session-button"
+    optional: true
 - assertVisible:
-    id: "data-runtime-smoke-last-value"
+    id: "session-recorder-screen"
+- tapOn: "Log new exercise"
+- tapOn: "Select exercise Barbell Squat"
+- tapOn: "Weight for exercise 1 set 1"
+- inputText: "135"
+- tapOn: "Reps for exercise 1 set 1"
+- inputText: "8"
+- tapOn: "Submit Session"
+- tapOn:
+    text: "Submit Session"
+    optional: true
+- tapOn:
+    text: "Remove incomplete sets and submit"
+    optional: true
+- tapOn:
+    text: "Remove empty exercises and submit"
+    optional: true
+- assertVisible:
+    id: "session-list-screen"
+- assertVisible:
+    id: "completed-history-scroll"
 - takeScreenshot: "04-data-runtime-smoke-success"

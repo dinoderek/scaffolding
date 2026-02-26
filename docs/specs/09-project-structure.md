@@ -9,7 +9,7 @@ Define the canonical repository structure, path ownership, and placement convent
 - Update this document in the same task/session when significant project-structure changes are made (for example new top-level folders, workspace moves, canonical test-location changes, or path-convention changes).
 - Minor file additions within an existing well-defined folder usually do not require updates.
 
-## Current repository structure (verified 2026-02-25)
+## Current repository structure (verified 2026-02-26)
 
 ```text
 /
@@ -20,6 +20,7 @@ Define the canonical repository structure, path ownership, and placement convent
       app/                       # Expo Router routes/screens
       app/__tests__/             # Current app-side test location (legacy/needs rationalization)
       components/                # UI components
+        ui/                      # Canonical UI tokens + primitives foundation (M8+)
       src/                       # Non-route app code (domain/data/helpers)
       drizzle/                   # Mobile local DB schema/migrations artifacts
       .maestro/flows/            # Maestro flow definitions (canonical location)
@@ -33,6 +34,7 @@ Define the canonical repository structure, path ownership, and placement convent
     tests/                       # Backend-local smoke/integration test entrypoints
   docs/
     specs/                       # Project/milestone/task process and technical specs
+      ui/                        # Canonical UI discovery/audit/guardrail docs (M8+)
     tasks/                       # Task cards
     brainstorms/                 # Working notes and brainstorming docs
 ```
@@ -41,10 +43,14 @@ Define the canonical repository structure, path ownership, and placement convent
 
 - `apps/mobile/`
   - owns the mobile app code, mobile-only tests, mobile SQLite schema artifacts, Maestro flows, and mobile test helper scripts.
+- `apps/mobile/components/ui/`
+  - owns the canonical mobile UI tokens + primitive components introduced in M8 for reuse across route screens and specialized shared components.
 - `scripts/`
   - owns repo-level cross-workspace wrappers (for example standard local quality-gate commands).
 - `docs/specs/`
   - owns project policy, architecture/testing strategy, milestone specs, and templates.
+- `docs/specs/ui/`
+  - owns authoritative UI discovery/audit/guardrail documentation produced in M8+ tasks.
 - `docs/tasks/`
   - owns per-session execution task cards.
 - `docs/brainstorms/`
@@ -52,12 +58,18 @@ Define the canonical repository structure, path ownership, and placement convent
 - `supabase/`
   - owns local Supabase backend config, migrations, seeds, Edge Functions, and backend-local test/runtime wrappers.
 
-## Agreed structure conventions (M5 additions)
+## Agreed structure conventions (M5+ additions)
 
 - `supabase/` (introduced in M5)
   - backend root for local Supabase project assets (migrations, seeds, functions, and backend-local tests).
+- `docs/specs/ui/` (introduced in M8)
+  - canonical location for authoritative UI discovery/audit/guardrail docs (for example repo discovery baseline, pattern audit, screen map, navigation contract, components catalog, UX rules).
+  - keep UI docs under `docs/specs/ui/**` rather than `docs/brainstorms/**` once they become source-of-truth references.
 - `apps/mobile/.maestro/flows`
   - remains the canonical location for Maestro flow definitions.
+- `apps/mobile/components/ui/` (introduced in M8)
+  - canonical location for mobile UI tokens and primitive components used by shared/screen UI code.
+  - keep specialized feature components (for example navigation/session-layout components) in domain folders under `apps/mobile/components/**`; compose primitives from `apps/mobile/components/ui/**`.
 - `e2e/` (reserved)
   - reserved for cross-stack orchestration/tests that span mobile + backend.
   - strategy may be documented before implementation exists.

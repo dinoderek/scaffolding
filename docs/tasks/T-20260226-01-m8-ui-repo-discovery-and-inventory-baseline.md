@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260226-01`
 - Title: M8 repo discovery and UI inventory baseline (docs/templates/navigation/styling/routes)
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-26`
 - Session interaction mode: `interactive (default)`
@@ -97,14 +97,23 @@ Produce the required M8 repo discovery baseline so all later UI guardrail/docs/r
 ## Evidence
 
 - Discovery table or bullet inventory with code/doc references.
+  - Added `docs/specs/ui/repo-discovery-baseline.md` with verified docs/template paths, navigation approach, route inventory, styling baseline, reusable component inventory, and Task 02 follow-up questions.
 - Manual verification summary (required when CI is absent/partial):
+  - Verified route/component inventories and code references with local `rg --files`, `rg -n`, `sed`, and `nl -ba` reads.
+  - Verified milestone + project-structure docs were updated in the same session for the new canonical `docs/specs/ui/` path and M8 task status progression.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable: `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Created `docs/specs/ui/repo-discovery-baseline.md` with code-referenced M8 Phase 0 discovery baseline (docs/templates paths, `expo-router` route location, route inventory/purposes, styling approach, reusable UI baseline, open questions).
+  - Updated `docs/specs/milestones/M8-ui-guardrails-and-authoritative-ui-docs.md` to link the baseline doc, mark Task 01 `completed`, and set milestone status to `in_progress`.
+  - Updated `docs/specs/09-project-structure.md` to register `docs/specs/ui/` as the canonical UI docs folder.
 - What tests ran:
+  - `N/A` for default code gates (`lint/typecheck/test`) because this is a docs-only discovery task.
+  - Replacement verification: local path/reference discovery and manual doc/path sanity checks via `rg --files`, `rg -n`, `sed`, and `nl -ba`.
 - What remains:
+  - Task 02 UI pattern audit still needs to quantify repeated UI patterns/literals and identify primitive candidates from the verified baseline.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -112,4 +121,3 @@ Produce the required M8 repo discovery baseline so all later UI guardrail/docs/r
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-

@@ -1,5 +1,7 @@
 import { Fragment, type ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+
+import { UiSurface, UiText, uiSpace } from '@/components/ui';
 
 export type SessionContentSetValue = {
   id: string;
@@ -49,33 +51,33 @@ export function SessionContentLayout<TSet extends SessionContentSetValue>({
   return (
     <>
       {showMetadataSection ? (
-        <View style={styles.section}>
+        <UiSurface style={styles.section} variant="panelMuted">
           <View style={styles.topRow}>
             <View style={styles.rowField}>
-              <Text style={styles.label}>Date and Time</Text>
+              <UiText variant="label">Date and Time</UiText>
               {dateTimeValue}
             </View>
 
             <View style={styles.rowField}>
-              <Text style={styles.label}>Gym</Text>
+              <UiText variant="label">Gym</UiText>
               {gymValue}
             </View>
           </View>
-        </View>
+        </UiSurface>
       ) : null}
 
       <View style={styles.exerciseList}>
         {exercises.map((exercise, exerciseIndex) => (
-          <View key={exercise.id} style={styles.exerciseCard}>
+          <UiSurface key={exercise.id} style={styles.exerciseCard}>
             <View style={styles.exerciseCardHeader}>
               <View style={styles.exerciseHeaderTextStack}>
-                <Text numberOfLines={1} style={styles.exerciseCardTitle}>
+                <UiText numberOfLines={1} variant="title">
                   {exercise.name || `Exercise ${exerciseIndex + 1}`}
-                </Text>
+                </UiText>
                 {exercise.machineName?.trim() ? (
-                  <Text numberOfLines={1} style={styles.exerciseCardSubtitle}>
+                  <UiText numberOfLines={1} variant="subtitle">
                     {exercise.machineName.trim()}
-                  </Text>
+                  </UiText>
                 ) : null}
               </View>
               {renderExerciseHeaderAction ? renderExerciseHeaderAction({ exercise, exerciseIndex }) : null}
@@ -95,14 +97,14 @@ export function SessionContentLayout<TSet extends SessionContentSetValue>({
             </View>
 
             {renderExerciseFooter ? renderExerciseFooter({ exercise, exerciseIndex }) : null}
-          </View>
+          </UiSurface>
         ))}
 
         {exercises.length === 0
           ? renderEmptyState
             ? renderEmptyState(emptyExercisesText)
             : (
-              <Text style={styles.emptyText}>{emptyExercisesText}</Text>
+              <UiText variant="bodyMuted">{emptyExercisesText}</UiText>
             )
           : null}
       </View>
@@ -112,64 +114,37 @@ export function SessionContentLayout<TSet extends SessionContentSetValue>({
 
 const styles = StyleSheet.create({
   section: {
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#d0d0d0',
-    gap: 12,
-    backgroundColor: '#fafafa',
+    padding: uiSpace.lg,
+    gap: uiSpace.lg,
   },
   topRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: uiSpace.md,
     alignItems: 'flex-end',
   },
   rowField: {
     flex: 1,
-    gap: 6,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#222222',
+    gap: uiSpace.sm - 2,
   },
   exerciseList: {
-    gap: 12,
+    gap: uiSpace.lg,
   },
   exerciseCard: {
-    borderWidth: 1,
-    borderColor: '#d0d0d0',
-    borderRadius: 10,
-    backgroundColor: '#ffffff',
-    padding: 10,
-    gap: 8,
+    padding: uiSpace.md,
+    gap: uiSpace.sm,
   },
   exerciseCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: uiSpace.sm,
   },
   exerciseHeaderTextStack: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
-  },
-  exerciseCardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#121212',
-  },
-  exerciseCardSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#5a5a5a',
+    gap: uiSpace.xxs,
   },
   setList: {
-    gap: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#555555',
+    gap: uiSpace.sm,
   },
 });

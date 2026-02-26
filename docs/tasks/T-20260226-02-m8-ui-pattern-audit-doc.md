@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260226-02`
 - Title: M8 UI pattern audit doc (harvest current patterns and primitive candidates)
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-26`
 - Session interaction mode: `interactive (default)`
@@ -122,15 +122,24 @@ Create the M8 UI audit document that inventories existing screen patterns and id
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
 - Audit doc with code-reference traceability.
+  - Added `docs/specs/ui/ui-pattern-audit.md` covering screen-by-screen section inventories, pattern categories, reusable-component classification, primitive candidates, and Task 06 refactor priorities with direct refs.
 - Primitive candidate list derived from audited patterns.
+  - Included an audit-derived candidate set (high-confidence + medium-confidence + specialized keepers) scoped to the milestone's `10-20` primitive target.
 - Manual verification summary (required when CI is absent/partial):
+  - Verified pattern findings and references through local route/component inspections using `rg -n`, `sed`, and `nl -ba`.
+  - Verified the M8 milestone links/task breakdown were updated in the same session.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable: `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Created `docs/specs/ui/ui-pattern-audit.md` as the M8 evidence-first UI audit document with screen summaries, pattern inventories (buttons/headers/lists/forms/states/layout/typography), reusable component classification, primitive candidates, duplication hotspots, and Task 06 refactor ordering.
+  - Updated `docs/specs/milestones/M8-ui-guardrails-and-authoritative-ui-docs.md` to link the new audit doc and mark Task 02 `completed`.
 - What tests ran:
+  - `N/A` for default code gates (`lint/typecheck/test`) because this is a docs-only audit task.
+  - Replacement verification: local code-reference traceability review via `rg -n`, `sed`, `nl -ba`, plus manual milestone/task doc sanity checks.
 - What remains:
+  - Task 03 must define tokens and initial primitives from the audited patterns without overfitting one-off screen behaviors.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -138,4 +147,3 @@ Create the M8 UI audit document that inventories existing screen patterns and id
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-

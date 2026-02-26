@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260226-03`
 - Title: M8 tokens source of truth and audit-derived primitives foundation
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-26`
 - Session interaction mode: `interactive (default)`
@@ -122,15 +122,28 @@ Implement a single token source of truth and a minimal primitives layer derived 
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
 - Before/after examples (screenshots or test snapshots) showing at least one migrated shared UI element.
+  - Added snapshot evidence for migrated `TopLevelTabs` primitive integration: `apps/mobile/app/__tests__/__snapshots__/ui-primitives.test.tsx.snap`
 - Test evidence for primitive states/semantics where added.
+  - Added `apps/mobile/app/__tests__/ui-primitives.test.tsx` covering tab accessibility state + press behavior, disabled button semantics, token-backed styles, and `TopLevelTabs` snapshot.
 - Manual verification summary (required when CI is absent/partial):
+  - Verified proof integrations in shared components (`TopLevelTabs`, `SessionContentLayout`) and token/primitive files via local code review.
+  - Ran targeted primitive test before full gates, then ran all required `apps/mobile` gates locally.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable: `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Added canonical UI tokens + primitives foundation under `apps/mobile/components/ui/` (`tokens`, `UiText`, `UiSurface`, `UiButton`, barrel exports).
+  - Migrated shared components `apps/mobile/components/navigation/top-level-tabs.tsx` and `apps/mobile/components/session-recorder/session-content-layout.tsx` to consume tokens/primitives as proof integrations.
+  - Added primitive-focused tests and snapshot evidence in `apps/mobile/app/__tests__/ui-primitives.test.tsx` and `apps/mobile/app/__tests__/__snapshots__/ui-primitives.test.tsx.snap`.
+  - Added/updated UI docs: seeded `docs/specs/ui/components-catalog.md`, recorded Task 03 implemented subset in `docs/specs/ui/ui-pattern-audit.md`, and documented canonical primitive path in `docs/specs/09-project-structure.md`.
 - What tests ran:
+  - `npm test -- ui-primitives.test.tsx` (from `apps/mobile`)
+  - `npm run lint` (from `apps/mobile`)
+  - `npm run typecheck` (from `apps/mobile`)
+  - `npm run test` (from `apps/mobile`)
 - What remains:
+  - Task 04 guardrail enforcement and Task 05 catalog/docs finalization still need to formalize usage rules and documentation coverage for the remaining audit candidates.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -138,4 +151,3 @@ Implement a single token source of truth and a minimal primitives layer derived 
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-
