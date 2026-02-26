@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     gap: uiSpace.sm,
     padding: uiSpace.sm,
     borderRadius: uiRadius.xl,
-    borderColor: uiColors.borderTabShell,
+    borderColor: uiColors.borderMuted,
     backgroundColor: uiColors.surfaceDefault,
   },
 });

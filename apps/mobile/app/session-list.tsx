@@ -1026,7 +1026,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   summarySeparator: {
-    color: uiColors.textTertiary,
+    color: uiColors.textDisabled,
     fontSize: 11,
   },
   metaText: {
@@ -1111,7 +1111,7 @@ const styles = StyleSheet.create({
   },
   modalDisabledButton: {
     backgroundColor: uiColors.surfaceDisabled,
-    borderColor: uiColors.borderDisabled,
+    borderColor: uiColors.borderMuted,
   },
   modalNeutralButtonText: {
     color: uiColors.actionNeutralSubtleText,

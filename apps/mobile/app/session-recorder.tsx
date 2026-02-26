@@ -1758,7 +1758,7 @@ const styles = StyleSheet.create({
   },
   completedEditMetadataRowDivider: {
     borderTopWidth: 1,
-    borderTopColor: uiColors.borderSubtle,
+    borderTopColor: uiColors.borderMuted,
     paddingTop: 10,
     marginTop: 4,
   },

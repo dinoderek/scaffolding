@@ -10,6 +10,7 @@ import {
   loadLocalGymById,
   loadSessionSnapshotById,
   reopenCompletedSessionDraft,
+  setSessionDeletedState,
 } from '@/src/data';
 
 export type CompletedSessionDetailSet = {
@@ -39,6 +40,7 @@ export type CompletedSessionDetailRecord = {
 export type CompletedSessionDetailDataClient = {
   loadCompletedSession(sessionId: string): Promise<CompletedSessionDetailRecord | null>;
   reopenCompletedSession(sessionId: string): Promise<void>;
+  setCompletedSessionDeletedState(sessionId: string, isDeleted: boolean): Promise<void>;
 };
 
 export type CompletedSessionDetailScreenShellProps = {
@@ -160,6 +162,9 @@ export const DEFAULT_COMPLETED_SESSION_DETAIL_DATA_CLIENT: CompletedSessionDetai
   async reopenCompletedSession(sessionId) {
     await reopenCompletedSessionDraft(sessionId);
   },
+  async setCompletedSessionDeletedState(sessionId, isDeleted) {
+    await setSessionDeletedState(sessionId, isDeleted);
+  },
 };
 
 export function CompletedSessionDetailScreenShell({
@@ -172,6 +177,7 @@ export function CompletedSessionDetailScreenShell({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [session, setSession] = useState<CompletedSessionDetailRecord | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const [isTogglingDeletedState, setIsTogglingDeletedState] = useState(false);
 
   const reloadSession = useCallback(() => {
     let cancelled = false;
@@ -224,7 +230,13 @@ export function CompletedSessionDetailScreenShell({
     }, [reloadSession])
   );
 
-  const deleteLabel = session?.deletedAt ? 'Undelete' : 'Delete';
+  const deleteLabel = isTogglingDeletedState
+    ? session?.deletedAt
+      ? 'Undeleting...'
+      : 'Deleting...'
+    : session?.deletedAt
+      ? 'Undelete'
+      : 'Delete';
   const reopenDisabled = Boolean(session?.reopenDisabledReason);
   const editLabel = 'Edit';
 
@@ -266,23 +278,40 @@ export function CompletedSessionDetailScreenShell({
   };
 
   const handleToggleDeletedState = () => {
-    setSession((current) => {
-      if (!current) {
-        return current;
-      }
+    if (!session || isTogglingDeletedState) {
+      return;
+    }
 
-      const nextIsDeleted = current.deletedAt === null;
-      setActionFeedback(
-        nextIsDeleted
-          ? 'Session hidden from default history (viewer-only stub).'
-          : 'Session restored to default history (viewer-only stub).'
-      );
+    const sessionId = session.id;
+    const nextIsDeleted = session.deletedAt === null;
+    setActionFeedback(null);
+    setIsTogglingDeletedState(true);
 
-      return {
-        ...current,
-        deletedAt: nextIsDeleted ? new Date().toISOString() : null,
-      };
-    });
+    void dataClient
+      .setCompletedSessionDeletedState(sessionId, nextIsDeleted)
+      .then(() => {
+        setSession((current) => {
+          if (!current || current.id !== sessionId) {
+            return current;
+          }
+
+          return {
+            ...current,
+            deletedAt: nextIsDeleted ? new Date().toISOString() : null,
+          };
+        });
+        setActionFeedback(
+          nextIsDeleted ? 'Session hidden from default history.' : 'Session restored to default history.'
+        );
+      })
+      .catch((error) => {
+        setActionFeedback(
+          error instanceof Error ? error.message : 'Unable to update deleted state for this session.'
+        );
+      })
+      .finally(() => {
+        setIsTogglingDeletedState(false);
+      });
   };
 
   if (isLoading) {
@@ -362,10 +391,20 @@ export function CompletedSessionDetailScreenShell({
 
               <Pressable
                 accessibilityRole="button"
+                disabled={isTogglingDeletedState}
                 onPress={handleToggleDeletedState}
-                style={[styles.actionBarButton, styles.actionBarDangerButton]}
+                style={[
+                  styles.actionBarButton,
+                  styles.actionBarDangerButton,
+                  isTogglingDeletedState ? styles.disabledActionButton : null,
+                ]}
                 testID="completed-session-detail-delete-button">
-                <Text numberOfLines={1} style={styles.actionBarDangerButtonText}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.actionBarDangerButtonText,
+                    isTogglingDeletedState ? styles.disabledActionButtonText : null,
+                  ]}>
                   {deleteLabel}
                 </Text>
               </Pressable>
@@ -566,7 +605,7 @@ const styles = StyleSheet.create({
   },
   disabledActionButton: {
     backgroundColor: uiColors.surfaceDisabled,
-    borderColor: uiColors.borderDisabled,
+    borderColor: uiColors.borderMuted,
   },
   disabledActionButtonText: {
     color: uiColors.textDisabled,
@@ -636,7 +675,7 @@ const styles = StyleSheet.create({
     borderColor: uiColors.actionPrimarySubtleBorder,
     borderRadius: 8,
     padding: 8,
-    backgroundColor: uiColors.surfaceInfoAlt,
+    backgroundColor: uiColors.surfaceInfo,
   },
   setIndexText: {
     color: uiColors.textPrimary,
@@ -663,7 +702,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: uiColors.borderMuted,
-    backgroundColor: uiColors.surfaceInfoMuted,
+    backgroundColor: uiColors.surfacePage,
     paddingHorizontal: 8,
     paddingVertical: 6,
     gap: 8,

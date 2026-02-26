@@ -16,7 +16,7 @@ exports[`UI primitives matches the current top-level tabs snapshot after primiti
       {
         "alignItems": "center",
         "backgroundColor": "#ffffff",
-        "borderColor": "#cfd8e6",
+        "borderColor": "#dbe3ef",
         "borderRadius": 14,
         "flexDirection": "row",
         "gap": 8,
@@ -89,7 +89,7 @@ exports[`UI primitives matches the current top-level tabs snapshot after primiti
             "color": "#122033",
           },
           {
-            "color": "#22344f",
+            "color": "#20324f",
             "fontSize": 13,
             "fontWeight": "600",
           },

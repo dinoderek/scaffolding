@@ -62,6 +62,7 @@ jest.mock('@/src/data', () => ({
   loadLocalGymById: jest.fn(),
   loadSessionSnapshotById: jest.fn(),
   reopenCompletedSessionDraft: jest.fn(),
+  setSessionDeletedState: jest.fn(),
 }));
 
 const {
@@ -108,6 +109,7 @@ describe('CompletedSessionDetailScreenShell', () => {
     const dataClient: CompletedSessionDetailDataClient = {
       loadCompletedSession: jest.fn().mockResolvedValue(COMPLETED_SESSION_DETAIL_FIXTURE),
       reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
+      setCompletedSessionDeletedState: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
@@ -145,6 +147,7 @@ describe('CompletedSessionDetailScreenShell', () => {
         reopenDisabledReason: null,
       }),
       reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
+      setCompletedSessionDeletedState: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
@@ -168,6 +171,7 @@ describe('CompletedSessionDetailScreenShell', () => {
         reopenDisabledReason: null,
       }),
       reopenCompletedSession: mockReopenCompletedSession,
+      setCompletedSessionDeletedState: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
@@ -194,6 +198,7 @@ describe('CompletedSessionDetailScreenShell', () => {
           gymName: 'Updated Gym',
         }),
       reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
+      setCompletedSessionDeletedState: jest.fn().mockResolvedValue(undefined),
     };
     const { __triggerFocus: triggerFocus } = jest.requireMock('expo-router') as {
       __triggerFocus: () => void;
@@ -214,13 +219,17 @@ describe('CompletedSessionDetailScreenShell', () => {
     });
   });
 
-  it('delete action toggles to undelete and back', async () => {
-    const dataClient: CompletedSessionDetailDataClient = {
+  it('delete and undelete persist through the data client and update the action label', async () => {
+    const mockSetCompletedSessionDeletedState = jest.fn().mockResolvedValue(undefined);
+    const dataClient: CompletedSessionDetailDataClient & {
+      setCompletedSessionDeletedState: jest.Mock;
+    } = {
       loadCompletedSession: jest.fn().mockResolvedValue({
         ...COMPLETED_SESSION_DETAIL_FIXTURE,
         deletedAt: null,
       }),
       reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
+      setCompletedSessionDeletedState: mockSetCompletedSessionDeletedState,
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
@@ -231,18 +240,77 @@ describe('CompletedSessionDetailScreenShell', () => {
 
     expect(screen.getByText('Delete')).toBeTruthy();
     fireEvent.press(screen.getByTestId('completed-session-detail-delete-button'));
-    expect(screen.getByText('Undelete')).toBeTruthy();
-    expect(screen.getByText('Session hidden from default history (viewer-only stub).')).toBeTruthy();
+    await waitFor(() => {
+      expect(mockSetCompletedSessionDeletedState).toHaveBeenCalledWith('completed-under-test', true);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Undelete')).toBeTruthy();
+    });
+    expect(screen.queryByText('Deleting...')).toBeNull();
+    expect(screen.queryByText(/viewer-only stub/i)).toBeNull();
+    expect(screen.getByText('Session hidden from default history.')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('completed-session-detail-delete-button'));
+    await waitFor(() => {
+      expect(mockSetCompletedSessionDeletedState).toHaveBeenNthCalledWith(2, 'completed-under-test', false);
+    });
     expect(screen.getByText('Delete')).toBeTruthy();
-    expect(screen.getByText('Session restored to default history (viewer-only stub).')).toBeTruthy();
+    expect(screen.getByText('Session restored to default history.')).toBeTruthy();
+  });
+
+  it('disables the delete button while delete state is being persisted', async () => {
+    let resolveDeleteRequest: (() => void) | undefined;
+    const pendingDeleteRequest = new Promise<void>((resolve) => {
+      resolveDeleteRequest = resolve;
+    });
+
+    const mockSetCompletedSessionDeletedState = jest
+      .fn()
+      .mockReturnValueOnce(pendingDeleteRequest)
+      .mockResolvedValueOnce(undefined);
+
+    const dataClient: CompletedSessionDetailDataClient = {
+      loadCompletedSession: jest.fn().mockResolvedValue({
+        ...COMPLETED_SESSION_DETAIL_FIXTURE,
+        deletedAt: null,
+      }),
+      reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
+      setCompletedSessionDeletedState: mockSetCompletedSessionDeletedState,
+    };
+
+    render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-detail-screen')).toBeTruthy();
+    });
+
+    const deleteButton = screen.getByTestId('completed-session-detail-delete-button');
+    fireEvent.press(deleteButton);
+
+    await waitFor(() => {
+      expect(mockSetCompletedSessionDeletedState).toHaveBeenCalledWith('completed-under-test', true);
+    });
+    expect(screen.getByText('Deleting...')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('completed-session-detail-delete-button'));
+    expect(mockSetCompletedSessionDeletedState).toHaveBeenCalledTimes(1);
+
+    if (!resolveDeleteRequest) {
+      throw new Error('Expected delete request resolver to be set');
+    }
+    resolveDeleteRequest();
+
+    await waitFor(() => {
+      expect(screen.getByText('Undelete')).toBeTruthy();
+    });
+    expect(screen.queryByText('Deleting...')).toBeNull();
   });
 
   it('renders a stable empty state when the session is missing', async () => {
     const dataClient: CompletedSessionDetailDataClient = {
       loadCompletedSession: jest.fn().mockResolvedValue(null),
       reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
+      setCompletedSessionDeletedState: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="missing-session" dataClient={dataClient} />);
@@ -258,6 +326,7 @@ describe('CompletedSessionDetailScreenShell', () => {
     const dataClient: CompletedSessionDetailDataClient = {
       loadCompletedSession: jest.fn().mockRejectedValue(new Error('boom')),
       reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
+      setCompletedSessionDeletedState: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="broken-session" dataClient={dataClient} />);

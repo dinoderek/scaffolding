@@ -68,7 +68,7 @@ const variantStyles = StyleSheet.create({
   buttonPrimary: {
     fontSize: uiTypography.size.md,
     fontWeight: uiTypography.weight.bold,
-    color: uiColors.actionPrimaryText,
+    color: uiColors.surfaceDefault,
   },
   buttonSecondary: {
     fontSize: uiTypography.size.md,
@@ -83,11 +83,11 @@ const variantStyles = StyleSheet.create({
   tab: {
     fontSize: uiTypography.size.md,
     fontWeight: uiTypography.weight.semibold,
-    color: uiColors.textTab,
+    color: uiColors.actionNeutralSubtleText,
   },
   tabActive: {
     fontSize: uiTypography.size.md,
     fontWeight: uiTypography.weight.bold,
-    color: uiColors.textAccent,
+    color: uiColors.actionPrimary,
   },
 });

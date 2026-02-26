@@ -63,9 +63,11 @@ const { __mockPush: mockPush, __triggerFocus: triggerFocus } = jest.requireMock(
 const {
   listSessionListBuckets: mockListSessionListBuckets,
   persistSessionDraftSnapshot: mockPersistSessionDraftSnapshot,
+  setSessionDeletedState: mockSetSessionDeletedState,
 } = jest.requireMock('@/src/data') as {
   listSessionListBuckets: jest.Mock;
   persistSessionDraftSnapshot: jest.Mock;
+  setSessionDeletedState: jest.Mock;
 };
 
 const NO_ACTIVE_SESSIONS: SessionListItem[] = [
@@ -123,6 +125,8 @@ describe('SessionListScreenShell', () => {
       completed: [],
     });
     mockPersistSessionDraftSnapshot.mockResolvedValue({ sessionId: 'created-session-id' });
+    mockSetSessionDeletedState.mockReset();
+    mockSetSessionDeletedState.mockResolvedValue(undefined);
   });
 
   it('hydrates DB-backed summaries through the route data client', async () => {
@@ -215,6 +219,137 @@ describe('SessionListScreenShell', () => {
     });
     expect(screen.getByTestId('session-summary-active-stale-exercises').props.children).toBe('1 exercise');
     expect(screen.getByTestId('session-summary-active-stale-gym').props.children).toBe('Westside Barbell Club');
+  });
+
+  it('shows deleted completed sessions after toggling Show deleted in the DB-backed route flow', async () => {
+    mockListSessionListBuckets.mockImplementation(
+      async ({ includeDeleted }: { includeDeleted?: boolean } = {}) => ({
+        active: null,
+        completed: [
+          {
+            id: 'db-completed-visible',
+            status: 'completed',
+            startedAt: new Date('2026-02-20T16:00:00.000Z'),
+            completedAt: new Date('2026-02-20T16:58:00.000Z'),
+            durationSec: 3480,
+            compactDuration: '58m',
+            deletedAt: null,
+            gymName: 'Westside',
+            exerciseCount: 3,
+            setCount: 12,
+          },
+          ...(includeDeleted
+            ? [
+                {
+                  id: 'db-completed-deleted',
+                  status: 'completed' as const,
+                  startedAt: new Date('2026-02-19T16:00:00.000Z'),
+                  completedAt: new Date('2026-02-19T17:05:00.000Z'),
+                  durationSec: 3900,
+                  compactDuration: '1h 5m',
+                  deletedAt: new Date('2026-02-20T12:00:00.000Z'),
+                  gymName: 'Westside',
+                  exerciseCount: 2,
+                  setCount: 9,
+                },
+              ]
+            : []),
+        ],
+      })
+    );
+
+    render(<SessionListRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-row-db-completed-visible')).toBeTruthy();
+    });
+    expect(screen.queryByTestId('completed-session-row-db-completed-deleted')).toBeNull();
+
+    fireEvent.press(screen.getByTestId('toggle-deleted-sessions-button'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-row-db-completed-deleted')).toBeTruthy();
+    });
+    expect(mockListSessionListBuckets).toHaveBeenCalledWith(
+      expect.objectContaining({ includeDeleted: true })
+    );
+  });
+
+  it('restores a just-deleted DB-backed session when Show deleted is toggled on', async () => {
+    jest.useFakeTimers();
+
+    type MutableCompletedSummary = {
+      id: string;
+      status: 'completed';
+      startedAt: Date;
+      completedAt: Date;
+      durationSec: number;
+      compactDuration: string;
+      deletedAt: Date | null;
+      gymName: string | null;
+      exerciseCount: number;
+      setCount: number;
+    };
+
+    const completedRows: MutableCompletedSummary[] = [
+      {
+        id: 'db-completed-visible',
+        status: 'completed',
+        startedAt: new Date('2026-02-20T16:00:00.000Z'),
+        completedAt: new Date('2026-02-20T16:58:00.000Z'),
+        durationSec: 3480,
+        compactDuration: '58m',
+        deletedAt: null,
+        gymName: 'Westside',
+        exerciseCount: 3,
+        setCount: 12,
+      },
+    ];
+
+    mockSetSessionDeletedState.mockImplementation(async (sessionId: string, isDeleted: boolean) => {
+      const row = completedRows.find((item) => item.id === sessionId);
+      if (!row) {
+        throw new Error('Session not found');
+      }
+      row.deletedAt = isDeleted ? new Date('2026-02-23T12:00:00.000Z') : null;
+    });
+
+    mockListSessionListBuckets.mockImplementation(
+      async ({ includeDeleted }: { includeDeleted?: boolean } = {}) => ({
+        active: null,
+        completed: completedRows
+          .filter((row) => includeDeleted || row.deletedAt === null)
+          .map((row) => ({
+            ...row,
+          })),
+      })
+    );
+
+    render(<SessionListRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-row-db-completed-visible')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByTestId('completed-session-menu-button-db-completed-visible'));
+    fireEvent.press(screen.getByTestId('completed-session-modal-action-button'));
+
+    act(() => {
+      jest.advanceTimersByTime(400);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('completed-session-row-db-completed-visible')).toBeNull();
+    });
+
+    fireEvent.press(screen.getByTestId('toggle-deleted-sessions-button'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-row-db-completed-visible')).toBeTruthy();
+    });
+    expect(screen.getByText('Hide deleted')).toBeTruthy();
+
+    jest.useRealTimers();
   });
 
   it('creates an active local session on Start Session so returning to the list shows the active row', async () => {
