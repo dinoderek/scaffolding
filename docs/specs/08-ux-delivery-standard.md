@@ -20,6 +20,7 @@ Document boundary:
    - summarize what exists and why it matters,
    - avoid duplicating source-file prop/API details unless a compact contract summary is needed.
 4. If a UI task changes app-specific UI behavior/docs, update the relevant `docs/specs/ui/*.md` files in the same session.
+   - Use `docs/specs/ui/README.md` (`Maintenance rules`) as the canonical trigger map for which UI docs to update.
 5. Update this document in the same task only when the change affects shared UX process/pattern standards (not just one screen/component implementation).
 
 ## UX consistency and pattern management

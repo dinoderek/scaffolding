@@ -108,6 +108,7 @@ Required session sync steps:
 
 1. Start-of-session sync (before edits):
    - sync local `main` with remote `main` (`origin/main`) before reading/writing task files.
+   - refresh the active task card `Context Freshness` section (use `./scripts/task-bootstrap.sh <task-card-path>` when available).
 2. End-of-task sync (after verification and doc/status updates, before handoff):
    - sync with remote again,
    - resolve merge/rebase conflicts locally if they occur,
@@ -172,9 +173,19 @@ Provide these references at execution start:
 9. `docs/specs/10-api-authn-authz-guidelines.md` (for backend API/auth work and API-consuming integration tasks)
 10. `supabase/session-sync-api-contract.md` (for session sync API work and FE/backend sync integration tasks, when present)
 
+Recommended bootstrap helper (optional but preferred when available):
+
+- `./scripts/task-bootstrap.sh <task-card-path>`
+  - prints a start-of-session context/freshness report (git SHA/status, parent refs, missing refs, and gate snippets) to support the task card `Context Freshness` section.
+
 ## UI docs bundle usage (UI tasks)
 
 Use `docs/specs/ui/README.md` as the entrypoint for app-specific UI docs.
+
+Canonical UI docs maintenance trigger map:
+
+- `docs/specs/ui/README.md` (`Maintenance rules`) is the canonical source for "which UI docs to update when X changes".
+- Task templates/task cards may keep a short execution checklist, but should link back to the canonical map rather than redefining it differently.
 
 Update the relevant UI docs in the same task/session when UI-affecting changes land:
 
@@ -229,7 +240,9 @@ Authoritative UI docs bundle (load via the index, then only what the task needs)
    - MVP deliverable
    - Milestone spec
 2. Task card must define:
+   - machine-readable frontmatter metadata for new task cards (recommended; markdown body remains authoritative)
    - In-scope / out-of-scope
+   - context freshness checkpoint (what refs/inventories were re-opened or verified this session)
    - UI impact checkpoint (for UI-adjacent tasks, explicitly declare `yes|no` and keep/remove UI-only sections accordingly)
    - UX contract with key user flows (for UI tasks)
    - UI docs impact / docs touched plan (for UI tasks; which `docs/specs/ui/*.md` files must be updated and why, or explicit `no UI docs update` rationale)
@@ -261,6 +274,7 @@ Before ending any implementation session, AI must update both:
 
 Rule: do not consider a task done if code is complete but status fields were not updated.
 Rule: if a task makes significant project-structure changes (for example adds/moves/removes top-level folders, moves canonical test locations, introduces a new workspace, or changes path conventions), update `docs/specs/09-project-structure.md` in the same session and summarize the change in the task completion note.
+Rule: run `./scripts/task-closeout-check.sh <task-card-path>` before handoff when the helper is available, or document why it was `N/A`.
 
 ## Automated feedback loops (before human review)
 

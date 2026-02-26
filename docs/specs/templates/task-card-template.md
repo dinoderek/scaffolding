@@ -1,3 +1,16 @@
+---
+# Minimal machine-readable task metadata (recommended for new task cards; keep values current)
+task_id: T-YYYYMMDD-XX-short-name
+milestone_id: "M#"
+status: planned
+ui_impact: "yes|no"
+areas: "docs|frontend|backend|cross-stack"
+runtimes: "docs|node|expo|maestro|supabase|deno|sql"
+gates_fast: "./scripts/quality-fast.sh <area>|N/A"
+gates_slow: "./scripts/quality-slow.sh <area>|N/A"
+docs_touched: "comma-separated paths or none"
+---
+
 # Task Card Template
 
 ## Task metadata
@@ -18,6 +31,18 @@
 - Project structure: `docs/specs/09-project-structure.md` (always load for context; update only when task changes paths/layout/conventions)
 - UX standard (UI/UX tasks only; remove for non-UX tasks): `docs/specs/08-ux-delivery-standard.md`
 - UI docs bundle index (UI/UX tasks only; remove for non-UI tasks): `docs/specs/ui/README.md`
+
+## Context Freshness (required at session start; update before edits)
+
+- Verified current branch + HEAD commit:
+- Start-of-session sync completed per `docs/specs/04-ai-development-playbook.md` git sync workflow?: `yes | no | N/A` (explain)
+- Parent refs opened in this session (list exact files actually reviewed):
+  - `<path>`
+- Code/docs inventory freshness checks run (route inventory, UI docs inventory, schema/runtime inventory as applicable):
+  - `<check>` - `<result/date>`
+- Known stale references or assumptions (must be explicit; write `none` if none):
+- Optional helper command (recommended):
+  - `./scripts/task-bootstrap.sh <task-card-path>`
 
 ## Objective
 
@@ -84,6 +109,7 @@ UI task acceptance boilerplate (include/adapt when `UI Impact = yes`; remove for
 - Planned docs/spec files to update and why (list exact paths; write `none` + rationale if no docs/spec changes expected):
   - `<path>` - `<why>`
 - If `UI Impact = yes`, complete all of the following:
+  - Canonical UI docs maintenance trigger map lives in `docs/specs/ui/README.md` (`Maintenance rules`); keep this section as a task-local summary only.
   - UI docs update required?: `yes | no`
   - If `yes`, list exact files under `docs/specs/ui/` and why using this trigger map:
     - `screen-map.md` (route inventory, screen purpose/sections, high-level state/entry-exit changes)
@@ -127,6 +153,7 @@ UI task acceptance boilerplate (include/adapt when `UI Impact = yes`; remove for
 - Standard local fast gate: `./scripts/quality-fast.sh` (or area-specific form, with rationale)
 - Standard local slow gate: `./scripts/quality-slow.sh <frontend|backend>` when task risk triggers require it
 - If a standard gate is `N/A`, document the reason and list the runtime-specific replacement gate(s).
+- Optional closeout validation helper (recommended before handoff): `./scripts/task-closeout-check.sh <task-card-path>`
 - Additional gate(s), if any:
 
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
@@ -149,3 +176,4 @@ UI task acceptance boilerplate (include/adapt when `UI Impact = yes`; remove for
 - For UI/UX tasks, update the relevant `docs/specs/ui/*.md` files (or record explicit `no update` rationale) and keep entries synthetic/overview-first.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
+- Run `./scripts/task-closeout-check.sh <task-card-path>` (or document why `N/A`) before handoff.
