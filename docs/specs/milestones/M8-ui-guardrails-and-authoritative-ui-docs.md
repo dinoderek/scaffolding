@@ -4,7 +4,7 @@
 
 - Milestone ID: `M8`
 - Title: UI guardrails, authoritative UI docs, and convergence refactor
-- Status: `in_progress`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Target window: `2026-02` / `2026-03`
 
@@ -163,8 +163,8 @@ Establish a reality-based UI foundation for AI-assisted development by harvestin
 4. `docs/tasks/T-20260226-04-m8-ui-guardrail-enforcement.md` - add lightweight UI guardrail enforcement and document exceptions/usage. (`completed`)
 5. `docs/tasks/T-20260226-05-m8-authoritative-ui-docs-bundle.md` - create/update UI docs bundle (`ux-rules`, `screen-map`, `navigation-contract`, `components-catalog`) and register docs path conventions. (`completed`)
 6. `docs/tasks/T-20260226-06-m8-screen-refactor-to-tokens-and-primitives.md` - refactor current user-facing screens to converge on tokens/primitives with regression checks. (`completed`)
-7. `docs/tasks/T-20260226-07-m8-ai-playbook-ui-rules-summary-and-links.md` - add concise UI rules summary + links to `docs/specs/04-ai-development-playbook.md`. (`planned`)
-8. `docs/tasks/T-20260226-08-m8-task-template-ui-impact-and-docs-enforcement.md` - update task template(s) to enforce UI impact checks, docs updates, and UI acceptance boilerplate. (`planned`)
+7. `docs/tasks/T-20260226-07-m8-ai-playbook-ui-rules-summary-and-links.md` - add concise UI rules summary + links to `docs/specs/04-ai-development-playbook.md`. (`completed`)
+8. `docs/tasks/T-20260226-08-m8-task-template-ui-impact-and-docs-enforcement.md` - update task template(s) to enforce UI impact checks, docs updates, and UI acceptance boilerplate. (`completed`)
 
 ## Risks / dependencies
 
@@ -176,9 +176,9 @@ Establish a reality-based UI foundation for AI-assisted development by harvestin
 
 ## Completion note (fill when milestone closes)
 
-- What changed:
-- Verification summary:
-- What remains:
+- What changed: Completed the remaining M8 documentation integration tasks by adding a concise UI rules summary + authoritative UI docs links to `docs/specs/04-ai-development-playbook.md`, and updating `docs/specs/templates/task-card-template.md` / `docs/tasks/README.md` to require a UI impact checkpoint, UI docs maintenance planning, tokens/primitives compliance statements, and UI acceptance boilerplate for UI-affecting tasks. Prior M8 tasks already delivered the UI docs bundle, tokens/primitives foundation, enforcement, and screen refactors.
+- Verification summary: Docs-only verification for Tasks 07/08 (path existence checks for referenced UI docs, grep/section review for required playbook/template content, and manual template walkthrough for UI/non-UI authoring paths). Earlier M8 implementation verification remains documented in the owning task cards.
+- What remains: M8 milestone scope is complete. Follow-on improvements to AI context ergonomics/guardrails can be tracked as new tasks if desired.
 
 ## Status update checklist (mandatory during task closeout)
 

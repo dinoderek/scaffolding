@@ -33,6 +33,20 @@ What this session must accomplish.
 
 - 
 
+## UI Impact (required checkpoint)
+
+- UI Impact?: `yes | no`
+- If `yes`:
+  - keep UI/UX parent references (`docs/specs/08-ux-delivery-standard.md`, `docs/specs/ui/README.md`)
+  - keep the `UX Contract` section and fill it before implementation
+  - include a tokens/primitives compliance statement in `Docs touched` / implementation notes:
+    - what existing tokens/primitives/shared UI components will be reused
+    - any justified one-off styling or raw literal exceptions (file + rationale)
+  - include a UI docs update plan in `Docs touched` (or explicit no-update rationale only if UI behavior/contracts/inventory truly do not change)
+  - include screenshots/artifacts expectations in `Evidence` when required by `docs/specs/08-ux-delivery-standard.md` or task scope; otherwise note they are optional/non-blocking for this task
+- If `no`:
+  - remove UI-only sections (`UX Contract`, UI-only bullets in `Docs touched`) and note any UI-adjacent impact rationale if helpful
+
 ## UX Contract (UI/UX tasks only; remove this entire section for non-UX tasks)
 
 ### Key user flows (minimal template)
@@ -58,16 +72,34 @@ What this session must accomplish.
 2. 
 3. 
 
-## UI docs impact / Docs touched (UI/UX tasks only; remove for non-UI tasks)
+UI task acceptance boilerplate (include/adapt when `UI Impact = yes`; remove for non-UI tasks):
 
-- UI docs update required?: `yes | no`
-- If `yes`, list exact files under `docs/specs/ui/` and why:
-  - `screen-map.md` (route inventory/screen purpose/high-level state changes)
-  - `navigation-contract.md` (route paths/params/redirects/transitions changes)
-  - `components-catalog.md` (reusable UI tokens/primitives/shared components added/removed/renamed or purpose changed)
-  - `ux-rules.md` (app-specific UI semantics/guardrails/pattern conventions changed)
-- If `no`, provide rationale:
-- Authoring rule for UI docs:
+4. Screen UI uses documented tokens/primitives/shared components for common buttons/text/layout/list patterns, or records a justified exception.
+5. No raw color literals are introduced in screen files unless explicitly allowed by the task and documented with rationale.
+6. Relevant `docs/specs/ui/*.md` docs are updated in the same task (or explicit `no update` rationale is recorded in `Docs touched`).
+7. `docs/specs/ui/navigation-contract.md` is updated when routes, params/query behavior, redirects, or transitions change.
+
+## Docs touched (required)
+
+- Planned docs/spec files to update and why (list exact paths; write `none` + rationale if no docs/spec changes expected):
+  - `<path>` - `<why>`
+- If `UI Impact = yes`, complete all of the following:
+  - UI docs update required?: `yes | no`
+  - If `yes`, list exact files under `docs/specs/ui/` and why using this trigger map:
+    - `screen-map.md` (route inventory, screen purpose/sections, high-level state/entry-exit changes)
+    - `navigation-contract.md` (route paths, params/query behavior, redirects, transitions)
+    - `components-catalog.md` (reusable tokens/primitives/shared components added/removed/renamed, variants/purpose changes)
+    - `ux-rules.md` (app-specific UI semantics/guardrails/pattern conventions changed)
+    - `repo-discovery-baseline.md` / `ui-pattern-audit.md` (only when inventory/audit facts or evidence references materially change)
+  - If `no`, provide explicit rationale (for example: visual-only spacing tweak within existing documented pattern, no route/component contract change)
+  - Tokens/primitives compliance statement (required for UI tasks):
+    - Reuse plan:
+    - Exceptions (raw literals or screen-local one-offs), if any:
+  - UI artifacts/screenshots expectation (required to state for UI tasks):
+    - Required by `docs/specs/08-ux-delivery-standard.md` or task scope?: `yes | no`
+    - Planned captures/artifacts (if required):
+    - If not required, why optional/non-blocking here:
+- Authoring rule for UI docs (`docs/specs/ui/**`):
   - keep docs synthetic/overview-first and source-linked
   - do not duplicate detailed props/variants/implementation notes that are better read from source files
 
@@ -100,6 +132,7 @@ What this session must accomplish.
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
 - 
+- UI/UX task visual artifacts note (remove for non-UI tasks): list screenshot/capture evidence here when required by `docs/specs/08-ux-delivery-standard.md` or task scope; otherwise record `N/A` + rationale
 - Manual verification summary (required when CI is absent/partial):
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable:
 

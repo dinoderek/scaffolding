@@ -17,3 +17,9 @@ Use template:
 
 - `docs/specs/templates/task-card-template.md`
 
+UI/UX task authoring reminders (see template for exact fields):
+
+1. Keep the `UI Impact` checkpoint and set it to `yes` or `no`.
+2. If `UI Impact = yes`, keep the `UX Contract` section and UI parent refs (`docs/specs/08-ux-delivery-standard.md`, `docs/specs/ui/README.md`).
+3. Fill `Docs touched` with exact `docs/specs/ui/*.md` updates (or explicit `no update` rationale) and a tokens/primitives compliance statement.
+4. Add UI acceptance criteria for primitives/tokens usage and route/navigation doc updates when route contracts change.

@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260226-08`
 - Title: M8 update task template(s) with UI impact checks and docs-update enforcement
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-26`
 - Session interaction mode: `interactive (default)`
@@ -110,14 +110,14 @@ Modify the task template(s) so UI-affecting tasks explicitly declare UI impact, 
 ## Evidence
 
 - Template diff summary showing new `UI Impact` gate, `Docs touched` section, and UI-doc mapping guidance.
-- Manual verification summary (required when CI is absent/partial):
+- Manual verification summary (required when CI is absent/partial): Confirmed `docs/specs/templates/task-card-template.md` now includes a required `UI Impact` yes/no checkpoint, UI-task acceptance boilerplate (raw color literal guardrail, primitives usage, UI docs updates, navigation-contract update trigger), a required `Docs touched` section with UI-doc trigger mapping, tokens/primitives compliance statement fields, and UI artifacts/screenshots expectation language. Confirmed `docs/tasks/README.md` now points authors to the new UI-impact/template requirements. Performed a manual template walkthrough for UI and non-UI authoring paths.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable: `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: Updated `docs/specs/templates/task-card-template.md` to add a reviewable `UI Impact` checkpoint, UI-task acceptance boilerplate, and a required `Docs touched` section with concise UI docs maintenance trigger guidance plus tokens/primitives compliance and UI artifacts expectation fields. Updated `docs/tasks/README.md` so the revised template expectations are discoverable.
+- What tests ran: Docs/template-only verification (`N/A` for `lint/typecheck/test`). Ran grep-based checks for required template sections/phrasing and a manual template usability walkthrough for one UI-task path and one non-UI path.
+- What remains: Nothing for this task. Parent milestone/task breakdown status updated in the same session.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -125,4 +125,3 @@ Modify the task template(s) so UI-affecting tasks explicitly declare UI impact, 
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-

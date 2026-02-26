@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260226-07`
 - Title: M8 update AI development playbook with UI rules summary and UI docs links
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-26`
 - Session interaction mode: `interactive (default)`
@@ -102,14 +102,14 @@ Update the AI development playbook with a concise UI Development Rules Summary a
 ## Evidence
 
 - Playbook diff summary highlighting the new UI rules summary and link list.
-- Manual verification summary (required when CI is absent/partial):
+- Manual verification summary (required when CI is absent/partial): Confirmed `docs/specs/04-ai-development-playbook.md` now includes `UI Development Rules Summary (UI tasks)` with the required non-negotiables (tokens/primitives, composition over one-offs, same-session UI docs updates, reusable pattern promotion) plus links to `docs/specs/ui/README.md`, discovery/audit docs, and the authoritative UI bundle docs. Verified referenced UI doc paths exist locally.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable: `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: Added a concise `UI Development Rules Summary (UI tasks)` section to `docs/specs/04-ai-development-playbook.md` with enforceable UI non-negotiables and direct links to the authoritative UI docs bundle (`README`, discovery baseline, audit, `ux-rules`, `screen-map`, `navigation-contract`, `components-catalog`) plus `docs/specs/08-ux-delivery-standard.md`. Also aligned task-card rules wording to mention the `UI Impact` checkpoint used by the task template.
+- What tests ran: Docs-only verification (`N/A` for `lint/typecheck/test`). Ran manual path existence checks for referenced UI docs and grep/section review to confirm required summary content and links are present.
+- What remains: Nothing for this task. Parent milestone/task breakdown status updated in the same session.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -117,4 +117,3 @@ Update the AI development playbook with a concise UI Development Rules Summary a
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-

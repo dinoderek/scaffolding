@@ -193,6 +193,35 @@ Authoring rule for `docs/specs/ui/**`:
 - link to source files for exact props/variants/implementation details,
 - avoid duplicating source code structure/API documentation unless a compact contract summary is necessary to prevent ambiguity.
 
+## UI Development Rules Summary (UI tasks)
+
+Use this section as the quick-start checklist for UI execution. Detailed app-specific rules and inventories live in `docs/specs/ui/**` and `docs/specs/08-ux-delivery-standard.md`.
+
+Non-negotiables for UI-affecting work:
+
+1. Tokens/primitives first:
+   - prefer shared tokens/primitives and documented reusable components over screen-local styling;
+   - avoid raw color literals and ad hoc spacing/typography/radius values in screen files unless the task explicitly allows an exception and the rationale is recorded.
+2. Composition over one-offs:
+   - compose existing primitives/patterns before introducing a screen-local one-off;
+   - if a one-off is necessary, document why and promote it to a reusable primitive when it becomes repeatable.
+3. Same-session UI docs maintenance:
+   - update the relevant `docs/specs/ui/*.md` docs in the same task when screens/routes/navigation behavior/components/semantics change;
+   - task cards must list the planned UI docs updates (or an explicit no-update rationale).
+4. Reusable pattern promotion:
+   - new reusable UI patterns must be captured as primitives/shared components and documented in `components-catalog.md` (and `ux-rules.md` when semantics/guardrails change).
+
+Authoritative UI docs bundle (load via the index, then only what the task needs):
+
+- Index: `docs/specs/ui/README.md`
+- Discovery baseline: `docs/specs/ui/repo-discovery-baseline.md`
+- Pattern audit: `docs/specs/ui/ui-pattern-audit.md`
+- App-specific UI rules/semantics: `docs/specs/ui/ux-rules.md`
+- Screen inventory/state summaries: `docs/specs/ui/screen-map.md`
+- Route/params/transitions contracts: `docs/specs/ui/navigation-contract.md`
+- Tokens/primitives/shared components catalog: `docs/specs/ui/components-catalog.md`
+- Cross-task UI process/evidence standard: `docs/specs/08-ux-delivery-standard.md`
+
 ## Task card rules
 
 1. Task card must include explicit references to:
@@ -201,6 +230,7 @@ Authoring rule for `docs/specs/ui/**`:
    - Milestone spec
 2. Task card must define:
    - In-scope / out-of-scope
+   - UI impact checkpoint (for UI-adjacent tasks, explicitly declare `yes|no` and keep/remove UI-only sections accordingly)
    - UX contract with key user flows (for UI tasks)
    - UI docs impact / docs touched plan (for UI tasks; which `docs/specs/ui/*.md` files must be updated and why, or explicit `no UI docs update` rationale)
    - Acceptance criteria
