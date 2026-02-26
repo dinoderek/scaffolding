@@ -2,8 +2,17 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 
 import SessionRecorderScreen from '../session-recorder';
 
+let mockSearchParams: Record<string, string | undefined> = {};
+
 jest.mock('@/src/data', () => ({
+  loadLocalGymById: jest.fn().mockResolvedValue(null),
   loadLatestSessionDraftSnapshot: jest.fn().mockResolvedValue(null),
+  loadSessionSnapshotById: jest.fn().mockResolvedValue(null),
+  persistCompletedSessionSnapshot: jest.fn().mockResolvedValue({
+    sessionId: 'test-session',
+    completedAt: new Date('2026-02-24T00:00:00.000Z'),
+    durationSec: 0,
+  }),
   persistSessionDraftSnapshot: jest.fn().mockResolvedValue({ sessionId: 'test-session' }),
   upsertLocalGym: jest.fn().mockResolvedValue(undefined),
   completeSessionDraft: jest.fn().mockResolvedValue({
@@ -19,6 +28,8 @@ jest.mock('expo-router', () => {
   const mockDismissTo = jest.fn();
   const mockDismissAll = jest.fn();
   return {
+    useLocalSearchParams: () => mockSearchParams,
+    useNavigation: () => ({ addListener: jest.fn(() => () => undefined), dispatch: jest.fn() }),
     useRouter: () => ({
       replace: mockReplace,
       dismissTo: mockDismissTo,
@@ -32,9 +43,13 @@ jest.mock('expo-router', () => {
 });
 
 const {
+  loadSessionSnapshotById: mockLoadSessionSnapshotById,
+  persistCompletedSessionSnapshot: mockPersistCompletedSessionSnapshot,
   persistSessionDraftSnapshot: mockPersistSessionDraftSnapshot,
   completeSessionDraft: mockCompleteSessionDraft,
 } = jest.requireMock('@/src/data') as {
+  loadSessionSnapshotById: jest.Mock;
+  persistCompletedSessionSnapshot: jest.Mock;
   persistSessionDraftSnapshot: jest.Mock;
   completeSessionDraft: jest.Mock;
 };
@@ -51,6 +66,9 @@ const {
 
 describe('SessionRecorderScreen submit cleanup flow', () => {
   beforeEach(() => {
+    mockSearchParams = {};
+    mockLoadSessionSnapshotById.mockClear();
+    mockPersistCompletedSessionSnapshot.mockClear();
     mockPersistSessionDraftSnapshot.mockClear();
     mockCompleteSessionDraft.mockClear();
     mockReplace.mockClear();
@@ -140,5 +158,73 @@ describe('SessionRecorderScreen submit cleanup flow', () => {
       expect(mockCompleteSessionDraft).toHaveBeenCalledWith('test-session');
       expect(mockDismissTo).toHaveBeenCalledWith('/');
     });
+  });
+
+  it('loads completed-edit mode, validates end time, and saves changes back to the list', async () => {
+    mockSearchParams = { mode: 'completed-edit', sessionId: 'completed-edit-1' };
+    mockLoadSessionSnapshotById.mockResolvedValue({
+      sessionId: 'completed-edit-1',
+      gymId: null,
+      status: 'completed',
+      startedAt: new Date('2026-02-25T10:00:00.000Z'),
+      completedAt: new Date('2026-02-25T10:45:00.000Z'),
+      durationSec: 2700,
+      deletedAt: null,
+      createdAt: new Date('2026-02-25T10:00:00.000Z'),
+      updatedAt: new Date('2026-02-25T10:45:00.000Z'),
+      exercises: [
+        {
+          id: 'exercise-1',
+          name: 'Bench Press',
+          machineName: 'Flat Bench',
+          originScopeId: 'private',
+          originSourceId: 'local',
+          sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
+        },
+      ],
+    });
+
+    render(<SessionRecorderScreen />);
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('completed-edit-banner')).toBeNull();
+      expect(screen.getByText('Save Changes')).toBeTruthy();
+      expect(screen.getByTestId('completed-edit-end-time-input')).toBeTruthy();
+      expect(screen.getByDisplayValue('2026-02-25 10:45')).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByTestId('completed-edit-start-time-input'), '2026-02-30 10:00');
+    fireEvent.changeText(screen.getByTestId('completed-edit-end-time-input'), '2026-02-30 10:50');
+    fireEvent(screen.getByTestId('completed-edit-start-time-input'), 'blur');
+    fireEvent(screen.getByTestId('completed-edit-end-time-input'), 'blur');
+    expect(screen.getByTestId('completed-edit-start-time-validation-error')).toBeTruthy();
+    expect(screen.getByTestId('completed-edit-time-validation-error')).toBeTruthy();
+    expect(screen.getByTestId('completed-edit-save-blocked-notice')).toBeTruthy();
+    fireEvent.press(screen.getByText('Save Changes'));
+    expect(mockPersistCompletedSessionSnapshot).toHaveBeenCalledTimes(0);
+
+    fireEvent.changeText(screen.getByTestId('completed-edit-start-time-input'), '2026-02-25 10:00');
+    fireEvent.changeText(screen.getByTestId('completed-edit-end-time-input'), '2026-02-25 09:55');
+    expect(screen.getByTestId('completed-edit-time-validation-error')).toBeTruthy();
+    expect(screen.getByTestId('completed-edit-save-blocked-notice')).toBeTruthy();
+    fireEvent.press(screen.getByText('Save Changes'));
+    expect(mockPersistCompletedSessionSnapshot).toHaveBeenCalledTimes(0);
+
+    fireEvent.changeText(screen.getByTestId('completed-edit-end-time-input'), '2026-02-25 10:50');
+    expect(screen.queryByTestId('completed-edit-save-blocked-notice')).toBeNull();
+    fireEvent.press(screen.getByText('Save Changes'));
+
+    await waitFor(() => {
+      expect(mockPersistCompletedSessionSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionId: 'completed-edit-1',
+          startedAt: new Date(2026, 1, 25, 10, 0, 0, 0),
+          completedAt: new Date(2026, 1, 25, 10, 50, 0, 0),
+        })
+      );
+      expect(mockDismissTo).toHaveBeenCalledWith('/');
+    });
+
+    expect(mockCompleteSessionDraft).not.toHaveBeenCalled();
   });
 });

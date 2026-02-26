@@ -58,6 +58,16 @@ jest.mock('@/src/data', () => ({
       completed: [],
     };
   }),
+  loadLocalGymById: jest.fn(async (gymId: string) =>
+    gymId && mockGymNamesById.has(gymId) ? { id: gymId, name: mockGymNamesById.get(gymId)! } : null
+  ),
+  loadSessionSnapshotById: jest.fn().mockResolvedValue(null),
+  persistCompletedSessionSnapshot: jest.fn().mockResolvedValue({
+    sessionId: 'mock-complete',
+    completedAt: new Date('2026-02-24T00:00:00.000Z'),
+    durationSec: 0,
+  }),
+  reopenCompletedSessionDraft: jest.fn().mockResolvedValue(undefined),
   loadLatestSessionDraftSnapshot: jest.fn(async () => {
     if (!mockDraftStore) {
       return null;
@@ -113,6 +123,8 @@ jest.mock('@/src/data', () => ({
 jest.mock('expo-router', () => {
   const mockPush = jest.fn();
   return {
+    useLocalSearchParams: () => ({}),
+    useNavigation: () => ({ addListener: jest.fn(() => () => undefined), dispatch: jest.fn() }),
     useRouter: () => ({ push: mockPush, replace: jest.fn() }),
     useFocusEffect: () => {},
     __mockPush: mockPush,

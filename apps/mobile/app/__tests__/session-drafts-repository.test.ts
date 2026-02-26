@@ -7,10 +7,12 @@ import {
 
 const createMockStore = (): jest.Mocked<SessionDraftStore> => ({
   saveDraftGraph: jest.fn(),
+  saveCompletedSessionGraph: jest.fn(),
   loadLatestDraftGraph: jest.fn(),
   loadSessionGraphById: jest.fn(),
   loadSessionById: jest.fn(),
   completeSession: jest.fn(),
+  reopenCompletedSession: jest.fn(),
   listCompletedSessions: jest.fn(),
 });
 
@@ -96,6 +98,170 @@ describe('session draft repository', () => {
           }),
         ],
       })
+    );
+  });
+
+  it('loads a completed session graph by id with ordered exercises and sets', async () => {
+    const store = createMockStore();
+    const repository = createSessionDraftRepository(store);
+
+    store.loadSessionGraphById.mockResolvedValue({
+      session: buildSessionRecord({
+        id: 'session-completed',
+        status: 'completed',
+        completedAt: new Date('2026-02-20T10:45:00.000Z'),
+        durationSec: 2700,
+      }),
+      exercises: [
+        {
+          id: 'exercise-1',
+          sessionId: 'session-completed',
+          orderIndex: 0,
+          name: 'Bench Press',
+          machineName: 'Flat Bench',
+          originScopeId: 'private',
+          originSourceId: 'local',
+          sets: [
+            {
+              id: 'set-1',
+              sessionExerciseId: 'exercise-1',
+              orderIndex: 0,
+              repsValue: '5',
+              weightValue: '225',
+            },
+            {
+              id: 'set-2',
+              sessionExerciseId: 'exercise-1',
+              orderIndex: 1,
+              repsValue: '4',
+              weightValue: '225',
+            },
+          ],
+        },
+        {
+          id: 'exercise-2',
+          sessionId: 'session-completed',
+          orderIndex: 1,
+          name: 'Incline DB Press',
+          machineName: null,
+          originScopeId: 'private',
+          originSourceId: 'local',
+          sets: [
+            {
+              id: 'set-3',
+              sessionExerciseId: 'exercise-2',
+              orderIndex: 0,
+              repsValue: '10',
+              weightValue: '70',
+            },
+          ],
+        },
+      ],
+    });
+
+    const snapshot = await repository.loadSessionSnapshotById('session-completed');
+
+    expect(snapshot).toEqual(
+      expect.objectContaining({
+        sessionId: 'session-completed',
+        status: 'completed',
+        completedAt: new Date('2026-02-20T10:45:00.000Z'),
+        durationSec: 2700,
+      })
+    );
+    expect(snapshot?.exercises.map((exercise) => exercise.name)).toEqual(['Bench Press', 'Incline DB Press']);
+    expect(snapshot?.exercises[0]?.sets.map((set) => set.id)).toEqual(['set-1', 'set-2']);
+  });
+
+  it('persists completed-session edits through a dedicated store contract and recomputes duration', async () => {
+    const store = createMockStore();
+    const repository = createSessionDraftRepository(store);
+    const now = new Date('2026-02-20T10:46:00.000Z');
+
+    store.saveDraftGraph.mockRejectedValue(new Error('Cannot modify completed session session-completed'));
+    store.saveCompletedSessionGraph.mockResolvedValue({ sessionId: 'session-completed' });
+
+    const result = await repository.persistCompletedSessionSnapshot(
+      {
+        sessionId: 'session-completed',
+        gymId: 'gym-2',
+        startedAt: new Date('2026-02-20T10:00:00.000Z'),
+        completedAt: new Date('2026-02-20T10:45:30.000Z'),
+        exercises: [
+          {
+            id: 'exercise-1',
+            name: 'Bench Press',
+            sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
+          },
+        ],
+      },
+      { now }
+    );
+
+    expect(result).toEqual({
+      sessionId: 'session-completed',
+      completedAt: new Date('2026-02-20T10:45:30.000Z'),
+      durationSec: 2730,
+    });
+    expect(store.saveCompletedSessionGraph).toHaveBeenCalledWith({
+      sessionId: 'session-completed',
+      gymId: 'gym-2',
+      startedAt: new Date('2026-02-20T10:00:00.000Z'),
+      completedAt: new Date('2026-02-20T10:45:30.000Z'),
+      durationSec: 2730,
+      exercises: [
+        {
+          id: 'exercise-1',
+          name: 'Bench Press',
+          sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
+        },
+      ],
+      now,
+    });
+    expect(store.saveDraftGraph).toHaveBeenCalledTimes(0);
+  });
+
+  it('rejects completed-session edits with end time before start time', async () => {
+    const store = createMockStore();
+    const repository = createSessionDraftRepository(store);
+
+    await expect(
+      repository.persistCompletedSessionSnapshot({
+        sessionId: 'session-completed',
+        gymId: 'gym-1',
+        startedAt: new Date('2026-02-20T10:05:00.000Z'),
+        completedAt: new Date('2026-02-20T10:00:00.000Z'),
+        exercises: [],
+      })
+    ).rejects.toThrow('completedAt must be greater than or equal to startedAt');
+
+    expect(store.saveCompletedSessionGraph).toHaveBeenCalledTimes(0);
+  });
+
+  it('reopens a completed session via the store contract with deterministic timestamping', async () => {
+    const store = createMockStore();
+    const repository = createSessionDraftRepository(store);
+    const now = new Date('2026-02-20T11:00:00.000Z');
+
+    const result = await repository.reopenCompletedSession('session-completed', { now });
+
+    expect(result).toEqual({ sessionId: 'session-completed' });
+    expect(store.reopenCompletedSession).toHaveBeenCalledWith({
+      sessionId: 'session-completed',
+      updatedAt: now,
+    });
+  });
+
+  it('surfaces single-active-session reopen rejections from the store invariant', async () => {
+    const store = createMockStore();
+    const repository = createSessionDraftRepository(store);
+
+    store.reopenCompletedSession.mockRejectedValue(
+      new Error('Cannot reopen session session-completed while another active or draft session exists')
+    );
+
+    await expect(repository.reopenCompletedSession('session-completed')).rejects.toThrow(
+      'Cannot reopen session session-completed while another active or draft session exists'
     );
   });
 

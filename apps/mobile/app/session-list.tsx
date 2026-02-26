@@ -18,6 +18,7 @@ import {
   formatSessionListCompactDuration,
   listSessionListBuckets,
   persistSessionDraftSnapshot,
+  reopenCompletedSessionDraft,
   setSessionDeletedState,
 } from '@/src/data';
 import { TopLevelTabs } from '@/components/navigation/top-level-tabs';
@@ -95,6 +96,7 @@ export type SessionListDataClient = {
   completeActiveSession(sessionId: string): Promise<void>;
   discardActiveSession(sessionId: string): Promise<void>;
   setCompletedSessionDeletedState(sessionId: string, isDeleted: boolean): Promise<void>;
+  reopenCompletedSession(sessionId: string): Promise<void>;
 };
 
 const COMPLETED_ROW_DELETE_EXIT_MS = 350;
@@ -173,6 +175,9 @@ export const DEFAULT_SESSION_LIST_DATA_CLIENT: SessionListDataClient = {
   },
   async setCompletedSessionDeletedState(sessionId, isDeleted) {
     await setSessionDeletedState(sessionId, isDeleted);
+  },
+  async reopenCompletedSession(sessionId) {
+    await reopenCompletedSessionDraft(sessionId);
   },
 };
 
@@ -343,6 +348,7 @@ export function SessionListScreenShell({
   );
 
   const showEmptyState = !isLoadingSessions && !loadErrorMessage && !activeSession && visibleCompletedSessions.length === 0;
+  const reopenMenuDisabled = Boolean(activeSession);
 
   useEffect(() => {
     if (!activeSession) {
@@ -459,11 +465,34 @@ export function SessionListScreenShell({
 
     const sessionId = completedSessionMenuState.sessionId;
     closeCompletedSessionMenu();
-    router.push(`/completed-session/${sessionId}?intent=edit`);
+    router.push(`/session-recorder?mode=completed-edit&sessionId=${sessionId}`);
   };
 
   const attemptCompletedSessionReopen = () => {
-    closeCompletedSessionMenu();
+    if (!completedSessionMenuState) {
+      return;
+    }
+
+    if (activeSession) {
+      return;
+    }
+
+    const sessionId = completedSessionMenuState.sessionId;
+    const pendingAction = dataClient
+      ? (async () => {
+          await dataClient.reopenCompletedSession(sessionId);
+          await reloadSessions();
+          setCompletedSessionMenuVisible(false);
+        })()
+      : (async () => {
+          await reopenCompletedSessionDraft(sessionId);
+          await reloadSessions();
+          setCompletedSessionMenuVisible(false);
+        })();
+
+    void pendingAction.catch(() => {
+      setCompletedSessionMenuVisible(false);
+    });
   };
 
   const applyCompletedSessionMenuAction = () => {
@@ -712,6 +741,17 @@ export function SessionListScreenShell({
           />
           {completedSessionMenuState?.action === 'delete' ? (
             <View style={styles.modalPanel} testID="completed-session-delete-modal-card">
+              <Text selectable style={styles.modalTitle}>
+                Session Options
+              </Text>
+              <Text selectable style={styles.metaText}>
+                Hide this session from the default history list.
+              </Text>
+              {reopenMenuDisabled ? (
+                <Text selectable style={styles.metaText}>
+                  Finish or discard the active session before reopening another.
+                </Text>
+              ) : null}
               <Pressable
                 accessibilityLabel="Edit completed session"
                 accessibilityRole="button"
@@ -724,10 +764,21 @@ export function SessionListScreenShell({
               <Pressable
                 accessibilityLabel="Reopen completed session"
                 accessibilityRole="button"
+                disabled={reopenMenuDisabled}
                 onPress={attemptCompletedSessionReopen}
-                style={[styles.modalActionButton, styles.modalNeutralButton]}
+                style={[
+                  styles.modalActionButton,
+                  styles.modalNeutralButton,
+                  reopenMenuDisabled ? styles.modalDisabledButton : null,
+                ]}
                 testID="completed-session-reopen-menu-action-button">
-                <Text style={styles.modalNeutralButtonText}>Reopen session</Text>
+                <Text
+                  style={[
+                    styles.modalNeutralButtonText,
+                    reopenMenuDisabled ? styles.modalDisabledButtonText : null,
+                  ]}>
+                  Reopen session
+                </Text>
               </Pressable>
 
               <Pressable
@@ -744,6 +795,17 @@ export function SessionListScreenShell({
           ) : null}
           {completedSessionMenuState?.action === 'undelete' ? (
             <View style={styles.modalPanel} testID="completed-session-undelete-modal-card">
+              <Text selectable style={styles.modalTitle}>
+                Session Options
+              </Text>
+              <Text selectable style={styles.metaText}>
+                Restore this session to the default history list.
+              </Text>
+              {reopenMenuDisabled ? (
+                <Text selectable style={styles.metaText}>
+                  Finish or discard the active session before reopening another.
+                </Text>
+              ) : null}
               <Pressable
                 accessibilityLabel="Edit completed session"
                 accessibilityRole="button"
@@ -756,10 +818,21 @@ export function SessionListScreenShell({
               <Pressable
                 accessibilityLabel="Reopen completed session"
                 accessibilityRole="button"
+                disabled={reopenMenuDisabled}
                 onPress={attemptCompletedSessionReopen}
-                style={[styles.modalActionButton, styles.modalNeutralButton]}
+                style={[
+                  styles.modalActionButton,
+                  styles.modalNeutralButton,
+                  reopenMenuDisabled ? styles.modalDisabledButton : null,
+                ]}
                 testID="completed-session-reopen-menu-action-button">
-                <Text style={styles.modalNeutralButtonText}>Reopen session</Text>
+                <Text
+                  style={[
+                    styles.modalNeutralButtonText,
+                    reopenMenuDisabled ? styles.modalDisabledButtonText : null,
+                  ]}>
+                  Reopen session
+                </Text>
               </Pressable>
 
               <Pressable
@@ -1035,8 +1108,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#c7d3e8',
   },
+  modalDisabledButton: {
+    backgroundColor: '#f4f6fa',
+    borderColor: '#dde4f0',
+  },
   modalNeutralButtonText: {
     color: '#20324f',
     fontWeight: '700',
+  },
+  modalDisabledButtonText: {
+    color: '#8190a8',
   },
 });

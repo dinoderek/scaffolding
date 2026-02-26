@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { AppState, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { SessionContentLayout } from '@/components/session-recorder/session-content-layout';
@@ -15,10 +15,14 @@ import {
 } from '@/components/session-recorder/types';
 import {
   completeSessionDraft,
+  loadLocalGymById,
   loadLatestSessionDraftSnapshot,
+  loadSessionSnapshotById,
+  persistCompletedSessionSnapshot,
   persistSessionDraftSnapshot,
   upsertLocalGym,
   type SessionDraftSnapshot,
+  type SessionGraphSnapshot,
 } from '@/src/data';
 import { createDraftAutosaveController, type DraftAutosaveController } from '@/src/session-recorder/draft-autosave';
 import { createSessionRecorderLifecycleHelpers } from '@/src/session-recorder/lifecycle-helpers';
@@ -34,13 +38,13 @@ function formatCurrentDateTime(date: Date): string {
 }
 
 function parseSessionDateTime(dateTime: string): Date | null {
-  const [datePart, timePart] = dateTime.trim().split(' ');
-  if (!datePart || !timePart) {
+  const trimmed = dateTime.trim();
+  const matched = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$/.exec(trimmed);
+  if (!matched) {
     return null;
   }
 
-  const [yearText, monthText, dayText] = datePart.split('-');
-  const [hourText, minuteText] = timePart.split(':');
+  const [, yearText, monthText, dayText, hourText, minuteText] = matched;
   const year = Number(yearText);
   const month = Number(monthText);
   const day = Number(dayText);
@@ -51,8 +55,26 @@ function parseSessionDateTime(dateTime: string): Date | null {
     return null;
   }
 
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return null;
+  }
+
   const parsed = new Date(year, month - 1, day, hour, minute, 0, 0);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day ||
+    parsed.getHours() !== hour ||
+    parsed.getMinutes() !== minute
+  ) {
+    return null;
+  }
+
+  return parsed;
 }
 
 function mapDraftSnapshotToSession(snapshot: SessionDraftSnapshot): Session {
@@ -71,6 +93,90 @@ function mapDraftSnapshotToSession(snapshot: SessionDraftSnapshot): Session {
     })),
   };
 }
+
+function mapSessionGraphSnapshotToSession(snapshot: SessionGraphSnapshot): Session {
+  return {
+    dateTime: formatCurrentDateTime(snapshot.startedAt),
+    locationId: snapshot.gymId,
+    exercises: snapshot.exercises.map((exercise) => ({
+      id: exercise.id,
+      name: exercise.name,
+      machineName: exercise.machineName ?? '',
+      sets: exercise.sets.map((set) => ({
+        id: set.id,
+        reps: set.repsValue,
+        weight: set.weightValue,
+      })),
+    })),
+  };
+}
+
+const coerceRouteParam = (value: string | string[] | undefined): string | null => {
+  if (Array.isArray(value)) {
+    return value[0] ?? null;
+  }
+
+  return value ?? null;
+};
+
+const getDateTimeValidationMessage = (
+  startedAtText: string,
+  completedAtText: string | null
+): string | null => {
+  const parsedStart = parseSessionDateTime(startedAtText);
+  if (!parsedStart) {
+    return 'Enter a valid Start time in YYYY-MM-DD HH:mm format.';
+  }
+
+  if (completedAtText === null) {
+    return null;
+  }
+
+  const parsedEnd = parseSessionDateTime(completedAtText);
+  if (!parsedEnd) {
+    return 'Enter a valid End time in YYYY-MM-DD HH:mm format.';
+  }
+
+  if (parsedEnd.getTime() < parsedStart.getTime()) {
+    return 'End time must be later than or equal to Start time.';
+  }
+
+  return null;
+};
+
+const getCompletedEditStartTimeValidationMessage = (startedAtText: string): string | null => {
+  const parsedStart = parseSessionDateTime(startedAtText);
+  if (!parsedStart) {
+    return 'Enter a valid Start time in YYYY-MM-DD HH:mm format.';
+  }
+
+  return null;
+};
+
+const getCompletedEditEndTimeValidationMessage = (
+  startedAtText: string,
+  completedAtText: string | null
+): string | null => {
+  if (completedAtText === null) {
+    return 'Enter a valid End time in YYYY-MM-DD HH:mm format.';
+  }
+
+  const parsedEnd = parseSessionDateTime(completedAtText);
+  if (!parsedEnd) {
+    return 'Enter a valid End time in YYYY-MM-DD HH:mm format.';
+  }
+
+  const parsedStart = parseSessionDateTime(startedAtText);
+  if (!parsedStart) {
+    return null;
+  }
+
+  if (parsedEnd.getTime() < parsedStart.getTime()) {
+    return 'End time must be later than or equal to Start time.';
+  }
+
+  return null;
+};
 
 function hasPersistableSessionContent(session: Session): boolean {
   return session.locationId !== null || session.exercises.length > 0;
@@ -204,21 +310,36 @@ function removeExercisesWithNoSets(session: Session): { session: Session; remove
 
 export default function SessionRecorderScreen() {
   const router = useRouter();
+  const navigation = useNavigation<any>();
+  const params = useLocalSearchParams<{ mode?: string | string[]; sessionId?: string | string[] }>();
+  const routeMode = coerceRouteParam(params.mode) === 'completed-edit' ? 'completed-edit' : 'active';
+  const routeSessionId = coerceRouteParam(params.sessionId);
+
   const [state, setState] = useState<SessionRecorderState>(createInitialState);
   const [submitCleanupPrompt, setSubmitCleanupPrompt] = useState<SubmitCleanupPrompt | null>(null);
+  const [completedEditEndDateTime, setCompletedEditEndDateTime] = useState<string | null>(null);
+  const [completedEditLoadError, setCompletedEditLoadError] = useState<string | null>(null);
+  const [isCompletedEditLoading, setIsCompletedEditLoading] = useState(false);
+  const [completedEditAutosaveNotice, setCompletedEditAutosaveNotice] = useState<string | null>(null);
+  const [completedEditStartTouched, setCompletedEditStartTouched] = useState(false);
+  const [completedEditEndTouched, setCompletedEditEndTouched] = useState(false);
+  const [completedEditSubmitAttempted, setCompletedEditSubmitAttempted] = useState(false);
   const stateRef = useRef(state);
+  const completedEditEndDateTimeRef = useRef<string | null>(completedEditEndDateTime);
   const persistedSessionIdRef = useRef<string | null>(null);
   const persistenceHydratedRef = useRef(false);
   const autosaveRef = useRef<DraftAutosaveController | null>(null);
   const hasSessionMutationRef = useRef(false);
+  const replayingBeforeRemoveActionRef = useRef(false);
 
   stateRef.current = state;
+  completedEditEndDateTimeRef.current = completedEditEndDateTime;
 
   if (!autosaveRef.current) {
     autosaveRef.current = createDraftAutosaveController({
       persistDraft: async () => {
         const currentState = stateRef.current;
-        const parsedStartedAt = parseSessionDateTime(currentState.session.dateTime) ?? new Date();
+        const parsedStartedAt = parseSessionDateTime(currentState.session.dateTime);
         const selectedGym =
           currentState.session.locationId === null
             ? null
@@ -229,11 +350,48 @@ export default function SessionRecorderScreen() {
           return;
         }
 
+        if (!parsedStartedAt) {
+          return;
+        }
+
         if (selectedGym) {
           await upsertLocalGym({
             id: selectedGym.id,
             name: selectedGym.name,
           });
+        }
+
+        if (routeMode === 'completed-edit') {
+          const currentEndText = completedEditEndDateTimeRef.current;
+          const timingValidationMessage = getDateTimeValidationMessage(
+            currentState.session.dateTime,
+            currentEndText
+          );
+
+          if (timingValidationMessage || !currentEndText || !persistedSessionIdRef.current) {
+            setCompletedEditAutosaveNotice(
+              timingValidationMessage
+                ? 'Autosave paused until Start/End times are valid.'
+                : 'Autosave waiting for completed-session timestamps.'
+            );
+            return;
+          }
+
+          const parsedCompletedAt = parseSessionDateTime(currentEndText);
+          if (!parsedCompletedAt) {
+            setCompletedEditAutosaveNotice('Autosave paused until Start/End times are valid.');
+            return;
+          }
+
+          await persistCompletedSessionSnapshot({
+            sessionId: persistedSessionIdRef.current,
+            gymId: selectedGym?.id ?? null,
+            startedAt: parsedStartedAt,
+            completedAt: parsedCompletedAt,
+            exercises: toPersistDraftExercises(currentState.session),
+          });
+          setCompletedEditAutosaveNotice(null);
+          return;
         }
 
         const persisted = await persistSessionDraftSnapshot({
@@ -253,7 +411,107 @@ export default function SessionRecorderScreen() {
   const lifecycleHelpers = useMemo(() => createSessionRecorderLifecycleHelpers(autosaveController), [autosaveController]);
 
   useEffect(() => {
+    if (routeMode !== 'completed-edit') {
+      return;
+    }
+
+    if (!navigation || typeof navigation.addListener !== 'function') {
+      return;
+    }
+
+    const unsubscribe = navigation.addListener('beforeRemove', (event: any) => {
+      if (replayingBeforeRemoveActionRef.current) {
+        replayingBeforeRemoveActionRef.current = false;
+        return;
+      }
+
+      if (!hasSessionMutationRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+
+      void autosaveController
+        .dispose({ flushDirty: true })
+        .catch(() => {
+          // Best-effort save on navigation out; allow navigation even if persistence fails.
+        })
+        .finally(() => {
+          replayingBeforeRemoveActionRef.current = true;
+          navigation.dispatch?.(event.data.action);
+        });
+    });
+
+    return unsubscribe;
+  }, [autosaveController, navigation, routeMode]);
+
+  useEffect(() => {
     let cancelled = false;
+
+    if (routeMode === 'completed-edit') {
+      if (!routeSessionId) {
+        setCompletedEditLoadError('Missing completed session id');
+        persistenceHydratedRef.current = true;
+        return () => {
+          cancelled = true;
+        };
+      }
+
+      setIsCompletedEditLoading(true);
+      setCompletedEditLoadError(null);
+      setCompletedEditStartTouched(false);
+      setCompletedEditEndTouched(false);
+      setCompletedEditSubmitAttempted(false);
+
+      void loadSessionSnapshotById(routeSessionId)
+        .then(async (snapshot) => {
+          if (cancelled || !snapshot || hasSessionMutationRef.current) {
+            if (!snapshot && !cancelled) {
+              setCompletedEditLoadError('Completed session not found');
+            }
+            return;
+          }
+
+          if (snapshot.status !== 'completed') {
+            setCompletedEditLoadError('Session is not completed');
+            return;
+          }
+
+          persistedSessionIdRef.current = snapshot.sessionId;
+          const loadedGym = snapshot.gymId ? await loadLocalGymById(snapshot.gymId) : null;
+
+          if (cancelled) {
+            return;
+          }
+
+          setState((current) => ({
+            ...current,
+            locations:
+              loadedGym && !current.locations.some((location) => location.id === loadedGym.id)
+                ? [...current.locations, { id: loadedGym.id, name: loadedGym.name, archived: false }]
+                : current.locations,
+            session: mapSessionGraphSnapshotToSession(snapshot),
+          }));
+          setCompletedEditEndDateTime(
+            formatCurrentDateTime(snapshot.completedAt ?? snapshot.startedAt)
+          );
+        })
+        .catch(() => {
+          if (!cancelled) {
+            setCompletedEditLoadError('Unable to load completed session');
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setIsCompletedEditLoading(false);
+            persistenceHydratedRef.current = true;
+          }
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
 
     void loadLatestSessionDraftSnapshot()
       .then((snapshot) => {
@@ -279,7 +537,7 @@ export default function SessionRecorderScreen() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [routeMode, routeSessionId]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -804,6 +1062,34 @@ export default function SessionRecorderScreen() {
     markSessionTextMutation();
   };
 
+  const updateSessionStartDateTime = (value: string) => {
+    setState((current) => ({
+      ...current,
+      session: {
+        ...current.session,
+        dateTime: value,
+      },
+    }));
+    clearSubmitFeedback();
+    setCompletedEditAutosaveNotice(null);
+    markSessionTextMutation();
+  };
+
+  const updateCompletedEditEndDateTimeValue = (value: string) => {
+    setCompletedEditEndDateTime(value);
+    clearSubmitFeedback();
+    setCompletedEditAutosaveNotice(null);
+    markSessionTextMutation();
+  };
+
+  const handleCompletedEditStartBlur = () => {
+    setCompletedEditStartTouched(true);
+  };
+
+  const handleCompletedEditEndBlur = () => {
+    setCompletedEditEndTouched(true);
+  };
+
   const removeSetFromExercise = (exerciseId: string, setId: string) => {
     setState((current) => ({
       ...current,
@@ -827,7 +1113,10 @@ export default function SessionRecorderScreen() {
     }));
 
     void (async () => {
-      const parsedStartedAt = parseSessionDateTime(submittedSession.dateTime) ?? new Date();
+      const parsedStartedAt = parseSessionDateTime(submittedSession.dateTime);
+      if (!parsedStartedAt) {
+        return;
+      }
       const submittedGym =
         submittedSession.locationId === null
           ? null
@@ -839,6 +1128,30 @@ export default function SessionRecorderScreen() {
           id: submittedGym.id,
           name: submittedGym.name,
         });
+      }
+
+      if (routeMode === 'completed-edit') {
+        const endTimeText = completedEditEndDateTimeRef.current;
+        if (!endTimeText || !persistedSessionIdRef.current) {
+          return;
+        }
+
+        const parsedCompletedAt = parseSessionDateTime(endTimeText);
+        if (!parsedCompletedAt) {
+          return;
+        }
+
+        await persistCompletedSessionSnapshot({
+          sessionId: persistedSessionIdRef.current,
+          gymId: submittedGym?.id ?? null,
+          startedAt: parsedStartedAt,
+          completedAt: parsedCompletedAt,
+          exercises: toPersistDraftExercises(submittedSession),
+        });
+
+        hasSessionMutationRef.current = false;
+        router.dismissTo('/');
+        return;
       }
 
       const persisted = await persistSessionDraftSnapshot({
@@ -884,6 +1197,17 @@ export default function SessionRecorderScreen() {
   };
 
   const handleSubmit = () => {
+    if (routeMode === 'completed-edit') {
+      const validationMessage = getDateTimeValidationMessage(state.session.dateTime, completedEditEndDateTime);
+      if (validationMessage) {
+        setCompletedEditSubmitAttempted(true);
+        setCompletedEditStartTouched(true);
+        setCompletedEditEndTouched(true);
+        setCompletedEditAutosaveNotice(null);
+        return;
+      }
+    }
+
     beginSubmitFlow(state.session);
   };
 
@@ -919,16 +1243,128 @@ export default function SessionRecorderScreen() {
         } with no sets will be removed.`;
   const cleanupModalConfirmLabel =
     submitCleanupPrompt?.step === 'incomplete-sets'
-      ? 'Remove incomplete sets and submit'
-      : 'Remove empty exercises and submit';
+      ? routeMode === 'completed-edit'
+        ? 'Remove incomplete sets and save changes'
+        : 'Remove incomplete sets and submit'
+      : routeMode === 'completed-edit'
+        ? 'Remove empty exercises and save changes'
+        : 'Remove empty exercises and submit';
+
+  const completedEditTimeValidationMessage =
+    routeMode === 'completed-edit' ? getDateTimeValidationMessage(state.session.dateTime, completedEditEndDateTime) : null;
+  const completedEditStartValidationMessage =
+    routeMode === 'completed-edit'
+      ? getCompletedEditStartTimeValidationMessage(state.session.dateTime)
+      : null;
+  const completedEditEndValidationMessage =
+    routeMode === 'completed-edit'
+      ? getCompletedEditEndTimeValidationMessage(state.session.dateTime, completedEditEndDateTime)
+      : null;
+  const showCompletedEditStartValidationError =
+    Boolean(completedEditStartValidationMessage) && (completedEditStartTouched || completedEditSubmitAttempted);
+  const showCompletedEditEndValidationError =
+    Boolean(completedEditEndValidationMessage) && (completedEditEndTouched || completedEditSubmitAttempted);
+  const showCompletedEditSaveBlockedNotice =
+    routeMode === 'completed-edit' &&
+    Boolean(completedEditTimeValidationMessage) &&
+    (completedEditStartTouched || completedEditEndTouched || completedEditSubmitAttempted);
+
+  if (routeMode === 'completed-edit' && isCompletedEditLoading) {
+    return (
+      <View style={styles.loadingState} testID="completed-edit-recorder-loading">
+        <Text style={styles.loadingStateTitle}>Loading completed session...</Text>
+      </View>
+    );
+  }
+
+  if (routeMode === 'completed-edit' && completedEditLoadError) {
+    return (
+      <View style={styles.loadingState} testID="completed-edit-recorder-error">
+        <Text style={styles.loadingStateTitle}>Unable to open completed session</Text>
+        <Text style={styles.loadingStateBody}>{completedEditLoadError}</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.content} testID="session-recorder-screen">
-      <SessionContentLayout
-        dateTimeValue={
-          <View accessibilityLabel="Session date and time" style={styles.readOnlyInput}>
-            <Text style={styles.readOnlyInputText}>{state.session.dateTime}</Text>
+      {routeMode === 'completed-edit' ? (
+        <View style={styles.completedEditMetadataCard}>
+          <View style={styles.completedEditMetadataRow}>
+            <Text style={styles.completedEditMetadataLabel}>Start time</Text>
+            <TextInput
+              accessibilityLabel="Session start time"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="YYYY-MM-DD HH:mm"
+              style={styles.input}
+              testID="completed-edit-start-time-input"
+              value={state.session.dateTime}
+              onChangeText={updateSessionStartDateTime}
+              onBlur={handleCompletedEditStartBlur}
+            />
+            {showCompletedEditStartValidationError ? (
+              <Text style={styles.validationErrorText} testID="completed-edit-start-time-validation-error">
+                {completedEditStartValidationMessage}
+              </Text>
+            ) : null}
           </View>
+
+          <View style={[styles.completedEditMetadataRow, styles.completedEditMetadataRowDivider]}>
+            <Text style={styles.completedEditMetadataLabel}>End time</Text>
+            <TextInput
+              accessibilityLabel="Session end time"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="YYYY-MM-DD HH:mm"
+              style={styles.input}
+              testID="completed-edit-end-time-input"
+              value={completedEditEndDateTime ?? ''}
+              onChangeText={updateCompletedEditEndDateTimeValue}
+              onBlur={handleCompletedEditEndBlur}
+            />
+            {showCompletedEditEndValidationError ? (
+              <Text style={styles.validationErrorText} testID="completed-edit-time-validation-error">
+                {completedEditEndValidationMessage}
+              </Text>
+            ) : null}
+            {completedEditAutosaveNotice ? (
+              <Text style={styles.completedEditHintText} testID="completed-edit-autosave-notice">
+                {completedEditAutosaveNotice}
+              </Text>
+            ) : null}
+          </View>
+
+          <View style={[styles.completedEditMetadataRow, styles.completedEditMetadataRowDivider]}>
+            <Text style={styles.completedEditMetadataLabel}>Gym</Text>
+            <Pressable style={styles.gymButton} onPress={openGymModal}>
+              <Text numberOfLines={1} style={styles.gymButtonText}>
+                {selectedGym ? selectedGym.name : 'Choose gym'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
+      <SessionContentLayout
+        showMetadataSection={routeMode !== 'completed-edit'}
+        dateTimeValue={
+          routeMode === 'completed-edit' ? (
+            <TextInput
+              accessibilityLabel="Session start time"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="YYYY-MM-DD HH:mm"
+              style={styles.input}
+              testID="completed-edit-start-time-input"
+              value={state.session.dateTime}
+              onChangeText={updateSessionStartDateTime}
+            />
+          ) : (
+            <View accessibilityLabel="Session date and time" style={styles.readOnlyInput}>
+              <Text style={styles.readOnlyInputText}>{state.session.dateTime}</Text>
+            </View>
+          )
         }
         gymValue={
           <Pressable style={styles.gymButton} onPress={openGymModal}>
@@ -990,8 +1426,25 @@ export default function SessionRecorderScreen() {
         <Text style={styles.logExerciseButtonText}>Log new exercise</Text>
       </Pressable>
 
-      <Pressable accessibilityLabel="Submit session" style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitButtonText}>Submit Session</Text>
+      {showCompletedEditSaveBlockedNotice ? (
+        <View style={styles.completedEditSaveBlockedNotice} testID="completed-edit-save-blocked-notice">
+          <Text style={styles.completedEditSaveBlockedNoticeText}>
+            Fix Start/End time validation errors above before saving. Autosave stays paused until times are valid.
+          </Text>
+        </View>
+      ) : null}
+
+      <Pressable
+        accessibilityLabel={routeMode === 'completed-edit' ? 'Save changes' : 'Submit session'}
+        testID="session-recorder-submit-button"
+        style={[
+          styles.submitButton,
+          routeMode === 'completed-edit' && completedEditTimeValidationMessage ? styles.submitButtonDisabled : null,
+        ]}
+        onPress={handleSubmit}>
+        <Text style={styles.submitButtonText}>
+          {routeMode === 'completed-edit' ? 'Save Changes' : 'Submit Session'}
+        </Text>
       </Pressable>
 
       <Modal
@@ -1273,6 +1726,68 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 20,
   },
+  loadingState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+    gap: 8,
+    backgroundColor: '#f7f9fc',
+  },
+  loadingStateTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#15243a',
+  },
+  loadingStateBody: {
+    fontSize: 13,
+    color: '#56667f',
+    textAlign: 'center',
+  },
+  completedEditMetadataCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d7deea',
+    backgroundColor: '#ffffff',
+    padding: 12,
+    gap: 6,
+  },
+  completedEditMetadataRow: {
+    gap: 6,
+  },
+  completedEditMetadataRowDivider: {
+    borderTopWidth: 1,
+    borderTopColor: '#e6ebf3',
+    paddingTop: 10,
+    marginTop: 4,
+  },
+  completedEditMetadataLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#222222',
+  },
+  completedEditHintText: {
+    fontSize: 12,
+    color: '#5a6b84',
+  },
+  completedEditSaveBlockedNotice: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#f0c9a5',
+    backgroundColor: '#fff7ee',
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  completedEditSaveBlockedNoticeText: {
+    fontSize: 12,
+    color: '#7f4214',
+    fontWeight: '600',
+  },
+  validationErrorText: {
+    fontSize: 12,
+    color: '#9a1f1f',
+    fontWeight: '600',
+  },
   section: {
     padding: 12,
     borderRadius: 12,
@@ -1415,6 +1930,9 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     backgroundColor: '#0f5cc0',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#96afcf',
   },
   submitButtonText: {
     color: '#ffffff',

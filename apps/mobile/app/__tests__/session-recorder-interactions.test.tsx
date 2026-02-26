@@ -3,7 +3,14 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import SessionRecorderScreen from '../session-recorder';
 
 jest.mock('@/src/data', () => ({
+  loadLocalGymById: jest.fn().mockResolvedValue(null),
   loadLatestSessionDraftSnapshot: jest.fn().mockResolvedValue(null),
+  loadSessionSnapshotById: jest.fn().mockResolvedValue(null),
+  persistCompletedSessionSnapshot: jest.fn().mockResolvedValue({
+    sessionId: 'test-session',
+    completedAt: new Date('2026-02-24T00:00:00.000Z'),
+    durationSec: 0,
+  }),
   persistSessionDraftSnapshot: jest.fn().mockResolvedValue({ sessionId: 'test-session' }),
   upsertLocalGym: jest.fn().mockResolvedValue(undefined),
   completeSessionDraft: jest.fn().mockResolvedValue({
@@ -15,6 +22,8 @@ jest.mock('@/src/data', () => ({
 }));
 
 jest.mock('expo-router', () => ({
+  useLocalSearchParams: () => ({}),
+  useNavigation: () => ({ addListener: jest.fn(() => () => undefined), dispatch: jest.fn() }),
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
 }));
 

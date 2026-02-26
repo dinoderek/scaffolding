@@ -1,9 +1,15 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { SessionContentLayout } from '@/components/session-recorder/session-content-layout';
-import { formatSessionListCompactDuration, loadLocalGymById, loadSessionSnapshotById } from '@/src/data';
+import {
+  formatSessionListCompactDuration,
+  listSessionListBuckets,
+  loadLocalGymById,
+  loadSessionSnapshotById,
+  reopenCompletedSessionDraft,
+} from '@/src/data';
 
 export type CompletedSessionDetailSet = {
   id: string;
@@ -31,6 +37,7 @@ export type CompletedSessionDetailRecord = {
 
 export type CompletedSessionDetailDataClient = {
   loadCompletedSession(sessionId: string): Promise<CompletedSessionDetailRecord | null>;
+  reopenCompletedSession(sessionId: string): Promise<void>;
 };
 
 export type CompletedSessionDetailScreenShellProps = {
@@ -121,6 +128,8 @@ export const DEFAULT_COMPLETED_SESSION_DETAIL_DATA_CLIENT: CompletedSessionDetai
     if (sessionGraph && sessionGraph.status === 'completed') {
       const gymRecord = sessionGraph.gymId ? await loadLocalGymById(sessionGraph.gymId) : null;
       const completedAt = sessionGraph.completedAt ?? sessionGraph.startedAt;
+      const buckets = await listSessionListBuckets();
+      const hasOtherActiveSession = Boolean(buckets.active && buckets.active.id !== sessionGraph.sessionId);
 
       return {
         id: sessionGraph.sessionId,
@@ -129,7 +138,9 @@ export const DEFAULT_COMPLETED_SESSION_DETAIL_DATA_CLIENT: CompletedSessionDetai
         durationDisplay: formatSessionListCompactDuration(sessionGraph.durationSec),
         gymName: gymRecord?.name ?? null,
         deletedAt: sessionGraph.deletedAt ? sessionGraph.deletedAt.toISOString() : null,
-        reopenDisabledReason: null,
+        reopenDisabledReason: hasOtherActiveSession
+          ? 'Finish or discard the active session before reopening another.'
+          : null,
         exercises: sessionGraph.exercises.map((exercise) => ({
           id: exercise.id,
           name: exercise.name,
@@ -145,6 +156,9 @@ export const DEFAULT_COMPLETED_SESSION_DETAIL_DATA_CLIENT: CompletedSessionDetai
 
     return DEFAULT_COMPLETED_SESSION_DETAILS[sessionId] ?? null;
   },
+  async reopenCompletedSession(sessionId) {
+    await reopenCompletedSessionDraft(sessionId);
+  },
 };
 
 export function CompletedSessionDetailScreenShell({
@@ -152,17 +166,13 @@ export function CompletedSessionDetailScreenShell({
   dataClient = DEFAULT_COMPLETED_SESSION_DETAIL_DATA_CLIENT,
   initialMode = 'view',
 }: CompletedSessionDetailScreenShellProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [session, setSession] = useState<CompletedSessionDetailRecord | null>(null);
-  const [viewerMode, setViewerMode] = useState<'view' | 'edit'>(initialMode);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
 
-  useEffect(() => {
-    setViewerMode(initialMode);
-  }, [initialMode]);
-
-  useEffect(() => {
+  const reloadSession = useCallback(() => {
     let cancelled = false;
 
     if (!sessionId) {
@@ -204,9 +214,18 @@ export function CompletedSessionDetailScreenShell({
     };
   }, [dataClient, sessionId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      const cleanup = reloadSession();
+      return () => {
+        cleanup?.();
+      };
+    }, [reloadSession])
+  );
+
   const deleteLabel = session?.deletedAt ? 'Undelete' : 'Delete';
   const reopenDisabled = Boolean(session?.reopenDisabledReason);
-  const editLabel = viewerMode === 'edit' ? 'View' : 'Edit';
+  const editLabel = 'Edit';
 
   const formattedStartedAt = useMemo(
     () => (session ? formatDateTimeStamp(session.startedAt) : '—'),
@@ -217,9 +236,12 @@ export function CompletedSessionDetailScreenShell({
     [session]
   );
 
-  const handleToggleMode = () => {
-    setViewerMode((current) => (current === 'edit' ? 'view' : 'edit'));
-    setActionFeedback(null);
+  const handleEdit = () => {
+    if (!session) {
+      return;
+    }
+
+    router.push(`/session-recorder?mode=completed-edit&sessionId=${session.id}`);
   };
 
   const handleReopen = () => {
@@ -227,7 +249,19 @@ export function CompletedSessionDetailScreenShell({
       return;
     }
 
-    setActionFeedback('Reopen action coming next.');
+    if (!session) {
+      return;
+    }
+
+    setActionFeedback(null);
+    void dataClient
+      .reopenCompletedSession(session.id)
+      .then(() => {
+        router.dismissTo('/');
+      })
+      .catch((error) => {
+        setActionFeedback(error instanceof Error ? error.message : 'Unable to reopen session');
+      });
   };
 
   const handleToggleDeletedState = () => {
@@ -250,50 +284,10 @@ export function CompletedSessionDetailScreenShell({
     });
   };
 
-  const updateSessionField = (field: 'startedAt' | 'completedAt' | 'gymName', value: string) => {
-    setSession((current) => {
-      if (!current) {
-        return current;
-      }
-
-      return {
-        ...current,
-        [field]: value,
-      };
-    });
-    setActionFeedback('Editing locally (not saved yet).');
-  };
-
-  const updateSetField = (
-    exerciseId: string,
-    setId: string,
-    field: 'weight' | 'reps',
-    value: string
-  ) => {
-    setSession((current) => {
-      if (!current) {
-        return current;
-      }
-
-      return {
-        ...current,
-        exercises: current.exercises.map((exercise) =>
-          exercise.id !== exerciseId
-            ? exercise
-            : {
-                ...exercise,
-                sets: exercise.sets.map((set) => (set.id === setId ? { ...set, [field]: value } : set)),
-              }
-        ),
-      };
-    });
-    setActionFeedback('Editing locally (not saved yet).');
-  };
-
   if (isLoading) {
     return (
       <>
-        <Stack.Screen options={{ title: viewerMode === 'edit' ? 'Edit Session' : 'View Session' }} />
+        <Stack.Screen options={{ title: 'View Session' }} />
         <View style={styles.centerState} testID="completed-session-detail-loading">
           <Text style={styles.stateTitle}>Loading session...</Text>
         </View>
@@ -304,7 +298,7 @@ export function CompletedSessionDetailScreenShell({
   if (errorMessage) {
     return (
       <>
-        <Stack.Screen options={{ title: viewerMode === 'edit' ? 'Edit Session' : 'View Session' }} />
+        <Stack.Screen options={{ title: 'View Session' }} />
         <View style={styles.centerState} testID="completed-session-detail-error">
           <Text style={styles.stateTitle}>Unable to load session</Text>
           <Text style={styles.stateBody}>{errorMessage}</Text>
@@ -316,7 +310,7 @@ export function CompletedSessionDetailScreenShell({
   if (!sessionId || !session) {
     return (
       <>
-        <Stack.Screen options={{ title: viewerMode === 'edit' ? 'Edit Session' : 'View Session' }} />
+        <Stack.Screen options={{ title: 'View Session' }} />
         <View style={styles.centerState} testID="completed-session-detail-empty">
           <Text style={styles.stateTitle}>Session not found</Text>
           <Text style={styles.stateBody}>This completed session could not be loaded.</Text>
@@ -327,7 +321,7 @@ export function CompletedSessionDetailScreenShell({
 
   return (
     <>
-      <Stack.Screen options={{ title: viewerMode === 'edit' ? 'Edit Session' : 'View Session' }} />
+      <Stack.Screen options={{ title: 'View Session' }} />
       <ScrollView
         contentContainerStyle={styles.content}
         stickyHeaderIndices={[0]}
@@ -337,7 +331,7 @@ export function CompletedSessionDetailScreenShell({
             <View style={styles.actionBar} testID="completed-session-detail-action-bar">
               <Pressable
                 accessibilityRole="button"
-                onPress={handleToggleMode}
+                onPress={handleEdit}
                 style={[styles.actionBarButton, styles.actionBarPrimaryButton]}
                 testID="completed-session-detail-edit-button">
                 <Text numberOfLines={1} style={styles.actionBarPrimaryButtonText}>
@@ -407,93 +401,40 @@ export function CompletedSessionDetailScreenShell({
           </View>
         </View>
 
-        {viewerMode === 'edit' ? (
-          <View style={styles.editModeBanner} testID="completed-session-detail-edit-mode-banner">
-            <Text style={styles.editModeBannerTitle}>Edit mode</Text>
-            <Text style={styles.editModeBannerBody}>Local edits are enabled in this viewer shell (save flow comes next).</Text>
-          </View>
-        ) : null}
-
         <SessionContentLayout
-          showMetadataSection={viewerMode === 'edit'}
+          showMetadataSection={false}
           dateTimeValue={
-            viewerMode === 'edit' ? (
-              <TextInput
-                accessibilityLabel="Edit session started time"
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={styles.editFieldInput}
-                testID="completed-session-detail-started-input"
-                value={session.startedAt}
-                onChangeText={(value) => updateSessionField('startedAt', value)}
-              />
-            ) : (
-              <View style={styles.readOnlyField}>
-                <Text style={styles.readOnlyFieldText}>{formattedStartedAt}</Text>
-              </View>
-            )
+            <View style={styles.readOnlyField}>
+              <Text style={styles.readOnlyFieldText}>{formattedStartedAt}</Text>
+            </View>
           }
           gymValue={
-            viewerMode === 'edit' ? (
-              <TextInput
-                accessibilityLabel="Edit session gym"
-                autoCapitalize="words"
-                autoCorrect={false}
-                style={styles.editFieldInput}
-                testID="completed-session-detail-gym-input"
-                value={session.gymName ?? ''}
-                onChangeText={(value) => updateSessionField('gymName', value)}
-              />
-            ) : (
-              <View style={styles.readOnlyField}>
-                <Text numberOfLines={1} style={styles.readOnlyFieldText}>
-                  {session.gymName?.trim() ? session.gymName : 'No gym'}
-                </Text>
-              </View>
-            )
+            <View style={styles.readOnlyField}>
+              <Text numberOfLines={1} style={styles.readOnlyFieldText}>
+                {session.gymName?.trim() ? session.gymName : 'No gym'}
+              </Text>
+            </View>
           }
           exercises={session.exercises}
           emptyExercisesText="No exercises logged in this session."
-          renderSetRow={({ exercise, set, setIndex }) =>
-            viewerMode === 'edit' ? (
-              <View style={styles.setRowEdit} testID={`completed-session-detail-set-row-${set.id}`}>
-                <Text style={styles.setIndexText}>Set {setIndex + 1}</Text>
-                <TextInput
-                  accessibilityLabel={`Edit weight for set ${setIndex + 1}`}
-                  keyboardType="decimal-pad"
-                  style={styles.editSetInput}
-                  testID={`completed-session-detail-set-weight-input-${set.id}`}
-                  value={set.weight}
-                  onChangeText={(value) => updateSetField(exercise.id, set.id, 'weight', value)}
-                />
-                <TextInput
-                  accessibilityLabel={`Edit reps for set ${setIndex + 1}`}
-                  keyboardType="number-pad"
-                  style={styles.editSetInput}
-                  testID={`completed-session-detail-set-reps-input-${set.id}`}
-                  value={set.reps}
-                  onChangeText={(value) => updateSetField(exercise.id, set.id, 'reps', value)}
-                />
-              </View>
-            ) : (
-              <View>
-                {setIndex === 0 ? (
-                  <View
-                    style={styles.setTableHeaderRow}
-                    testID={`completed-session-detail-sets-table-header-${exercise.id}`}>
-                    <Text style={[styles.setTableHeaderCell, styles.setTableIndexCell]}>Set</Text>
-                    <Text style={[styles.setTableHeaderCell, styles.setTableValueCell]}>Weight</Text>
-                    <Text style={[styles.setTableHeaderCell, styles.setTableValueCell]}>Reps</Text>
-                  </View>
-                ) : null}
-                <View style={styles.setTableRow} testID={`completed-session-detail-set-row-${set.id}`}>
-                  <Text style={[styles.setTableCell, styles.setTableIndexCell]}>{setIndex + 1}</Text>
-                  <Text style={[styles.setTableCell, styles.setTableValueCell]}>{set.weight || '—'}</Text>
-                  <Text style={[styles.setTableCell, styles.setTableValueCell]}>{set.reps || '—'}</Text>
+          renderSetRow={({ exercise, set, setIndex }) => (
+            <View>
+              {setIndex === 0 ? (
+                <View
+                  style={styles.setTableHeaderRow}
+                  testID={`completed-session-detail-sets-table-header-${exercise.id}`}>
+                  <Text style={[styles.setTableHeaderCell, styles.setTableIndexCell]}>Set</Text>
+                  <Text style={[styles.setTableHeaderCell, styles.setTableValueCell]}>Weight</Text>
+                  <Text style={[styles.setTableHeaderCell, styles.setTableValueCell]}>Reps</Text>
                 </View>
+              ) : null}
+              <View style={styles.setTableRow} testID={`completed-session-detail-set-row-${set.id}`}>
+                <Text style={[styles.setTableCell, styles.setTableIndexCell]}>{setIndex + 1}</Text>
+                <Text style={[styles.setTableCell, styles.setTableValueCell]}>{set.weight || '—'}</Text>
+                <Text style={[styles.setTableCell, styles.setTableValueCell]}>{set.reps || '—'}</Text>
               </View>
-            )
-          }
+            </View>
+          )}
         />
       </ScrollView>
     </>
@@ -501,10 +442,27 @@ export function CompletedSessionDetailScreenShell({
 }
 
 export default function CompletedSessionDetailRoute() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ sessionId?: string | string[]; intent?: string | string[] }>();
   const sessionId = coerceRouteParam(params.sessionId);
   const intent = coerceRouteParam(params.intent);
-  const initialMode = intent === 'edit' ? 'edit' : 'view';
+  const initialMode = 'view';
+
+  useEffect(() => {
+    if (intent !== 'edit' || !sessionId) {
+      return;
+    }
+
+    router.replace(`/session-recorder?mode=completed-edit&sessionId=${sessionId}`);
+  }, [intent, router, sessionId]);
+
+  if (intent === 'edit' && sessionId) {
+    return (
+      <View style={styles.centerState} testID="completed-session-detail-edit-redirect">
+        <Text style={styles.stateTitle}>Opening editor...</Text>
+      </View>
+    );
+  }
 
   return <CompletedSessionDetailScreenShell sessionId={sessionId} initialMode={initialMode} />;
 }

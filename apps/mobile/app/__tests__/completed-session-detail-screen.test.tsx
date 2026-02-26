@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import * as mockReact from 'react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import CompletedSessionDetailRoute, {
   CompletedSessionDetailScreenShell,
@@ -10,14 +11,30 @@ let mockLocalSearchParams: Record<string, string | undefined> = {
   sessionId: 'session-completed-1',
 };
 const mockStackScreen = jest.fn();
+const mockPush = jest.fn();
+const mockDismissTo = jest.fn();
+const mockReplace = jest.fn();
+let mockLatestFocusCallback: (() => void | (() => void)) | null = null;
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockLocalSearchParams,
+  useRouter: () => ({
+    push: mockPush,
+    dismissTo: mockDismissTo,
+    replace: mockReplace,
+  }),
+  useFocusEffect: (callback: () => void | (() => void)) => {
+    mockLatestFocusCallback = callback;
+    mockReact.useEffect(() => callback(), [callback]);
+  },
   Stack: {
     Screen: (props: unknown) => {
       mockStackScreen(props);
       return null;
     },
+  },
+  __triggerFocus: () => {
+    mockLatestFocusCallback?.();
   },
 }));
 
@@ -41,8 +58,10 @@ jest.mock('@/src/data', () => ({
 
     return `${hours}h ${minutes}m`;
   },
+  listSessionListBuckets: jest.fn().mockResolvedValue({ active: null, completed: [] }),
   loadLocalGymById: jest.fn(),
   loadSessionSnapshotById: jest.fn(),
+  reopenCompletedSessionDraft: jest.fn(),
 }));
 
 const {
@@ -79,11 +98,16 @@ describe('CompletedSessionDetailScreenShell', () => {
     mockLoadLocalGymById.mockReset();
     mockLoadSessionSnapshotById.mockReset();
     mockStackScreen.mockReset();
+    mockPush.mockReset();
+    mockDismissTo.mockReset();
+    mockReplace.mockReset();
+    mockLatestFocusCallback = null;
   });
 
   it('renders loading then a recorder-like read-only detail on success', async () => {
     const dataClient: CompletedSessionDetailDataClient = {
       loadCompletedSession: jest.fn().mockResolvedValue(COMPLETED_SESSION_DETAIL_FIXTURE),
+      reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
@@ -114,12 +138,13 @@ describe('CompletedSessionDetailScreenShell', () => {
     expect(screen.getByText('58m')).toBeTruthy();
   });
 
-  it('edit action toggles mode and updates the route title', async () => {
+  it('edit action navigates to the recorder completed-edit UI', async () => {
     const dataClient: CompletedSessionDetailDataClient = {
       loadCompletedSession: jest.fn().mockResolvedValue({
         ...COMPLETED_SESSION_DETAIL_FIXTURE,
         reopenDisabledReason: null,
       }),
+      reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
@@ -129,29 +154,20 @@ describe('CompletedSessionDetailScreenShell', () => {
     });
 
     expect(screen.getByText('Edit')).toBeTruthy();
-    expect(mockStackScreen).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        options: expect.objectContaining({ title: 'View Session' }),
-      })
-    );
 
     fireEvent.press(screen.getByTestId('completed-session-detail-edit-button'));
 
-    expect(screen.getByText('View')).toBeTruthy();
-    expect(screen.getByTestId('completed-session-detail-edit-mode-banner')).toBeTruthy();
-    expect(mockStackScreen).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        options: expect.objectContaining({ title: 'Edit Session' }),
-      })
-    );
+    expect(mockPush).toHaveBeenCalledWith('/session-recorder?mode=completed-edit&sessionId=completed-under-test');
   });
 
-  it('reopen action shows feedback when enabled', async () => {
+  it('reopen action calls the data client and returns to the list when enabled', async () => {
+    const mockReopenCompletedSession = jest.fn().mockResolvedValue(undefined);
     const dataClient: CompletedSessionDetailDataClient = {
       loadCompletedSession: jest.fn().mockResolvedValue({
         ...COMPLETED_SESSION_DETAIL_FIXTURE,
         reopenDisabledReason: null,
       }),
+      reopenCompletedSession: mockReopenCompletedSession,
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
@@ -162,7 +178,40 @@ describe('CompletedSessionDetailScreenShell', () => {
 
     fireEvent.press(screen.getByTestId('completed-session-detail-reopen-button'));
 
-    expect(screen.getByText('Reopen action coming next.')).toBeTruthy();
+    await waitFor(() => {
+      expect(mockReopenCompletedSession).toHaveBeenCalledWith('completed-under-test');
+      expect(mockDismissTo).toHaveBeenCalledWith('/');
+    });
+  });
+
+  it('reloads the completed session when the detail screen regains focus', async () => {
+    const dataClient: CompletedSessionDetailDataClient = {
+      loadCompletedSession: jest
+        .fn()
+        .mockResolvedValueOnce(COMPLETED_SESSION_DETAIL_FIXTURE)
+        .mockResolvedValueOnce({
+          ...COMPLETED_SESSION_DETAIL_FIXTURE,
+          gymName: 'Updated Gym',
+        }),
+      reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
+    };
+    const { __triggerFocus: triggerFocus } = jest.requireMock('expo-router') as {
+      __triggerFocus: () => void;
+    };
+
+    render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Westside Barbell Club')).toBeTruthy();
+    });
+
+    act(() => {
+      triggerFocus();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Updated Gym')).toBeTruthy();
+    });
   });
 
   it('delete action toggles to undelete and back', async () => {
@@ -171,6 +220,7 @@ describe('CompletedSessionDetailScreenShell', () => {
         ...COMPLETED_SESSION_DETAIL_FIXTURE,
         deletedAt: null,
       }),
+      reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
@@ -192,6 +242,7 @@ describe('CompletedSessionDetailScreenShell', () => {
   it('renders a stable empty state when the session is missing', async () => {
     const dataClient: CompletedSessionDetailDataClient = {
       loadCompletedSession: jest.fn().mockResolvedValue(null),
+      reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="missing-session" dataClient={dataClient} />);
@@ -206,6 +257,7 @@ describe('CompletedSessionDetailScreenShell', () => {
   it('renders an error state when loading fails', async () => {
     const dataClient: CompletedSessionDetailDataClient = {
       loadCompletedSession: jest.fn().mockRejectedValue(new Error('boom')),
+      reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
     };
 
     render(<CompletedSessionDetailScreenShell sessionId="broken-session" dataClient={dataClient} />);
@@ -223,6 +275,10 @@ describe('CompletedSessionDetailRoute', () => {
     mockLoadLocalGymById.mockReset();
     mockLoadSessionSnapshotById.mockReset();
     mockStackScreen.mockReset();
+    mockPush.mockReset();
+    mockDismissTo.mockReset();
+    mockReplace.mockReset();
+    mockLatestFocusCallback = null;
   });
 
   it('reads the session id from route params', async () => {
@@ -236,20 +292,15 @@ describe('CompletedSessionDetailRoute', () => {
     expect(screen.getByTestId('completed-session-detail-screen').props.testID).toBe('completed-session-detail-screen');
   });
 
-  it('uses Edit Session title when route intent is edit', async () => {
+  it('redirects route intent=edit to the recorder completed-edit flow', async () => {
     mockLocalSearchParams = { sessionId: 'session-completed-1', intent: 'edit' };
 
     render(<CompletedSessionDetailRoute />);
 
+    expect(screen.getByTestId('completed-session-detail-edit-redirect')).toBeTruthy();
     await waitFor(() => {
-      expect(screen.getByTestId('completed-session-detail-screen')).toBeTruthy();
+      expect(mockReplace).toHaveBeenCalledWith('/session-recorder?mode=completed-edit&sessionId=session-completed-1');
     });
-
-    expect(mockStackScreen).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        options: expect.objectContaining({ title: 'Edit Session' }),
-      })
-    );
   });
 
   it('loads a persisted completed session by generated id via the default route data client', async () => {

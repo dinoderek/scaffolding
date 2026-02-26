@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260225-03`
 - Title: M7 mode-aware recorder refactor for completed-session edit with continuous autosave and time editing
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-25`
 - Session interaction mode: `interactive (default)`
@@ -156,11 +156,32 @@ Refactor the current session recorder into a mode-aware screen/controller that r
 - Manual verification summary (required when CI is absent/partial):
   - Summarize local manual checks for completed edit autosave resilience (navigation/background), time validation UX, and reopen disabled/enabled states.
 
+Evidence captured this session:
+- Test evidence:
+  - `apps/mobile/app/__tests__/session-recorder-submit.test.tsx` covers completed-edit route loading, invalid end-time validation blocking save, and `Save Changes` persistence + return-to-list behavior.
+  - `apps/mobile/app/__tests__/session-recorder-persistence.test.tsx` covers completed-edit autosave pause/resume behavior when time inputs are invalid vs valid.
+  - `apps/mobile/app/__tests__/completed-session-detail-screen.test.tsx` covers detail `Edit` navigation to recorder completed-edit mode and `Reopen` action invoking the data client + returning to the list.
+  - `apps/mobile/app/__tests__/session-list-screen.test.tsx` covers completed-row menu `Edit` routing to recorder completed-edit mode and disabled `Reopen` menu state when an active session exists.
+- Contract traceability:
+  - Completed-edit persistence uses Task 02 contracts (`persistCompletedSessionSnapshot`, `reopenCompletedSessionDraft`) through UI route handlers in `session-recorder`, `completed-session/[sessionId]`, and `session-list`.
+- Manual verification summary:
+  - Local verification executed via targeted UI tests plus full `apps/mobile` `lint`, `typecheck`, and `test`. Manual device/simulator UX evidence (screenshots/flows) remains for Task 04 closeout.
+
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Refactored `apps/mobile/app/session-recorder.tsx` into a mode-aware screen using route params, adding completed-session edit mode (`/session-recorder?mode=completed-edit&sessionId=...`) that loads by session ID, reuses recorder UI interactions, supports editable Start/End text inputs, validates invalid time ranges, and saves changes back to the session list.
+  - Added completed-edit autosave behavior using the existing autosave controller with a completed-session persistence branch; autosave pauses when Start/End timestamps are invalid and resumes once inputs are valid.
+  - Wired completed-session detail `Edit` action to navigate into recorder completed-edit mode and wired detail `Reopen` action to use repository reopen behavior with real disabled-state gating based on active-session presence.
+  - Wired completed-session list menu `Edit` action to recorder completed-edit mode and list menu `Reopen` action to the reopen data contract, with disabled state + explanation while an active session exists.
+  - Added a follow-up backlog note documenting the temporary “autosave pauses when time inputs are invalid” UX behavior for future improvement.
 - What tests ran:
+  - `npm test -- --runInBand app/__tests__/completed-session-detail-screen.test.tsx app/__tests__/session-list-screen.test.tsx app/__tests__/session-recorder-submit.test.tsx app/__tests__/session-recorder-persistence.test.tsx` (from `apps/mobile`)
+  - `npm run typecheck` (from `apps/mobile`)
+  - `npm run lint` (from `apps/mobile`)
+  - `npm run test -- --runInBand` (from `apps/mobile`)
 - What remains:
+  - Task 04: collect manual UX evidence/screenshots and add integration/regression closeout coverage for full list -> detail -> edit/reopen flows.
 
 ## Status update checklist (mandatory at closeout)
 

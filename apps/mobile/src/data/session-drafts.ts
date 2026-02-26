@@ -32,6 +32,20 @@ export type PersistSessionDraftResult = {
   sessionId: string;
 };
 
+export type PersistCompletedSessionInput = {
+  sessionId: string;
+  gymId: string | null;
+  startedAt: Date;
+  completedAt: Date;
+  exercises: SessionDraftExerciseInput[];
+};
+
+export type PersistCompletedSessionResult = {
+  sessionId: string;
+  completedAt: Date;
+  durationSec: number;
+};
+
 export type SessionDraftSetSnapshot = {
   id: string;
   repsValue: string;
@@ -100,6 +114,14 @@ export type CompleteSessionResult = {
   wasAlreadyCompleted: boolean;
 };
 
+export type ReopenCompletedSessionOptions = {
+  now?: Date;
+};
+
+export type ReopenCompletedSessionResult = {
+  sessionId: string;
+};
+
 export type SessionPersistenceRecord = {
   id: string;
   gymId: string | null;
@@ -146,8 +168,19 @@ type SaveDraftGraphInput = {
   now: Date;
 };
 
+type SaveCompletedSessionGraphInput = {
+  sessionId: string;
+  gymId: string | null;
+  startedAt: Date;
+  completedAt: Date;
+  durationSec: number;
+  exercises: SessionDraftExerciseInput[];
+  now: Date;
+};
+
 export type SessionDraftStore = {
   saveDraftGraph(input: SaveDraftGraphInput): Promise<PersistSessionDraftResult>;
+  saveCompletedSessionGraph(input: SaveCompletedSessionGraphInput): Promise<PersistSessionDraftResult>;
   loadLatestDraftGraph(): Promise<StoredDraftGraph | null>;
   loadSessionGraphById(sessionId: string): Promise<StoredDraftGraph | null>;
   loadSessionById(sessionId: string): Promise<SessionPersistenceRecord | null>;
@@ -155,6 +188,10 @@ export type SessionDraftStore = {
     sessionId: string;
     completedAt: Date;
     durationSec: number;
+    updatedAt: Date;
+  }): Promise<void>;
+  reopenCompletedSession(input: {
+    sessionId: string;
     updatedAt: Date;
   }): Promise<void>;
   listCompletedSessions(): Promise<SessionPersistenceRecord[]>;
@@ -196,6 +233,15 @@ export const calculateSessionDurationSec = (startedAt: Date, completedAt: Date) 
 
   const deltaMs = completedAt.getTime() - startedAt.getTime();
   return Math.max(0, Math.floor(deltaMs / 1000));
+};
+
+const assertCompletedSessionTiming = (startedAt: Date, completedAt: Date) => {
+  ensureDate(startedAt, 'startedAt');
+  ensureDate(completedAt, 'completedAt');
+
+  if (completedAt.getTime() < startedAt.getTime()) {
+    throw new Error('completedAt must be greater than or equal to startedAt');
+  }
 };
 
 const mapSessionRow = (row: typeof sessions.$inferSelect): SessionPersistenceRecord => {
@@ -317,6 +363,61 @@ const loadDraftGraphBySessionId = (database: LocalDatabase, sessionId: string): 
   };
 };
 
+type SessionGraphWriteTx = Pick<LocalDatabase, 'select' | 'insert' | 'delete'>;
+
+const replaceSessionExerciseGraph = (
+  tx: SessionGraphWriteTx,
+  input: {
+    sessionId: string;
+    exercises: SessionDraftExerciseInput[];
+    now: Date;
+  }
+) => {
+  const existingExerciseRows = tx
+    .select({ id: sessionExercises.id })
+    .from(sessionExercises)
+    .where(eq(sessionExercises.sessionId, input.sessionId))
+    .all();
+  const existingExerciseIds = existingExerciseRows.map((row) => row.id);
+
+  if (existingExerciseIds.length > 0) {
+    tx.delete(exerciseSets).where(inArray(exerciseSets.sessionExerciseId, existingExerciseIds)).run();
+  }
+  tx.delete(sessionExercises).where(eq(sessionExercises.sessionId, input.sessionId)).run();
+
+  input.exercises.forEach((exercise, exerciseIndex) => {
+    const sessionExerciseId = exercise.id?.trim() || createLocalEntityId('exercise');
+
+    tx.insert(sessionExercises)
+      .values({
+        id: sessionExerciseId,
+        sessionId: input.sessionId,
+        orderIndex: exerciseIndex,
+        name: exercise.name,
+        machineName: exercise.machineName ?? null,
+        originScopeId: exercise.originScopeId ?? 'private',
+        originSourceId: exercise.originSourceId ?? 'local',
+        createdAt: input.now,
+        updatedAt: input.now,
+      })
+      .run();
+
+    exercise.sets.forEach((set, setIndex) => {
+      tx.insert(exerciseSets)
+        .values({
+          id: set.id?.trim() || createLocalEntityId('set'),
+          sessionExerciseId,
+          orderIndex: setIndex,
+          repsValue: set.repsValue,
+          weightValue: set.weightValue,
+          createdAt: input.now,
+          updatedAt: input.now,
+        })
+        .run();
+    });
+  });
+};
+
 export const createDrizzleSessionDraftStore = (): SessionDraftStore => ({
   async saveDraftGraph(input) {
     const database = await bootstrapLocalDataLayer();
@@ -355,52 +456,47 @@ export const createDrizzleSessionDraftStore = (): SessionDraftStore => ({
           .run();
       }
 
-      const existingExerciseRows = tx
-        .select({ id: sessionExercises.id })
-        .from(sessionExercises)
-        .where(eq(sessionExercises.sessionId, sessionId))
-        .all();
-      const existingExerciseIds = existingExerciseRows.map((row) => row.id);
-
-      if (existingExerciseIds.length > 0) {
-        tx.delete(exerciseSets).where(inArray(exerciseSets.sessionExerciseId, existingExerciseIds)).run();
-      }
-      tx.delete(sessionExercises).where(eq(sessionExercises.sessionId, sessionId)).run();
-
-      input.exercises.forEach((exercise, exerciseIndex) => {
-        const sessionExerciseId = exercise.id?.trim() || createLocalEntityId('exercise');
-
-        tx.insert(sessionExercises)
-          .values({
-            id: sessionExerciseId,
-            sessionId,
-            orderIndex: exerciseIndex,
-            name: exercise.name,
-            machineName: exercise.machineName ?? null,
-            originScopeId: exercise.originScopeId ?? 'private',
-            originSourceId: exercise.originSourceId ?? 'local',
-            createdAt: input.now,
-            updatedAt: input.now,
-          })
-          .run();
-
-        exercise.sets.forEach((set, setIndex) => {
-          tx.insert(exerciseSets)
-            .values({
-              id: set.id?.trim() || createLocalEntityId('set'),
-              sessionExerciseId,
-              orderIndex: setIndex,
-              repsValue: set.repsValue,
-              weightValue: set.weightValue,
-              createdAt: input.now,
-              updatedAt: input.now,
-            })
-            .run();
-        });
+      replaceSessionExerciseGraph(tx, {
+        sessionId,
+        exercises: input.exercises,
+        now: input.now,
       });
     });
 
     return { sessionId };
+  },
+  async saveCompletedSessionGraph(input) {
+    const database = await bootstrapLocalDataLayer();
+
+    database.transaction((tx) => {
+      const existingSession = tx.select().from(sessions).where(eq(sessions.id, input.sessionId)).get();
+      if (!existingSession) {
+        throw new Error(`Session ${input.sessionId} does not exist`);
+      }
+      if (existingSession.status !== 'completed') {
+        throw new Error(`Cannot update non-completed session ${input.sessionId}`);
+      }
+
+      tx.update(sessions)
+        .set({
+          gymId: input.gymId,
+          status: 'completed',
+          startedAt: input.startedAt,
+          completedAt: input.completedAt,
+          durationSec: input.durationSec,
+          updatedAt: input.now,
+        })
+        .where(eq(sessions.id, input.sessionId))
+        .run();
+
+      replaceSessionExerciseGraph(tx, {
+        sessionId: input.sessionId,
+        exercises: input.exercises,
+        now: input.now,
+      });
+    });
+
+    return { sessionId: input.sessionId };
   },
   async loadLatestDraftGraph() {
     const database = await bootstrapLocalDataLayer();
@@ -438,6 +534,41 @@ export const createDrizzleSessionDraftStore = (): SessionDraftStore => ({
       })
       .where(eq(sessions.id, input.sessionId))
       .run();
+  },
+  async reopenCompletedSession(input) {
+    const database = await bootstrapLocalDataLayer();
+
+    database.transaction((tx) => {
+      const existingSession = tx.select().from(sessions).where(eq(sessions.id, input.sessionId)).get();
+      if (!existingSession) {
+        throw new Error(`Session ${input.sessionId} does not exist`);
+      }
+      if (existingSession.status !== 'completed') {
+        throw new Error(`Cannot reopen non-completed session ${input.sessionId}`);
+      }
+
+      const activeConflict = tx
+        .select({ id: sessions.id })
+        .from(sessions)
+        .where(and(inArray(sessions.status, DRAFT_STATUSES), isNull(sessions.deletedAt)))
+        .all()
+        .find((row) => row.id !== input.sessionId);
+
+      if (activeConflict) {
+        throw new Error(`Cannot reopen session ${input.sessionId} while another active or draft session exists`);
+      }
+
+      tx.update(sessions)
+        .set({
+          status: 'active',
+          completedAt: null,
+          durationSec: null,
+          deletedAt: null,
+          updatedAt: input.updatedAt,
+        })
+        .where(eq(sessions.id, input.sessionId))
+        .run();
+    });
   },
   async listCompletedSessions() {
     const database = await bootstrapLocalDataLayer();
@@ -483,6 +614,49 @@ export const createSessionDraftRepository = (store: SessionDraftStore = createDr
     }
 
     return mapSessionGraphSnapshot(graph);
+  },
+  async persistCompletedSessionSnapshot(
+    input: PersistCompletedSessionInput,
+    options: {
+      now?: Date;
+    } = {}
+  ): Promise<PersistCompletedSessionResult> {
+    assertCompletedSessionTiming(input.startedAt, input.completedAt);
+
+    const now = options.now ?? new Date();
+    ensureDate(now, 'now');
+
+    const durationSec = calculateSessionDurationSec(input.startedAt, input.completedAt);
+
+    await store.saveCompletedSessionGraph({
+      sessionId: input.sessionId,
+      gymId: input.gymId,
+      startedAt: input.startedAt,
+      completedAt: input.completedAt,
+      durationSec,
+      exercises: input.exercises,
+      now,
+    });
+
+    return {
+      sessionId: input.sessionId,
+      completedAt: input.completedAt,
+      durationSec,
+    };
+  },
+  async reopenCompletedSession(
+    sessionId: string,
+    options: ReopenCompletedSessionOptions = {}
+  ): Promise<ReopenCompletedSessionResult> {
+    const now = options.now ?? new Date();
+    ensureDate(now, 'now');
+
+    await store.reopenCompletedSession({
+      sessionId,
+      updatedAt: now,
+    });
+
+    return { sessionId };
   },
   async completeSession(sessionId: string, options: CompleteSessionOptions = {}): Promise<CompleteSessionResult> {
     const existingSession = await store.loadSessionById(sessionId);
@@ -583,7 +757,9 @@ export const createSessionDraftRepository = (store: SessionDraftStore = createDr
 const defaultSessionDraftRepository = createSessionDraftRepository();
 
 export const persistSessionDraftSnapshot = defaultSessionDraftRepository.persistDraftSnapshot;
+export const persistCompletedSessionSnapshot = defaultSessionDraftRepository.persistCompletedSessionSnapshot;
 export const loadLatestSessionDraftSnapshot = defaultSessionDraftRepository.loadLatestDraftSnapshot;
 export const loadSessionSnapshotById = defaultSessionDraftRepository.loadSessionSnapshotById;
 export const completeSessionDraft = defaultSessionDraftRepository.completeSession;
+export const reopenCompletedSessionDraft = defaultSessionDraftRepository.reopenCompletedSession;
 export const listCompletedSessionsForAnalysis = defaultSessionDraftRepository.listCompletedSessionsForAnalysis;

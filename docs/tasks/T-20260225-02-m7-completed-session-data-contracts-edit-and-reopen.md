@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260225-02`
 - Title: M7 completed-session data contracts for load-by-id, in-place edit persistence, and reopen invariant
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-25`
 - Session interaction mode: `interactive (default)`
@@ -120,11 +120,32 @@ Extend local session repositories/stores so the app can load a full session grap
 - Manual verification summary (required when CI is absent/partial):
   - Summarize local execution of targeted repository tests and any manual DB/runtime smoke checks used to confirm invariant behavior.
 
+Evidence captured this session:
+- Test evidence:
+  - `apps/mobile/app/__tests__/session-drafts-repository.test.ts` now covers completed load-by-id graph mapping, completed-session edit persistence via a dedicated contract (without invoking the draft-only completed-session error path), invalid timing rejection, reopen dispatch, and reopen conflict rejection.
+- Invariant ownership:
+  - Repository owns completed-edit timing validation (`completedAt >= startedAt`) and duration recomputation before persistence.
+  - Store owns atomic persistence/mutation invariants: completed-only update path, reopen status transition/field clearing, and single-active-session reopen conflict rejection.
+- Manual verification summary:
+  - Local-only verification executed via targeted Jest repository tests plus full `apps/mobile` `lint`, `typecheck`, and `test`; no additional runtime/manual DB smoke was required because schema/runtime bootstrap wiring was unchanged.
+
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Extended `apps/mobile/src/data/session-drafts.ts` with explicit completed-session contracts: `persistCompletedSessionSnapshot` and `reopenCompletedSession` repository methods plus store methods for completed-session graph updates and in-place reopen.
+  - Added completed-edit timing validation (`completedAt >= startedAt`) and deterministic duration recomputation for completed-session persistence.
+  - Enforced reopen invariants in the Drizzle store transaction path: completed-only reopen, same-record mutation to `active`, completion-field clearing, conflict rejection when another non-deleted `draft/active` session exists, and undelete-on-reopen behavior (`deletedAt` cleared).
+  - Exported new completed-edit/reopen contracts and related types from `apps/mobile/src/data/index.ts` for upcoming UI tasks.
+  - Expanded `apps/mobile/app/__tests__/session-drafts-repository.test.ts` coverage for completed load-by-id, completed update invariants, and reopen contract behavior.
 - What tests ran:
+  - `npm test -- --runInBand app/__tests__/session-drafts-repository.test.ts` (from `apps/mobile`)
+  - `npm test -- --runInBand app/__tests__/session-list-screen.test.tsx app/__tests__/completed-session-detail-screen.test.tsx` (from `apps/mobile`, verification pass for prior Task 01 closeout requested before starting Task 02)
+  - `npm run lint` (from `apps/mobile`)
+  - `npm run typecheck` (from `apps/mobile`)
+  - `npm run test -- --runInBand` (from `apps/mobile`)
 - What remains:
+  - Task 03: wire these data contracts into a mode-aware recorder/detail completed-edit flow with autosave and start/end-time editing UX.
+  - Task 04: add integration/regression coverage and collect UX/manual evidence for the full list -> detail -> edit/reopen flows.
 
 ## Status update checklist (mandatory at closeout)
 

@@ -33,6 +33,7 @@ jest.mock('@/src/data', () => ({
     completed: [],
   }),
   persistSessionDraftSnapshot: jest.fn(),
+  reopenCompletedSessionDraft: jest.fn(),
   setSessionDeletedState: jest.fn(),
 }));
 
@@ -398,6 +399,44 @@ describe('SessionListScreenShell', () => {
     expect(screen.getByText('Edit session')).toBeTruthy();
     expect(screen.getByText('Reopen session')).toBeTruthy();
     expect(screen.getByText('Delete session')).toBeTruthy();
+  });
+
+  it('opens completed edit in recorder mode from the menu', () => {
+    render(<SessionListScreenShell initialSessions={NO_ACTIVE_SESSIONS} />);
+
+    fireEvent.press(screen.getByTestId('completed-session-menu-button-completed-visible'));
+    fireEvent.press(screen.getByTestId('completed-session-edit-menu-action-button'));
+
+    expect(mockPush).toHaveBeenCalledWith('/session-recorder?mode=completed-edit&sessionId=completed-visible');
+  });
+
+  it('disables completed reopen from the menu while an active session exists', () => {
+    render(
+      <SessionListScreenShell
+        initialSessions={[
+          ...ACTIVE_ONLY_SESSIONS,
+          {
+            id: 'completed-visible',
+            startedAt: '2026-02-20T16:00:00.000Z',
+            status: 'completed',
+            completedAt: '2026-02-20T16:58:00.000Z',
+            durationSec: 3480,
+            durationDisplay: '58m',
+            gymName: 'Westside',
+            exerciseCount: 3,
+            setCount: 12,
+            totalWeight: 4230,
+            deletedAt: null,
+          },
+        ]}
+      />
+    );
+
+    fireEvent.press(screen.getByTestId('completed-session-menu-button-completed-visible'));
+    expect(screen.getByText('Finish or discard the active session before reopening another.')).toBeTruthy();
+    expect(screen.getByTestId('completed-session-reopen-menu-action-button').props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true })
+    );
   });
 
   it('shows the empty state when there are no active or completed sessions', () => {
