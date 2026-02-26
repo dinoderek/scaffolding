@@ -211,9 +211,6 @@ function SessionSummaryLine({
         </Text>
         {locationLabel ? (
           <>
-            <Text selectable style={styles.summarySeparator}>
-              •
-            </Text>
             <Text selectable style={[styles.summaryToken, styles.summaryAtToken, styles.summaryTokenStrong]}>
               @
             </Text>
