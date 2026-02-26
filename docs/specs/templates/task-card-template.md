@@ -60,8 +60,12 @@ What this session must accomplish.
 ## Testing and verification approach (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
 - Planned checks/commands:
+- Standard local gate usage:
+  - `./scripts/quality-fast.sh` (default local fast gate; use area-specific form if needed)
+  - `./scripts/quality-slow.sh <frontend|backend>` (only when task risk triggers require slow local gates)
 - Test layers covered (for example unit / integration / contract / E2E / hosted smoke):
 - Execution triggers (`always`, file-change-triggered, milestone closeout, release closeout):
+- Slow-gate triggers (required when `quality-slow` may apply; state `N/A` only if truly not applicable):
 - Hosted/deployed smoke ownership (required for backend/deployment work; name the owning task if deferred):
 - CI/manual posture note (required when CI is absent or partial):
 - Notes:
@@ -74,10 +78,9 @@ What this session must accomplish.
 
 ## Mandatory verify gates
 
-- `npm run lint` (or runtime-appropriate equivalent)
-- `npm run typecheck` (or runtime-appropriate equivalent)
-- `npm run test` (or runtime-appropriate equivalent)
-- If any default gate is `N/A`, document the reason and list the runtime-specific replacement gate(s).
+- Standard local fast gate: `./scripts/quality-fast.sh` (or area-specific form, with rationale)
+- Standard local slow gate: `./scripts/quality-slow.sh <frontend|backend>` when task risk triggers require it
+- If a standard gate is `N/A`, document the reason and list the runtime-specific replacement gate(s).
 - Additional gate(s), if any:
 
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)

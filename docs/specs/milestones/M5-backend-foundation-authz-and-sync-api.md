@@ -115,7 +115,7 @@ Decide and lock the backend platform for MVP, stand up a minimal backend that ru
 3. `docs/tasks/T-20260220-09-m5-backend-deployment-strategy-and-environments.md` - define deployment strategy, environments, and operational safeguards. (`planned`)
 4. `docs/tasks/T-20260220-10-m5-user-auth-authz-and-security-baseline.md` - implement user model, auth/authz rules, and backend hardening baseline. (`completed`)
 5. `docs/tasks/T-20260220-11-m5-sync-api-for-session-domain.md` - implement authenticated sync API for session domain entities with contract tests. (`completed`)
-6. `docs/tasks/T-20260225-12-m5-quality-gate-command-and-testing-checklist-rationalization.md` - define/implement a standard fast local quality gate and simplify task verification checklists. (`planned`)
+6. `docs/tasks/T-20260225-12-m5-quality-gate-command-and-testing-checklist-rationalization.md` - define/implement a standard fast local quality gate and simplify task verification checklists. (`completed`)
 
 ## Deferred follow-up tasks (not required for M5 closeout)
 
@@ -154,6 +154,7 @@ Decide and lock the backend platform for MVP, stand up a minimal backend that ru
   - Updated project/testing/process docs and templates for Supabase backend local verification conventions, hosted-smoke ownership documentation, and `supabase/` project structure placement.
   - `T-20260220-10` completed: added `Supabase Auth` + `RLS` security baseline for user-owned sync tables in `app_public`, controlled user provisioning scripts, and local auth/authz contract tests (including auth failure, unauth denial, and cross-user denial coverage).
   - `T-20260220-11` completed: selected `PostgREST` table routes on `app_public` as the M5 sync API baseline surface, documented provider-neutral sync method contracts + Supabase route mappings in `supabase/session-sync-api-contract.md`, and added local sync API contract tests covering success/validation/unauth/cross-user denial paths for all sync-domain entities.
+  - `T-20260225-12` completed: added repo-level standard local quality-gate wrappers (`./scripts/quality-fast.sh`, `./scripts/quality-slow.sh`), documented the fast/slow gate model and trigger rules, updated the task-card template to reduce repeated verify checklists, and documented repo-root `scripts/` as the canonical location for cross-workspace quality-gate wrappers.
 - Verification summary:
   - Local Supabase runtime started successfully (port-offset config `554xx` used to avoid a host collision on default `54322`).
   - `supabase db reset` (via wrapper) reapplied the baseline migration and deterministic seed.
@@ -161,5 +162,7 @@ Decide and lock the backend platform for MVP, stand up a minimal backend that ru
   - Combined backend-local fast smoke suite passed (`./supabase/scripts/test-fast.sh`).
   - Auth/authz local contract suite passed (`./supabase/scripts/test-auth-authz.sh`) including password auth success/failure, self-signup disabled checks, unauthenticated denial, and cross-user `RLS`/constraint denial paths.
   - Sync API local contract suite passed (`./supabase/scripts/test-sync-api-contract.sh`) including authenticated create/read/update/list flows plus validation and ownership-denial coverage for `gyms`, `sessions`, `session_exercises`, and `exercise_sets`.
+  - `./scripts/quality-fast.sh frontend` executed and correctly dispatched frontend fast gates; run stopped on pre-existing mobile route-typing `typecheck` errors (wrapper implementation itself verified).
+  - Direct frontend parity spot-check passed (`cd apps/mobile && npm run lint`).
 - What remains:
-  - Milestone status remains `in_progress`; tasks `T-20260220-09` and `T-20260225-12` are still pending.
+  - Milestone status remains `in_progress`; task `T-20260220-09` (deployment strategy/environments) is still pending.

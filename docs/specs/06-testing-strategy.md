@@ -47,13 +47,31 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 ## Default testing practice
 
 - Every feature should include at least one success-path test and one offline/error-path test.
-- During execution sessions, run a targeted test or gate after each meaningful change, then run full `lint + typecheck + test` before task closeout.
+- During execution sessions, run a targeted test or gate after each meaningful change, then run `./scripts/quality-fast.sh` before task closeout.
+- Run `./scripts/quality-slow.sh <area>` when the task card's risk triggers require slower local runtime/contract checks.
+
+## Standard local quality-gate wrappers (M5)
+
+- Fast gate (default local closeout gate for covered workspaces):
+  - `./scripts/quality-fast.sh`
+  - area-specific form: `./scripts/quality-fast.sh frontend|backend`
+- Slow gate (risk-triggered local gate, not always mandatory):
+  - `./scripts/quality-slow.sh`
+  - area-specific form: `./scripts/quality-slow.sh frontend|backend`
+- Coverage intent (current repo):
+  - `./scripts/quality-fast.sh frontend` -> `apps/mobile` `lint` + `typecheck` + `test`
+  - `./scripts/quality-fast.sh backend` -> `./supabase/scripts/test-fast.sh`
+  - `./scripts/quality-slow.sh frontend` -> `Maestro` local simulator smoke/data-smoke commands
+  - `./scripts/quality-slow.sh backend` -> local backend auth/RLS and sync API contract suites
+- Rule:
+  - wrappers reduce checklist repetition, but task cards still own trigger conditions and any hosted/manual checks.
 
 ## Current CI posture (M5)
 
 - There is currently no CI pipeline configured for this repo.
 - Until CI exists, task cards must explicitly document:
   - what is run locally for verification,
+  - whether `quality-slow` is required and the trigger for it,
   - what is deferred/manual (for example hosted deployment smoke checks),
   - when manual checks must run (per change, before handoff, milestone closeout, release closeout).
 - When CI is introduced, update this doc and `docs/specs/04-ai-development-playbook.md` in the same task to move applicable manual gates into CI.
@@ -82,11 +100,13 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - maintain named fixture identities for ownership tests (at minimum `anonymous`, `user_a`, `user_b`; optional admin/service-role-only helper path).
 - Execution triggers (minimum expectations):
   - always run cheap tests relevant to the changed layer(s).
+  - `./scripts/quality-fast.sh backend` is the default backend fast gate for covered local backend work.
   - run `Supabase-local integration/contract` tests when changing:
     - `supabase/migrations/**`
     - `supabase/functions/**`
     - auth configuration/policies
     - sync API contracts/fixtures
+  - in current repo conventions, those backend integration/contract suites are grouped under `./scripts/quality-slow.sh backend`, but tasks must still mark them as required when risk triggers apply (not every backend task requires all slow suites)
   - run hosted smoke validation when changing:
     - deployment/env/secrets config
     - hosted-only behavior
@@ -105,6 +125,9 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - `./supabase/scripts/smoke-health.sh` (health endpoint smoke)
   - `./supabase/scripts/smoke-seed.sh` (fixture baseline smoke through local REST API)
   - `./supabase/scripts/test-fast.sh` (combined fast backend-local smoke suite)
+  - repo-level wrapper mapping:
+    - `./scripts/quality-fast.sh backend` -> `./supabase/scripts/test-fast.sh`
+    - `./scripts/quality-slow.sh backend` -> backend contract suites (`test-auth-authz.sh`, `test-sync-api-contract.sh`)
 - Current automated backend-local coverage (minimum baseline):
   - migration/reset/seed flow
   - deterministic fixture presence (`anonymous`, `user_a`, `user_b`, optional helper fixture)
@@ -131,6 +154,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 
 - Jest/React Native Testing Library remains the default for component logic, state transitions, and CI-safe assertions.
 - Maestro is used for simulator/device-integrated UI smoke checks that confirm core screens are reachable and visibly intact.
+- In the standard local gate matrix, current `Maestro` checks are classified as `frontend + slow` (run via `./scripts/quality-slow.sh frontend` when task triggers require them).
 - Current required Maestro coverage is a single iOS smoke flow:
   - app launch visible state
   - session recorder visible state
@@ -148,6 +172,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - validate runtime migration + smoke insert/read behavior on real Expo iOS runtime (`expo-sqlite`) when change risk is runtime-sensitive.
 - Command:
   - `npm run test:e2e:ios:data-smoke`
+  - (also covered by `./scripts/quality-slow.sh frontend`)
 - Required when any of these are true:
   - `apps/mobile/src/data/bootstrap.ts` changes.
   - `apps/mobile/src/data/migrations/**` changes.

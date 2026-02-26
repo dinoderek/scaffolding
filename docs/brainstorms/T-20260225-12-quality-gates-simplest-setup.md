@@ -1,0 +1,207 @@
+# T-20260225-12 Brainstorm: Simplest Quality-Gate Setup
+
+## Goal
+
+Define the simplest possible local quality-gate setup that:
+
+- gives us a one-stop command path for common fast checks,
+- keeps task-specific higher-risk checks explicit,
+- fits the current repo structure (`apps/mobile`, `supabase`),
+- and is easy to document consistently in task cards while CI is absent.
+
+## Working model (proposed)
+
+Categorize checks along these dimensions:
+
+1. `Speed`
+- `fast`
+- `slow` (current; examples include `Maestro` and backend contract suites)
+
+2. `Area`
+- `frontend` (`apps/mobile`)
+- `backend` (`supabase`)
+- `e2e` (future, cross-stack)
+
+3. `Environment` (future expansion)
+- `local` (default now)
+- `deployed`
+
+This gives a simple mental model without overcommitting to CI tooling yet.
+
+## Simplest v1 recommendation
+
+Start with a **small repo-level gate wrapper set** based on the matrix:
+
+- `quality-fast` (default local fast lane)
+- `quality-slow` (default local slow lane)
+- optional area-specific targets for both (`frontend`, `backend`)
+
+### Canonical concept
+
+- `quality-fast` = "run all applicable local fast checks"
+- `quality-slow` = "run all applicable local slow checks"
+- area-specific variants for targeted use:
+  - `quality-fast frontend`
+  - `quality-fast backend`
+  - `quality-slow frontend`
+  - `quality-slow backend`
+
+Because there is no repo-root `package.json` today, the simplest implementation surface is likely a repo-level shell wrapper (for example under `scripts/`).
+
+## What "fast" should mean (v1)
+
+`Fast` should cover repeatable, low-friction checks that are expected before task closeout for touched code areas.
+
+### Frontend fast (current reality)
+
+- `cd apps/mobile && npm run lint`
+- `cd apps/mobile && npm run typecheck`
+- `cd apps/mobile && npm run test`
+
+### Backend fast (current reality)
+
+- `./supabase/scripts/test-fast.sh`
+
+Notes:
+- This matches current backend-local baseline wrappers already documented.
+- It avoids forcing a Node-style `lint/typecheck/test` shape onto `supabase/**` work that does not have a backend Node workspace.
+
+## What "slow" should mean (v1)
+
+`Slow` should cover higher-confidence checks that are still local and repeatable, but slower / heavier than routine fast gates.
+
+### Frontend slow (current reality)
+
+- `cd apps/mobile && npm run test:e2e:ios:smoke`
+- `cd apps/mobile && npm run test:e2e:ios:data-smoke`
+
+Notes:
+- These are currently best classified as `frontend` simulator/runtime checks (not cross-stack `e2e` yet).
+- Repo-level `e2e` remains a future area for true cross-stack orchestration.
+
+### Backend slow (current reality)
+
+- `./supabase/scripts/test-auth-authz.sh`
+- `./supabase/scripts/test-sync-api-contract.sh`
+
+Notes:
+- These are local backend contract suites and fit naturally in `backend + slow`.
+- For backend auth/RLS/API tasks, it is reasonable to run them every time before closeout.
+
+## Explicit non-goal for v1 (important)
+
+Do **not** make `quality-fast` a replacement for task-specific required checks.
+
+Examples that may be covered by `quality-slow` but should still remain **task-card-triggered** when risk-specific:
+
+- `quality-slow backend` (auth/RLS/API contract suites)
+- `quality-slow frontend` (Maestro simulator smoke/data smoke)
+- hosted/deployed smoke checks
+
+Rationale:
+- the standard gate should reduce checklist duplication, not hide risk-based verification triggers.
+- task cards should say when `quality-slow` is mandatory vs optional for the change.
+
+## Proposed command/rules shape (lean)
+
+### Usage model
+
+- During development:
+  - run targeted checks for the changed runtime/area.
+- Before task closeout:
+  - run `quality-fast` (defaults to all current areas).
+- Then run `quality-slow` for the touched area(s) when required by task/card triggers.
+- Then run any remaining task-specific/manual gates required by the task card (especially hosted/deployed smoke).
+
+### Simplest behavior for v1
+
+Prefer **default-all with optional area overrides**, not git-diff auto-detection yet.
+
+Why:
+- easier to implement and explain,
+- avoids edge cases around uncommitted changes / docs-only changes / partial staging,
+- keeps behavior deterministic for AI + human use.
+
+Example behavior:
+
+- `quality-fast` -> runs frontend + backend fast gates if those areas exist
+- `quality-slow` -> runs frontend + backend slow gates if those areas exist
+- `quality-fast frontend` -> only frontend fast gate
+- `quality-fast backend` -> only backend fast gate
+- `quality-slow frontend` -> only frontend slow gate
+- `quality-slow backend` -> only backend slow gate
+
+## Naming options (recommendation + fallback)
+
+### Recommended
+
+- `quality-fast` (human-readable, matches task language "quality gate")
+
+### Acceptable alternatives
+
+- `verify-fast`
+- `test-fast-all` (less ideal because lint/typecheck are not tests)
+
+If we later add a richer matrix, we can extend without breaking the mental model:
+
+- `quality-fast`
+- `quality-slow`
+- `quality-fast frontend`
+- `quality-fast backend`
+- `quality-slow frontend`
+- `quality-slow backend`
+- future: `quality-fast e2e` / `quality-slow e2e`
+
+## Documentation impact (what this would simplify)
+
+Task cards and playbook/docs can reference:
+
+- "Run standard local fast gate (`quality-fast`)"
+- "Run `quality-slow <area>` when the task's risk triggers require it"
+- plus a short list of truly task-specific/manual checks (for example hosted smoke)
+
+This should reduce repeated command lists while keeping backend non-Node equivalents clear.
+
+## Documentation sync requirement (important)
+
+When this is implemented, update these together and keep wording aligned with minimal repetition:
+
+1. task templates (`docs/specs/templates/task-card-template.md`)
+2. AI dev guidelines (`docs/specs/04-ai-development-playbook.md`)
+3. testing policies (`docs/specs/06-testing-strategy.md`)
+
+Rule of thumb:
+- define the model once (playbook/testing strategy),
+- task templates reference the model and require task-specific triggers/overrides,
+- task cards list only deltas and mandatory extra checks.
+
+## Open questions to resolve before implementation
+
+Resolved from review comments:
+
+1. `quality-fast` should default to **all current areas** (`frontend + backend`).
+2. Naming preference is `quality-fast`.
+
+Still to confirm:
+
+1. Backend slow cadence:
+- should `quality-slow backend` be a default closeout gate for all backend code changes, or only when a task card explicitly marks auth/RLS/API risk triggers?
+2. Preferred command surface for v1 (my call: repo-root shell wrappers):
+- repo-root `scripts/quality-fast.sh` and `scripts/quality-slow.sh`
+- or introduce a repo-root `package.json` just to expose `npm run quality:fast` / `npm run quality:slow`?
+
+Resolution from follow-up:
+
+1. Backend `quality-slow` should be **task-card-triggered** (for auth/RLS/API risk triggers), not a universal backend closeout default.
+
+## Bias / recommendation summary
+
+If we optimize for simplicity and low churn:
+
+- implement repo-level shell wrappers for `quality-fast` and `quality-slow`,
+- default both to all current areas and support optional `frontend|backend` area args,
+- default to local environment,
+- treat current `Maestro` flows as `frontend + slow`,
+- treat backend auth/RLS/API contract suites as `backend + slow`,
+- keep hosted/deployed checks explicit outside the local gate wrappers,
+- document the matrix concept now (`speed x area`, `environment` later) and update playbook/testing/template docs together to stay in sync.

@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260225-12`
 - Title: M5 standard fast quality gate command and testing checklist rationalization
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-25`
 - Session interaction mode: `interactive (default)`
@@ -105,8 +105,24 @@ Define and implement a standard local fast quality-gate command path (or wrapper
 ## Completion note
 
 - What changed:
+- Added repo-level standard local quality-gate wrappers:
+  - `./scripts/quality-fast.sh` (default-all + optional `frontend|backend`)
+  - `./scripts/quality-slow.sh` (default-all + optional `frontend|backend`)
+- Documented wrapper scope and limits in the shared docs:
+  - `docs/specs/04-ai-development-playbook.md`
+  - `docs/specs/06-testing-strategy.md`
+  - `docs/specs/09-project-structure.md` (new repo-root `scripts/` canonical wrapper location)
+- Updated `docs/specs/templates/task-card-template.md` to reduce verify-checklist repetition and require explicit `quality-slow` triggers when applicable.
+- Captured the simplifying quality-gate matrix and decisions in `docs/brainstorms/T-20260225-12-quality-gates-simplest-setup.md` (`speed x area`, local-first now, deployed later).
+- Chose `quality-fast` naming and default-all behavior; classified current `Maestro` checks as `frontend + slow` and backend auth/RLS/API contract suites as `backend + slow`.
+- Did not retroactively rewrite historical M5 task cards in this session to avoid churn; template + shared docs now define the standard for future/updated tasks.
 - What tests ran:
+- `./scripts/quality-fast.sh frontend` -> executed wrapper successfully through frontend `lint`; failed at frontend `typecheck` due pre-existing mobile route typing errors in `apps/mobile` (not introduced by this task)
+- `cd apps/mobile && npm run lint` -> passed (wrapper parity spot-check for one underlying workspace command)
+- Documentation diff/review across touched shared docs + task template -> completed
 - What remains:
+- M5 task `T-20260220-09` (deployment strategy/environments) remains pending for milestone closeout.
+- Separate follow-up to fix existing `apps/mobile` typecheck errors is needed if we want `./scripts/quality-fast.sh frontend` to pass end-to-end on current branch.
 
 ## Status update checklist (mandatory at closeout)
 

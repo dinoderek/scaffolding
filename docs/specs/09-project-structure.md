@@ -14,6 +14,7 @@ Define the canonical repository structure, path ownership, and placement convent
 ```text
 /
   AGENTS.md
+  scripts/                       # Repo-level cross-workspace wrappers (quality gates, orchestration)
   apps/
     mobile/                      # Expo React Native app (current primary codebase)
       app/                       # Expo Router routes/screens
@@ -40,6 +41,8 @@ Define the canonical repository structure, path ownership, and placement convent
 
 - `apps/mobile/`
   - owns the mobile app code, mobile-only tests, mobile SQLite schema artifacts, Maestro flows, and mobile test helper scripts.
+- `scripts/`
+  - owns repo-level cross-workspace wrappers (for example standard local quality-gate commands).
 - `docs/specs/`
   - owns project policy, architecture/testing strategy, milestone specs, and templates.
 - `docs/tasks/`
@@ -58,6 +61,9 @@ Define the canonical repository structure, path ownership, and placement convent
 - `e2e/` (reserved)
   - reserved for cross-stack orchestration/tests that span mobile + backend.
   - strategy may be documented before implementation exists.
+- `scripts/` (repo root)
+  - canonical location for repo-level cross-workspace wrappers (for example `./scripts/quality-fast.sh`, `./scripts/quality-slow.sh`).
+  - keep workspace-specific wrappers in the owning workspace (for example `apps/mobile/scripts/**`, `supabase/scripts/**`).
 - Mobile test-directory refactor
   - moving tests out of `apps/mobile/app/__tests__/` is a valid follow-up improvement, but it must be done in a dedicated task (not mixed into unrelated backend work).
 
@@ -73,4 +79,4 @@ Define the canonical repository structure, path ownership, and placement convent
 ## Known cleanup opportunities (tracked)
 
 - Rationalize mobile test placement currently under `apps/mobile/app/__tests__/` into a dedicated mobile test directory (deferred to a dedicated follow-up task).
-- Standardize repo-level quality gate command wrappers across mobile + backend workspaces (backend `supabase/scripts/test-fast.sh` now exists; broader rationalization remains tracked in M5 follow-up tasking).
+- Optional follow-up: add a repo-root command alias surface (for example root `package.json` script aliases) if ergonomics justify it; current canonical wrappers are `./scripts/quality-fast.sh` and `./scripts/quality-slow.sh`.

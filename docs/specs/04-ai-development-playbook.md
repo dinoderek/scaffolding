@@ -45,6 +45,21 @@ Use these definitions when a task says "runtime", "runtime-specific gates", or "
 - `Runtime-specific gate`:
   - the smallest repeatable verification command(s) that meaningfully validate the changed runtime when default Node gates are not sufficient or not applicable.
 
+## Standard local quality-gate wrappers (M5)
+
+Use these repo-level wrappers as the default local verification entrypoints unless a task card states otherwise:
+
+- `./scripts/quality-fast.sh`
+  - runs local fast gates for all currently available areas (`frontend` + `backend`)
+  - supports optional area selection: `frontend` or `backend`
+- `./scripts/quality-slow.sh`
+  - runs local slow gates for all currently available areas (`frontend` + `backend`)
+  - supports optional area selection: `frontend` or `backend`
+  - task cards must state when this is mandatory (risk-triggered), because slow gates are not always required
+
+Rule:
+- task cards should reference these wrappers first, then list only task-specific/manual gates and trigger conditions.
+
 Baseline gate profiles (task cards may tighten these):
 
 1. `Node/TS workspace` (default)
@@ -103,11 +118,10 @@ Use this sequence for every task card:
    - Re-run the smallest relevant gate after each refactor batch.
 5. Verify:
    - Run mandatory quality gates:
-     - `npm run lint`
-     - `npm run typecheck`
-     - `npm run test`
-     - replace/add runtime-specific gates when the task is not Node-only (for example `supabase` CLI checks, `deno test`, `pgTAP`, Maestro smoke commands)
-     - if `lint/typecheck/test` are not applicable for the introduced runtime (for example no Node/TS workspace was added for a `Supabase`-only task), document the `N/A` rationale and run runtime-specific equivalents instead
+     - `./scripts/quality-fast.sh` (default local fast gate; use area-specific form when task scope is intentionally narrower)
+     - `./scripts/quality-slow.sh <area>` when the task card's risk triggers require slow local gates (for example Maestro runtime smoke, backend auth/RLS/API contract suites)
+     - add runtime-specific gates when wrappers do not cover the changed runtime/layer (for example `deno test`, `pgTAP`, hosted smoke checks)
+     - if a wrapper or default `lint/typecheck/test` shape is `N/A` for the task/runtime, document the `N/A` rationale and run the runtime-specific equivalent(s) instead
    - Run task-specific checks if defined.
    - Rule: do not defer all verification to the end; apply targeted checks during development and full gates at closeout.
 6. Closeout:
@@ -180,7 +194,7 @@ Rule: if a task makes significant project-structure changes (for example adds/mo
 
 ## Automated feedback loops (before human review)
 
-1. Local verification gates must pass (`lint`, `typecheck`, `test`, or documented runtime-appropriate equivalents).
+1. Local verification gates must pass (`./scripts/quality-fast.sh`, plus required `./scripts/quality-slow.sh <area>` and any documented runtime-appropriate equivalents).
 2. CI verification gates must pass on the branch/PR only when CI is configured for the repo/branch; otherwise mark this loop `N/A` and follow the manual/deferred verification posture in `Current CI posture`.
 3. Run an AI self-review pass against:
    - Acceptance criteria coverage
