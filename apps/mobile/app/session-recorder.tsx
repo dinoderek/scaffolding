@@ -1350,22 +1350,9 @@ export default function SessionRecorderScreen() {
       <SessionContentLayout
         showMetadataSection={routeMode !== 'completed-edit'}
         dateTimeValue={
-          routeMode === 'completed-edit' ? (
-            <TextInput
-              accessibilityLabel="Session start time"
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="YYYY-MM-DD HH:mm"
-              style={styles.input}
-              testID="completed-edit-start-time-input"
-              value={state.session.dateTime}
-              onChangeText={updateSessionStartDateTime}
-            />
-          ) : (
-            <View accessibilityLabel="Session date and time" style={styles.readOnlyInput}>
-              <Text style={styles.readOnlyInputText}>{state.session.dateTime}</Text>
-            </View>
-          )
+          <View accessibilityLabel="Session date and time" style={styles.readOnlyInput}>
+            <Text style={styles.readOnlyInputText}>{state.session.dateTime}</Text>
+          </View>
         }
         gymValue={
           <Pressable style={styles.gymButton} onPress={openGymModal}>

@@ -188,6 +188,55 @@ describe('CompletedSessionDetailScreenShell', () => {
     });
   });
 
+  it('shows the disabled reopen explanation when another active session exists', async () => {
+    const mockReopenCompletedSession = jest.fn().mockResolvedValue(undefined);
+    const dataClient: CompletedSessionDetailDataClient = {
+      loadCompletedSession: jest.fn().mockResolvedValue(COMPLETED_SESSION_DETAIL_FIXTURE),
+      reopenCompletedSession: mockReopenCompletedSession,
+      setCompletedSessionDeletedState: jest.fn().mockResolvedValue(undefined),
+    };
+
+    render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-detail-screen')).toBeTruthy();
+    });
+
+    expect(screen.getByText('Finish or discard the active session before reopening another.')).toBeTruthy();
+    expect(screen.getByTestId('completed-session-detail-reopen-button').props.accessibilityState).toEqual(
+      expect.objectContaining({ disabled: true })
+    );
+
+    fireEvent.press(screen.getByTestId('completed-session-detail-reopen-button'));
+    expect(mockReopenCompletedSession).not.toHaveBeenCalled();
+    expect(mockDismissTo).not.toHaveBeenCalled();
+  });
+
+  it('shows non-destructive feedback when reopen fails', async () => {
+    const dataClient: CompletedSessionDetailDataClient = {
+      loadCompletedSession: jest.fn().mockResolvedValue({
+        ...COMPLETED_SESSION_DETAIL_FIXTURE,
+        reopenDisabledReason: null,
+      }),
+      reopenCompletedSession: jest.fn().mockRejectedValue(new Error('Unable to reopen now')),
+      setCompletedSessionDeletedState: jest.fn().mockResolvedValue(undefined),
+    };
+
+    render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-detail-screen')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByTestId('completed-session-detail-reopen-button'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to reopen now')).toBeTruthy();
+    });
+    expect(mockDismissTo).not.toHaveBeenCalled();
+    expect(screen.getByTestId('completed-session-detail-screen')).toBeTruthy();
+  });
+
   it('reloads the completed session when the detail screen regains focus', async () => {
     const dataClient: CompletedSessionDetailDataClient = {
       loadCompletedSession: jest
@@ -304,6 +353,32 @@ describe('CompletedSessionDetailScreenShell', () => {
       expect(screen.getByText('Undelete')).toBeTruthy();
     });
     expect(screen.queryByText('Deleting...')).toBeNull();
+  });
+
+  it('shows feedback and preserves the delete label when delete persistence fails', async () => {
+    const dataClient: CompletedSessionDetailDataClient = {
+      loadCompletedSession: jest.fn().mockResolvedValue({
+        ...COMPLETED_SESSION_DETAIL_FIXTURE,
+        deletedAt: null,
+      }),
+      reopenCompletedSession: jest.fn().mockResolvedValue(undefined),
+      setCompletedSessionDeletedState: jest.fn().mockRejectedValue(new Error('Unable to update deleted state')),
+    };
+
+    render(<CompletedSessionDetailScreenShell sessionId="completed-under-test" dataClient={dataClient} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-detail-screen')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByTestId('completed-session-detail-delete-button'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to update deleted state')).toBeTruthy();
+    });
+
+    expect(screen.getByText('Delete')).toBeTruthy();
+    expect(screen.queryByText('Undelete')).toBeNull();
   });
 
   it('renders a stable empty state when the session is missing', async () => {

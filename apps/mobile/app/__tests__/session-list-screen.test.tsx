@@ -63,10 +63,12 @@ const { __mockPush: mockPush, __triggerFocus: triggerFocus } = jest.requireMock(
 const {
   listSessionListBuckets: mockListSessionListBuckets,
   persistSessionDraftSnapshot: mockPersistSessionDraftSnapshot,
+  reopenCompletedSessionDraft: mockReopenCompletedSessionDraft,
   setSessionDeletedState: mockSetSessionDeletedState,
 } = jest.requireMock('@/src/data') as {
   listSessionListBuckets: jest.Mock;
   persistSessionDraftSnapshot: jest.Mock;
+  reopenCompletedSessionDraft: jest.Mock;
   setSessionDeletedState: jest.Mock;
 };
 
@@ -125,6 +127,8 @@ describe('SessionListScreenShell', () => {
       completed: [],
     });
     mockPersistSessionDraftSnapshot.mockResolvedValue({ sessionId: 'created-session-id' });
+    mockReopenCompletedSessionDraft.mockReset();
+    mockReopenCompletedSessionDraft.mockResolvedValue(undefined);
     mockSetSessionDeletedState.mockReset();
     mockSetSessionDeletedState.mockResolvedValue(undefined);
   });
@@ -572,6 +576,123 @@ describe('SessionListScreenShell', () => {
     expect(screen.getByTestId('completed-session-reopen-menu-action-button').props.accessibilityState).toEqual(
       expect.objectContaining({ disabled: true })
     );
+  });
+
+  it('reopens a DB-backed completed session from the menu and refreshes it into the active row', async () => {
+    type MutableSessionRow = {
+      id: string;
+      status: 'active' | 'completed';
+      startedAt: Date;
+      completedAt: Date | null;
+      durationSec: number | null;
+      compactDuration: string;
+      deletedAt: Date | null;
+      gymName: string | null;
+      exerciseCount: number;
+      setCount: number;
+    };
+
+    const rows: MutableSessionRow[] = [
+      {
+        id: 'db-completed-reopen-target',
+        status: 'completed',
+        startedAt: new Date('2026-02-20T16:00:00.000Z'),
+        completedAt: new Date('2026-02-20T16:58:00.000Z'),
+        durationSec: 3480,
+        compactDuration: '58m',
+        deletedAt: null,
+        gymName: 'Westside',
+        exerciseCount: 3,
+        setCount: 12,
+      },
+      {
+        id: 'db-completed-other',
+        status: 'completed',
+        startedAt: new Date('2026-02-19T16:00:00.000Z'),
+        completedAt: new Date('2026-02-19T17:05:00.000Z'),
+        durationSec: 3900,
+        compactDuration: '1h 5m',
+        deletedAt: null,
+        gymName: 'Garage Gym',
+        exerciseCount: 2,
+        setCount: 9,
+      },
+    ];
+
+    mockReopenCompletedSessionDraft.mockImplementation(async (sessionId: string) => {
+      const target = rows.find((row) => row.id === sessionId);
+      if (!target) {
+        throw new Error('Session not found');
+      }
+
+      target.status = 'active';
+      target.completedAt = null;
+      target.durationSec = null;
+      target.compactDuration = '0m';
+    });
+
+    mockListSessionListBuckets.mockImplementation(async () => ({
+      active:
+        rows.find((row) => row.status === 'active' && row.deletedAt === null) ?? null,
+      completed: rows.filter((row) => row.status === 'completed'),
+    }));
+
+    render(<SessionListRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-row-db-completed-reopen-target')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByTestId('completed-session-menu-button-db-completed-reopen-target'));
+    fireEvent.press(screen.getByTestId('completed-session-reopen-menu-action-button'));
+
+    await waitFor(() => {
+      expect(mockReopenCompletedSessionDraft).toHaveBeenCalledWith('db-completed-reopen-target');
+      expect(screen.getByTestId('active-session-row-db-completed-reopen-target')).toBeTruthy();
+    });
+
+    expect(screen.queryByTestId('completed-session-row-db-completed-reopen-target')).toBeNull();
+    expect(screen.queryByTestId('completed-session-delete-modal-card')).toBeNull();
+  });
+
+  it('closes the completed-session menu and keeps the list stable when reopen fails', async () => {
+    mockReopenCompletedSessionDraft.mockRejectedValueOnce(new Error('boom'));
+    mockListSessionListBuckets.mockResolvedValue({
+      active: null,
+      completed: [
+        {
+          id: 'db-completed-reopen-failure',
+          status: 'completed',
+          startedAt: new Date('2026-02-20T16:00:00.000Z'),
+          completedAt: new Date('2026-02-20T16:58:00.000Z'),
+          durationSec: 3480,
+          compactDuration: '58m',
+          deletedAt: null,
+          gymName: 'Westside',
+          exerciseCount: 3,
+          setCount: 12,
+        },
+      ],
+    });
+
+    render(<SessionListRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-session-row-db-completed-reopen-failure')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByTestId('completed-session-menu-button-db-completed-reopen-failure'));
+    expect(screen.getByTestId('completed-session-delete-modal-card')).toBeTruthy();
+
+    fireEvent.press(screen.getByTestId('completed-session-reopen-menu-action-button'));
+
+    await waitFor(() => {
+      expect(mockReopenCompletedSessionDraft).toHaveBeenCalledWith('db-completed-reopen-failure');
+      expect(screen.queryByTestId('completed-session-delete-modal-card')).toBeNull();
+    });
+
+    expect(screen.getByTestId('completed-session-row-db-completed-reopen-failure')).toBeTruthy();
+    expect(screen.queryByTestId('active-session-row-db-completed-reopen-failure')).toBeNull();
   });
 
   it('shows the empty state when there are no active or completed sessions', () => {

@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260225-04`
 - Title: M7 completed-session view/edit/reopen integration tests and UX evidence closeout
-- Status: `planned`
+- Status: `blocked`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-25`
 - Session interaction mode: `interactive (default)`
@@ -138,11 +138,48 @@ Close out M7 with Jest/React Native Testing Library integration-focused test cov
 - Manual verification summary (required when CI is absent/partial):
   - Summarize local manual UX walkthrough outcomes and any limitations/deferred checks due to absent CI or device constraints.
 
+Evidence captured this session:
+- Test evidence (M7 integration + regression):
+  - `apps/mobile/app/__tests__/session-completed-journey.test.tsx` adds cross-screen Jest journeys for:
+    - completed row -> detail -> completed edit -> save -> list refresh (updated duration + ordering)
+    - completed row -> detail -> reopen -> list refresh (same record moves to active row)
+  - `apps/mobile/app/__tests__/session-list-screen.test.tsx` adds list-menu reopen happy-path refresh coverage and reopen failure stability coverage; existing delete/undelete + row/menu separation regressions remain covered.
+  - `apps/mobile/app/__tests__/completed-session-detail-screen.test.tsx` adds explicit disabled `Reopen` explanation assertions and detail reopen/delete error-feedback coverage.
+  - `apps/mobile/app/__tests__/session-recorder-submit.test.tsx` adds completed-edit cleanup prompt coverage for:
+    - `Remove incomplete sets and save changes`
+    - `Remove empty exercises and save changes`
+  - `apps/mobile/app/__tests__/session-recorder-persistence.test.tsx` adds completed-edit load/error/loading-state coverage and `beforeRemove` flush-on-navigation protection coverage.
+- Contract traceability (flow -> tests):
+  - Completed view/edit/save/list refresh -> `session-completed-journey.test.tsx` + `session-recorder-submit.test.tsx`
+  - Reopen happy + disabled conflict explanation -> `session-completed-journey.test.tsx`, `completed-session-detail-screen.test.tsx`, `session-list-screen.test.tsx`
+  - History row body vs menu actions + delete/undelete regression -> `session-list-screen.test.tsx`
+  - Invalid time edit path blocked -> `session-recorder-submit.test.tsx` and autosave invalid-time pause -> `session-recorder-persistence.test.tsx`
+- Visual evidence / manual UX limitation:
+  - Attempted local iOS Maestro smoke run (`npm run test:e2e:ios:smoke`) to capture screenshots and validate simulator reachability.
+  - Run failed before reaching app UI (`session-list-screen` visibility assertion failed), so required M7 visual screenshots/manual walkthrough evidence were not captured in this environment.
+  - Artifacts from failed attempt:
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-175124-64552/maestro-output/screenshots/01-app-launch.png`
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-175124-64552/maestro-output/2026-02-26_175159/ai-report-smoke-launch.html`
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-175124-64552/expo-start.log`
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-175124-64552/simulator.log`
+- Manual verification summary:
+  - Not completed in this session due local simulator/runtime smoke failure prior to app screen visibility; M7 UX screenshot/manual flow evidence remains outstanding.
+
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Added missing Jest coverage for M7 list/detail/recorder paths: list-menu reopen happy/failure, detail disabled-reopen explanation and action error feedback, completed-edit cleanup prompts, completed-edit load/error/beforeRemove flush, and two new cross-screen M7 journey tests.
+  - Added `apps/mobile/app/__tests__/session-completed-journey.test.tsx` for end-to-end app-screen journeys across session list, completed detail, and completed edit/reopen flows using an in-memory mocked repository.
+  - Removed an unreachable completed-edit `dateTimeValue` JSX branch in `apps/mobile/app/session-recorder.tsx` (metadata section is hidden in completed-edit mode, so that branch was never rendered).
 - What tests ran:
+  - `npm test -- --runInBand app/__tests__/session-list-screen.test.tsx app/__tests__/completed-session-detail-screen.test.tsx app/__tests__/session-recorder-submit.test.tsx app/__tests__/session-recorder-persistence.test.tsx app/__tests__/session-completed-journey.test.tsx` (from `apps/mobile`) ✅
+  - `npm run lint` (from `apps/mobile`) ✅ (warnings only in unrelated `app/__tests__/ui-guardrails-script.test.ts`)
+  - `npm run typecheck` (from `apps/mobile`) ✅
+  - `npm run test -- --runInBand` (from `apps/mobile`) ✅
+  - `npm run test:e2e:ios:smoke` (from `apps/mobile`) ❌ (`session-list-screen` not visible at launch in local simulator/runtime)
 - What remains:
+  - Capture required M7 UX visual evidence/manual walkthrough screenshots (happy path + edge path states) once the local simulator smoke issue is resolved.
+  - Re-run the local iOS smoke flow successfully and attach final artifact paths; then update this task from `blocked` to `completed`.
 
 ## Status update checklist (mandatory at closeout)
 

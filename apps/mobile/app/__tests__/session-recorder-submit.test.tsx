@@ -64,6 +64,29 @@ const {
   __mockDismissAll: jest.Mock;
 };
 
+const buildCompletedEditSnapshot = (overrides: Partial<any> = {}) => ({
+  sessionId: 'completed-edit-1',
+  gymId: null,
+  status: 'completed',
+  startedAt: new Date('2026-02-25T10:00:00.000Z'),
+  completedAt: new Date('2026-02-25T10:45:00.000Z'),
+  durationSec: 2700,
+  deletedAt: null,
+  createdAt: new Date('2026-02-25T10:00:00.000Z'),
+  updatedAt: new Date('2026-02-25T10:45:00.000Z'),
+  exercises: [
+    {
+      id: 'exercise-1',
+      name: 'Bench Press',
+      machineName: 'Flat Bench',
+      originScopeId: 'private',
+      originSourceId: 'local',
+      sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
+    },
+  ],
+  ...overrides,
+});
+
 describe('SessionRecorderScreen submit cleanup flow', () => {
   beforeEach(() => {
     mockSearchParams = {};
@@ -162,27 +185,7 @@ describe('SessionRecorderScreen submit cleanup flow', () => {
 
   it('loads completed-edit mode, validates end time, and saves changes back to the list', async () => {
     mockSearchParams = { mode: 'completed-edit', sessionId: 'completed-edit-1' };
-    mockLoadSessionSnapshotById.mockResolvedValue({
-      sessionId: 'completed-edit-1',
-      gymId: null,
-      status: 'completed',
-      startedAt: new Date('2026-02-25T10:00:00.000Z'),
-      completedAt: new Date('2026-02-25T10:45:00.000Z'),
-      durationSec: 2700,
-      deletedAt: null,
-      createdAt: new Date('2026-02-25T10:00:00.000Z'),
-      updatedAt: new Date('2026-02-25T10:45:00.000Z'),
-      exercises: [
-        {
-          id: 'exercise-1',
-          name: 'Bench Press',
-          machineName: 'Flat Bench',
-          originScopeId: 'private',
-          originSourceId: 'local',
-          sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
-        },
-      ],
-    });
+    mockLoadSessionSnapshotById.mockResolvedValue(buildCompletedEditSnapshot());
 
     render(<SessionRecorderScreen />);
 
@@ -225,6 +228,71 @@ describe('SessionRecorderScreen submit cleanup flow', () => {
       expect(mockDismissTo).toHaveBeenCalledWith('/');
     });
 
+    expect(mockCompleteSessionDraft).not.toHaveBeenCalled();
+  });
+
+  it('uses completed-edit cleanup prompt labels for incomplete sets and saves changes after confirmation', async () => {
+    mockSearchParams = { mode: 'completed-edit', sessionId: 'completed-edit-1' };
+    mockLoadSessionSnapshotById.mockResolvedValue(
+      buildCompletedEditSnapshot({
+        exercises: [
+          {
+            id: 'exercise-1',
+            name: 'Bench Press',
+            machineName: 'Flat Bench',
+            originScopeId: 'private',
+            originSourceId: 'local',
+            sets: [
+              { id: 'set-1', repsValue: '5', weightValue: '225' },
+              { id: 'set-2', repsValue: '', weightValue: '205' },
+            ],
+          },
+        ],
+      })
+    );
+
+    render(<SessionRecorderScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Save Changes')).toBeTruthy();
+      expect(screen.getByDisplayValue('2026-02-25 10:45')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByText('Save Changes'));
+
+    expect(screen.getByText('Remove incomplete sets and submit?')).toBeTruthy();
+    expect(screen.getByText('Remove incomplete sets and save changes')).toBeTruthy();
+    fireEvent.press(screen.getByText('Remove incomplete sets and save changes'));
+
+    await waitFor(() => {
+      expect(mockPersistCompletedSessionSnapshot).toHaveBeenCalled();
+      expect(mockDismissTo).toHaveBeenCalledWith('/');
+    });
+    expect(mockCompleteSessionDraft).not.toHaveBeenCalled();
+  });
+
+  it('uses completed-edit cleanup prompt labels for empty exercises and saves changes after confirmation', async () => {
+    mockSearchParams = { mode: 'completed-edit', sessionId: 'completed-edit-1' };
+    mockLoadSessionSnapshotById.mockResolvedValue(buildCompletedEditSnapshot());
+
+    render(<SessionRecorderScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Save Changes')).toBeTruthy();
+      expect(screen.getByDisplayValue('2026-02-25 10:45')).toBeTruthy();
+    });
+
+    fireEvent.press(screen.getByLabelText('Remove set 1 from exercise 1'));
+    fireEvent.press(screen.getByText('Save Changes'));
+
+    expect(screen.getByText('Remove exercises with no sets and submit?')).toBeTruthy();
+    expect(screen.getByText('Remove empty exercises and save changes')).toBeTruthy();
+    fireEvent.press(screen.getByText('Remove empty exercises and save changes'));
+
+    await waitFor(() => {
+      expect(mockPersistCompletedSessionSnapshot).toHaveBeenCalled();
+      expect(mockDismissTo).toHaveBeenCalledWith('/');
+    });
     expect(mockCompleteSessionDraft).not.toHaveBeenCalled();
   });
 });

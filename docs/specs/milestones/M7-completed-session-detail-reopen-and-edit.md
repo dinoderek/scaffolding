@@ -111,7 +111,7 @@ Ship a completed-session detail flow that lets a user open a completed session f
 1. `docs/tasks/T-20260225-01-m7-completed-session-detail-route-and-read-only-ui.md` - add completed-row navigation, detail route shell, recorder-like read-only rendering, and UX contract. (`completed`)
 2. `docs/tasks/T-20260225-02-m7-completed-session-data-contracts-edit-and-reopen.md` - implement load-by-id session graph, completed-session edit persistence, reopen mutation, and single-active invariant tests. (`completed`)
 3. `docs/tasks/T-20260225-03-m7-mode-aware-recorder-completed-edit-flow.md` - add recorder/detail mode support, completed edit autosave, start/end time editing, validation, and save-return-to-list UX. (`completed`)
-4. `docs/tasks/T-20260225-04-m7-integration-tests-and-ux-evidence.md` - end-to-end/integration flow tests, regressions, and UX evidence closeout. (`planned`)
+4. `docs/tasks/T-20260225-04-m7-integration-tests-and-ux-evidence.md` - end-to-end/integration flow tests, regressions, and UX evidence closeout. (`blocked`)
 5. `docs/tasks/T-20260226-01-m7-remove-draft-status-and-migrate-to-active-completed-lifecycle.md` - remove persisted `draft` status, migrate legacy rows to `active`, and align repository lifecycle contracts/tests to `active|completed`. (`completed`)
 
 ## Risks / dependencies

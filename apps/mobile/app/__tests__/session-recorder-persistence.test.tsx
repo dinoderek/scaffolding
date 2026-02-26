@@ -3,6 +3,19 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import SessionRecorderScreen from '../session-recorder';
 
 let mockSearchParams: Record<string, string | undefined> = {};
+let mockBeforeRemoveListener: ((event: any) => void) | null = null;
+const mockNavigationDispatch = jest.fn();
+const mockNavigationAddListener = jest.fn((eventName: string, listener: (event: any) => void) => {
+  if (eventName === 'beforeRemove') {
+    mockBeforeRemoveListener = listener;
+  }
+
+  return () => {
+    if (mockBeforeRemoveListener === listener) {
+      mockBeforeRemoveListener = null;
+    }
+  };
+});
 
 jest.mock('@/src/data', () => ({
   loadLocalGymById: jest.fn().mockResolvedValue(null),
@@ -25,7 +38,7 @@ jest.mock('@/src/data', () => ({
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockSearchParams,
-  useNavigation: () => ({ addListener: jest.fn(() => () => undefined), dispatch: jest.fn() }),
+  useNavigation: () => ({ addListener: mockNavigationAddListener, dispatch: mockNavigationDispatch }),
   useRouter: () => ({ replace: jest.fn(), push: jest.fn() }),
 }));
 
@@ -46,10 +59,36 @@ const flushMicrotasks = async () => {
   await Promise.resolve();
 };
 
+const buildCompletedEditSnapshot = (overrides: Partial<any> = {}) => ({
+  sessionId: 'completed-edit-1',
+  gymId: null,
+  status: 'completed',
+  startedAt: new Date('2026-02-25T10:00:00.000Z'),
+  completedAt: new Date('2026-02-25T10:45:00.000Z'),
+  durationSec: 2700,
+  deletedAt: null,
+  createdAt: new Date('2026-02-25T10:00:00.000Z'),
+  updatedAt: new Date('2026-02-25T10:45:00.000Z'),
+  exercises: [
+    {
+      id: 'exercise-1',
+      name: 'Bench Press',
+      machineName: null,
+      originScopeId: 'private',
+      originSourceId: 'local',
+      sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
+    },
+  ],
+  ...overrides,
+});
+
 describe('SessionRecorderScreen persistence wiring', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     mockSearchParams = {};
+    mockBeforeRemoveListener = null;
+    mockNavigationDispatch.mockReset();
+    mockNavigationAddListener.mockClear();
     mockLoadLatestSessionDraftSnapshot.mockReset();
     mockLoadSessionSnapshotById.mockReset();
     mockPersistCompletedSessionSnapshot.mockReset();
@@ -171,27 +210,7 @@ describe('SessionRecorderScreen persistence wiring', () => {
 
   it('pauses completed-edit autosave while times are invalid and resumes when valid', async () => {
     mockSearchParams = { mode: 'completed-edit', sessionId: 'completed-edit-1' };
-    mockLoadSessionSnapshotById.mockResolvedValue({
-      sessionId: 'completed-edit-1',
-      gymId: null,
-      status: 'completed',
-      startedAt: new Date('2026-02-25T10:00:00.000Z'),
-      completedAt: new Date('2026-02-25T10:45:00.000Z'),
-      durationSec: 2700,
-      deletedAt: null,
-      createdAt: new Date('2026-02-25T10:00:00.000Z'),
-      updatedAt: new Date('2026-02-25T10:45:00.000Z'),
-      exercises: [
-        {
-          id: 'exercise-1',
-          name: 'Bench Press',
-          machineName: null,
-          originScopeId: 'private',
-          originSourceId: 'local',
-          sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
-        },
-      ],
-    });
+    mockLoadSessionSnapshotById.mockResolvedValue(buildCompletedEditSnapshot());
 
     render(<SessionRecorderScreen />);
 
@@ -225,5 +244,101 @@ describe('SessionRecorderScreen persistence wiring', () => {
         sessionId: 'completed-edit-1',
       })
     );
+  });
+
+  it('shows an immediate error when completed-edit mode is missing a session id', async () => {
+    mockSearchParams = { mode: 'completed-edit' };
+
+    render(<SessionRecorderScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-edit-recorder-error')).toBeTruthy();
+    });
+
+    expect(screen.getByText('Missing completed session id')).toBeTruthy();
+    expect(mockLoadSessionSnapshotById).not.toHaveBeenCalled();
+  });
+
+  it('shows a loading state while the completed-edit session is being loaded', async () => {
+    mockSearchParams = { mode: 'completed-edit', sessionId: 'completed-edit-1' };
+
+    let resolveSnapshot: (value: any) => void = () => {
+      throw new Error('Expected completed-edit loader promise resolver');
+    };
+    mockLoadSessionSnapshotById.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveSnapshot = resolve;
+      })
+    );
+
+    render(<SessionRecorderScreen />);
+
+    expect(screen.getByTestId('completed-edit-recorder-loading')).toBeTruthy();
+
+    await act(async () => {
+      resolveSnapshot(buildCompletedEditSnapshot());
+      await flushMicrotasks();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Save Changes')).toBeTruthy();
+    });
+  });
+
+  it('shows an error when completed-edit target is not a completed session', async () => {
+    mockSearchParams = { mode: 'completed-edit', sessionId: 'completed-edit-1' };
+    mockLoadSessionSnapshotById.mockResolvedValue(
+      buildCompletedEditSnapshot({
+        status: 'active',
+        completedAt: null,
+        durationSec: null,
+      })
+    );
+
+    render(<SessionRecorderScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('completed-edit-recorder-error')).toBeTruthy();
+    });
+
+    expect(screen.getByText('Session is not completed')).toBeTruthy();
+  });
+
+  it('flushes completed-edit changes before navigation is removed', async () => {
+    mockSearchParams = { mode: 'completed-edit', sessionId: 'completed-edit-1' };
+    mockLoadSessionSnapshotById.mockResolvedValue(buildCompletedEditSnapshot());
+
+    render(<SessionRecorderScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Save Changes')).toBeTruthy();
+      expect(mockNavigationAddListener).toHaveBeenCalledWith('beforeRemove', expect.any(Function));
+    });
+
+    expect(mockBeforeRemoveListener).toBeTruthy();
+
+    fireEvent.changeText(screen.getByTestId('completed-edit-end-time-input'), '2026-02-25 10:50');
+
+    const preventDefault = jest.fn();
+    const action = { type: 'GO_BACK' };
+
+    await act(async () => {
+      mockBeforeRemoveListener?.({
+        preventDefault,
+        data: { action },
+      });
+      await flushMicrotasks();
+    });
+
+    expect(preventDefault).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(mockNavigationDispatch).toHaveBeenCalledWith(action);
+      expect(mockPersistCompletedSessionSnapshot).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sessionId: 'completed-edit-1',
+          completedAt: new Date(2026, 1, 25, 10, 50, 0, 0),
+        })
+      );
+    });
   });
 });
