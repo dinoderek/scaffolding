@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260226-04`
 - Title: M8 lightweight UI guardrail enforcement (tokens/primitives compliance checks)
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-26`
 - Session interaction mode: `interactive (default)`
@@ -121,15 +121,33 @@ Add a minimal, practical enforcement layer that nudges UI work toward tokens/pri
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
 - Guardrail command output summary (including at least one real finding or explicit "clean" result on scoped files).
+  - `npm run lint:ui-guardrails` (from `apps/mobile`) scanned `11` UI files, skipped `4` explicit allowlisted legacy screens, found `0` blocking violations.
+  - `npm run lint:ui-guardrails -- --include-allowlisted` (audit mode) reported `229` raw color literal findings across the `4` allowlisted legacy screens, validating the rule against current refactor targets while keeping default runs incremental/non-blocking.
 - Documentation snippet/location for exceptions and usage.
+  - Added guardrail rules, command usage, scope, and exception/allowlist process to `docs/specs/ui/ux-rules.md`.
 - Manual verification summary (required when CI is absent/partial):
+  - Verified the guardrail script skips only the explicit legacy-screen allowlist and reports per-file findings/reasons in audit mode.
+  - Added a dedicated Jest test (`app/__tests__/ui-guardrails-script.test.ts`) covering raw-color detection, test-file exclusion, and allowlist behavior.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable: `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Added a lightweight UI guardrail script at `apps/mobile/scripts/check-ui-guardrails.js` that scans `app/**/*.tsx` and `components/**/*.tsx` for raw color literals (`#hex`, `rgb`, `rgba`) and fails only on non-allowlisted files.
+  - Added explicit temporary legacy-screen allowlist configuration with reasons in `apps/mobile/scripts/ui-guardrails.config.js` to support incremental adoption until Task 06 screen refactors land.
+  - Added `apps/mobile` package command `npm run lint:ui-guardrails`.
+  - Added Jest coverage for the guardrail script in `apps/mobile/app/__tests__/ui-guardrails-script.test.ts`.
+  - Seeded `docs/specs/ui/ux-rules.md` with enforced rule(s), command usage, audit mode, and exception process documentation.
 - What tests ran:
+  - `npm test -- ui-guardrails-script.test.ts` (from `apps/mobile`)
+  - `npm run lint:ui-guardrails` (from `apps/mobile`)
+  - `npm run lint:ui-guardrails -- --include-allowlisted` (from `apps/mobile`, audit evidence mode)
+  - `npm run lint` (from `apps/mobile`)
+  - `npm run typecheck` (from `apps/mobile`)
+  - `npm run test` (from `apps/mobile`)
 - What remains:
+  - Task 05 should integrate `docs/specs/ui/ux-rules.md` into the full authoritative UI docs bundle/link graph.
+  - Task 06 should migrate the allowlisted legacy screens to tokens/primitives and remove/reduce allowlist entries.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -137,4 +155,3 @@ Add a minimal, practical enforcement layer that nudges UI work toward tokens/pri
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-

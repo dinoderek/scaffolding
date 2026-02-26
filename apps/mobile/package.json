@@ -8,6 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "lint:ui-guardrails": "node ./scripts/check-ui-guardrails.js",
     "router:types": "node ./scripts/generate-router-types.js",
     "typecheck": "npm run router:types && tsc --noEmit",
     "test": "jest",

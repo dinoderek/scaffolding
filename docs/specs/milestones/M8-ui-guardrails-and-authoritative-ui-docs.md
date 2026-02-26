@@ -160,7 +160,7 @@ Establish a reality-based UI foundation for AI-assisted development by harvestin
 1. `docs/tasks/T-20260226-01-m8-ui-repo-discovery-and-inventory-baseline.md` - create the required repo discovery baseline and confirm exact UI/doc/template/navigation/styling facts. (`completed`)
 2. `docs/tasks/T-20260226-02-m8-ui-pattern-audit-doc.md` - produce the UI pattern audit with code references and primitive candidates. (`completed`)
 3. `docs/tasks/T-20260226-03-m8-ui-tokens-and-primitives-foundation.md` - implement tokens source of truth and an initial primitive set derived from the audit. (`completed`)
-4. `docs/tasks/T-20260226-04-m8-ui-guardrail-enforcement.md` - add lightweight UI guardrail enforcement and document exceptions/usage. (`planned`)
+4. `docs/tasks/T-20260226-04-m8-ui-guardrail-enforcement.md` - add lightweight UI guardrail enforcement and document exceptions/usage. (`completed`)
 5. `docs/tasks/T-20260226-05-m8-authoritative-ui-docs-bundle.md` - create/update UI docs bundle (`ux-rules`, `screen-map`, `navigation-contract`, `components-catalog`) and register docs path conventions. (`planned`)
 6. `docs/tasks/T-20260226-06-m8-screen-refactor-to-tokens-and-primitives.md` - refactor current user-facing screens to converge on tokens/primitives with regression checks. (`planned`)
 7. `docs/tasks/T-20260226-07-m8-ai-playbook-ui-rules-summary-and-links.md` - add concise UI rules summary + links to `docs/specs/04-ai-development-playbook.md`. (`planned`)
