@@ -22,6 +22,7 @@ import {
   setSessionDeletedState,
 } from '@/src/data';
 import { TopLevelTabs } from '@/components/navigation/top-level-tabs';
+import { uiColors } from '@/components/ui';
 
 export type SessionListItem = {
   id: string;
@@ -868,7 +869,7 @@ export default function SessionListRoute() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f4f7fb',
+    backgroundColor: uiColors.surfacePage,
     padding: 16,
     gap: 16,
   },
@@ -901,7 +902,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#122033',
+    color: uiColors.textPrimary,
   },
   actionButton: {
     borderRadius: 10,
@@ -911,24 +912,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryButton: {
-    backgroundColor: '#0f5cc0',
+    backgroundColor: uiColors.actionPrimary,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: uiColors.surfaceDefault,
     fontWeight: '700',
   },
   emptyPanel: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e1e6ee',
-    backgroundColor: '#f7f9fc',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfacePage,
     padding: 12,
   },
   sessionRow: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e7ef',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
     paddingHorizontal: 10,
     paddingVertical: 8,
     flexDirection: 'row',
@@ -936,12 +937,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   activeSessionRow: {
-    borderColor: '#b8e3c3',
-    backgroundColor: '#ebf8ef',
+    borderColor: uiColors.borderSuccess,
+    backgroundColor: uiColors.surfaceSuccess,
   },
   deletedCompletedRow: {
-    borderColor: '#e0c9c9',
-    backgroundColor: '#fbf4f4',
+    borderColor: uiColors.actionDangerSubtleBorder,
+    backgroundColor: uiColors.actionDangerSubtleBg,
     opacity: 0.9,
   },
   sessionRowMainPressable: {
@@ -968,21 +969,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   completeButton: {
-    backgroundColor: '#dff5e7',
-    borderColor: '#b5e2c6',
+    backgroundColor: uiColors.surfaceSuccess,
+    borderColor: uiColors.borderSuccess,
   },
   menuButton: {
-    backgroundColor: '#eef2f9',
-    borderColor: '#c7d3e8',
+    backgroundColor: uiColors.actionNeutralSubtleBg,
+    borderColor: uiColors.actionNeutralSubtleBorder,
   },
   iconGlyphText: {
-    color: '#20324f',
+    color: uiColors.actionNeutralSubtleText,
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 16,
   },
   completeGlyphText: {
-    color: '#124d29',
+    color: uiColors.textSuccess,
   },
   summaryLines: {
     gap: 2,
@@ -996,25 +997,25 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   summaryToken: {
-    color: '#13243b',
+    color: uiColors.textPrimary,
     fontSize: 12,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
   summaryTokenPrimary: {
-    color: '#0f2a46',
+    color: uiColors.textAccentStrong,
   },
   summaryTokenStrong: {
     fontSize: 13,
     fontWeight: '700',
   },
   summaryTokenSecondary: {
-    color: '#45566f',
+    color: uiColors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
   },
   summaryAtToken: {
-    color: '#4a5d77',
+    color: uiColors.textSecondary,
   },
   summaryLocationToken: {
     flexShrink: 1,
@@ -1025,11 +1026,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   summarySeparator: {
-    color: '#8ea0b8',
+    color: uiColors.textTertiary,
     fontSize: 11,
   },
   metaText: {
-    color: '#56667f',
+    color: uiColors.textSecondary,
     fontSize: 13,
   },
   completedList: {
@@ -1038,27 +1039,27 @@ const styles = StyleSheet.create({
   toggleButton: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#c7d3e8',
-    backgroundColor: '#eef2f9',
+    borderColor: uiColors.actionNeutralSubtleBorder,
+    backgroundColor: uiColors.actionNeutralSubtleBg,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
   toggleButtonText: {
-    color: '#20324f',
+    color: uiColors.actionNeutralSubtleText,
     fontSize: 12,
     fontWeight: '600',
   },
   globalEmptyState: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#d7deea',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
     padding: 16,
     gap: 6,
     alignItems: 'center',
   },
   globalEmptyTitle: {
-    color: '#122033',
+    color: uiColors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -1070,20 +1071,20 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: uiColors.overlayScrim,
   },
   modalPanel: {
     width: '100%',
     maxWidth: 360,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#d7deea',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
     padding: 14,
     gap: 10,
   },
   modalTitle: {
-    color: '#122033',
+    color: uiColors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -1095,28 +1096,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalDangerButton: {
-    backgroundColor: '#fff0f0',
+    backgroundColor: uiColors.actionDangerSubtleBg,
     borderWidth: 1,
-    borderColor: '#f3c5c5',
+    borderColor: uiColors.actionDangerSubtleBorder,
   },
   modalDangerButtonText: {
-    color: '#8a2323',
+    color: uiColors.actionDangerText,
     fontWeight: '700',
   },
   modalNeutralButton: {
-    backgroundColor: '#eef2f9',
+    backgroundColor: uiColors.actionNeutralSubtleBg,
     borderWidth: 1,
-    borderColor: '#c7d3e8',
+    borderColor: uiColors.actionNeutralSubtleBorder,
   },
   modalDisabledButton: {
-    backgroundColor: '#f4f6fa',
-    borderColor: '#dde4f0',
+    backgroundColor: uiColors.surfaceDisabled,
+    borderColor: uiColors.borderDisabled,
   },
   modalNeutralButtonText: {
-    color: '#20324f',
+    color: uiColors.actionNeutralSubtleText,
     fontWeight: '700',
   },
   modalDisabledButtonText: {
-    color: '#8190a8',
+    color: uiColors.textDisabled,
   },
 });

@@ -100,6 +100,7 @@ Document app-specific UI semantics and guardrails for the current mobile app.
 1. Do not add raw color literals (`#hex`, `rgb(...)`, `rgba(...)`) directly in screen/component `.tsx` files.
 2. Use UI tokens from `apps/mobile/components/ui/tokens.ts` directly or through primitives in `apps/mobile/components/ui/`.
 3. Temporary exceptions require an explicit allowlist entry and rationale in `apps/mobile/scripts/ui-guardrails.config.js`.
+4. As of Task `T-20260226-06`, the current route screens (`session-list`, `session-recorder`, `exercise-catalog`, `completed-session/[sessionId]`) no longer require raw-color allowlist exceptions.
 
 Guardrail command:
 
@@ -114,6 +115,6 @@ Guardrail command:
 
 ## Pending / planned (not current behavior)
 
-1. Broader primitive adoption is expected to reduce local style duplication across screens (tracked in M8 follow-up tasks).
+1. Additional primitive extraction (for example state panels, modal surfaces, row cards, form fields) remains pending to reduce route-local style duplication beyond the token convergence completed in Task `T-20260226-06`.
 2. Additional primitives from the audit (for example `ScreenContainer`, `EmptyState`, `ModalSurface`) are candidates, not current required APIs.
-3. The raw-color guardrail allowlist should shrink as legacy screens are refactored onto tokens/primitives.
+3. Temporary raw-color guardrail allowlist entries remain available only for future exceptional migrations; current route-screen exceptions were cleared in Task `T-20260226-06`.

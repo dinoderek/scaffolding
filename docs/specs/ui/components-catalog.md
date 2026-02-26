@@ -30,6 +30,7 @@ Brief entrypoint inventory of the current reusable UI component set.
 - File: `apps/mobile/components/ui/tokens.ts`
 - Purpose:
   - single source of truth for shared UI token values (colors, spacing, radius, typography, border)
+  - includes the shared semantic/status/overlay color palette used by current route screens after the M8 convergence refactor (Task `T-20260226-06`)
 
 2. `UiText`
 - File: `apps/mobile/components/ui/text.tsx`
@@ -88,6 +89,12 @@ Audit-approved candidates that are not yet implemented/finalized:
 - `IconActionButton`
 
 Reference: `docs/specs/ui/ui-pattern-audit.md`
+
+## Refactor convergence notes (Task `T-20260226-06`)
+
+1. Current user-facing route screens now consume `uiTokens.colors` for route-level screen styles (including modal scrims and status surfaces) instead of screen-local raw color literals.
+2. No reusable primitives were removed in Task `T-20260226-06`; existing shared primitives/components (`UiButton`, `UiText`, `UiSurface`, `TopLevelTabs`, `SessionContentLayout`) remain the canonical reuse surface.
+3. Some repeated button/row/modal patterns remain route-local one-offs to avoid behavioral churn; they stay tracked as candidate primitives in the pending list above.
 
 ## Maintenance rule
 

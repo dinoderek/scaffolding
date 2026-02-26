@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { TopLevelTabs } from '@/components/navigation/top-level-tabs';
+import { uiColors } from '@/components/ui';
 import {
   deleteExerciseCatalogExercise,
   listExerciseCatalogExercises,
@@ -749,7 +750,7 @@ export default function ExerciseCatalogScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f2f4f7',
+    backgroundColor: uiColors.surfacePage,
     padding: 16,
     gap: 12,
   },
@@ -771,65 +772,65 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#d6dbe2',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
   },
   stateText: {
     fontSize: 15,
-    color: '#333333',
+    color: uiColors.textPrimary,
   },
   section: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#d6dbe2',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
     padding: 14,
     gap: 10,
   },
   feedbackCard: {
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#bfe3c7',
-    backgroundColor: '#edf9f0',
+    borderColor: uiColors.borderSuccess,
+    backgroundColor: uiColors.surfaceSuccess,
     paddingHorizontal: 10,
     paddingVertical: 8,
   },
   fieldLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: uiColors.textSecondary,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#c7ced8',
+    borderColor: uiColors.borderDefault,
     borderRadius: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: uiColors.surfaceDefault,
     paddingHorizontal: 10,
     paddingVertical: 9,
   },
   inputError: {
-    borderColor: '#b91c1c',
+    borderColor: uiColors.actionDanger,
   },
   list: {
     gap: 8,
   },
   helperText: {
     fontSize: 13,
-    color: '#4b5563',
+    color: uiColors.textSecondary,
   },
   errorText: {
     fontSize: 13,
-    color: '#b91c1c',
+    color: uiColors.actionDanger,
     fontWeight: '500',
   },
   successText: {
     fontSize: 13,
-    color: '#166534',
+    color: uiColors.textSuccess,
     fontWeight: '600',
   },
   primaryButton: {
     borderRadius: 8,
-    backgroundColor: '#0f5cc0',
+    backgroundColor: uiColors.actionPrimary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
@@ -837,7 +838,7 @@ const styles = StyleSheet.create({
     minHeight: 42,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: uiColors.surfaceDefault,
     fontWeight: '700',
   },
   modalPrimaryButton: {
@@ -846,8 +847,8 @@ const styles = StyleSheet.create({
   secondaryButton: {
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#6b7280',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.textSecondary,
+    backgroundColor: uiColors.surfaceDefault,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
@@ -856,13 +857,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   secondaryButtonText: {
-    color: '#374151',
+    color: uiColors.textSecondary,
     fontWeight: '600',
   },
   deleteConfirmButton: {
     flex: 1,
     borderRadius: 8,
-    backgroundColor: '#b3261e',
+    backgroundColor: uiColors.actionDanger,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
@@ -870,7 +871,7 @@ const styles = StyleSheet.create({
     minHeight: 42,
   },
   deleteConfirmButtonText: {
-    color: '#ffffff',
+    color: uiColors.surfaceDefault,
     fontWeight: '700',
   },
   exerciseListRow: {
@@ -878,11 +879,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: '#d6dbe2',
+    borderColor: uiColors.borderMuted,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 7,
-    backgroundColor: '#ffffff',
+    backgroundColor: uiColors.surfaceDefault,
   },
   exerciseListRowMainPressable: {
     flex: 1,
@@ -894,11 +895,11 @@ const styles = StyleSheet.create({
   exerciseListRowTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#111827',
+    color: uiColors.textPrimary,
   },
   exerciseListRowMuscleSummary: {
     fontSize: 11,
-    color: '#4b5563',
+    color: uiColors.textSecondary,
     fontWeight: '600',
   },
   exerciseRowKebabButton: {
@@ -908,13 +909,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#d6dbe2',
-    backgroundColor: '#f8fafc',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfacePage,
   },
   exerciseRowKebabText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#475569',
+    color: uiColors.textSecondary,
     lineHeight: 16,
   },
   addMuscleLinkRow: {
@@ -925,23 +926,23 @@ const styles = StyleSheet.create({
   addMuscleLinkButton: {
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#0f5cc0',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.actionPrimary,
+    backgroundColor: uiColors.surfaceDefault,
     paddingHorizontal: 10,
     paddingVertical: 8,
     minHeight: 38,
     justifyContent: 'center',
   },
   addMuscleLinkButtonText: {
-    color: '#0f5cc0',
+    color: uiColors.actionPrimary,
     fontWeight: '700',
     fontSize: 12,
   },
   pickerButton: {
     borderWidth: 1,
-    borderColor: '#c7ced8',
+    borderColor: uiColors.borderDefault,
     borderRadius: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: uiColors.surfaceDefault,
     minHeight: 42,
     paddingHorizontal: 10,
     paddingVertical: 9,
@@ -952,26 +953,26 @@ const styles = StyleSheet.create({
   pickerButtonText: {
     flex: 1,
     minWidth: 0,
-    color: '#111827',
+    color: uiColors.textPrimary,
     fontWeight: '600',
     fontSize: 13,
   },
   pickerButtonPlaceholder: {
     flex: 1,
     minWidth: 0,
-    color: '#6b7280',
+    color: uiColors.textSecondary,
     fontSize: 13,
   },
   pickerButtonChevron: {
-    color: '#475569',
+    color: uiColors.textSecondary,
     fontSize: 12,
     fontWeight: '700',
   },
   secondaryMuscleRow: {
     borderWidth: 1,
-    borderColor: '#d6dbe2',
+    borderColor: uiColors.borderMuted,
     borderRadius: 10,
-    backgroundColor: '#f9fafb',
+    backgroundColor: uiColors.surfaceMuted,
     paddingHorizontal: 8,
     paddingVertical: 8,
     gap: 6,
@@ -979,11 +980,11 @@ const styles = StyleSheet.create({
   secondaryMuscleRowTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#111827',
+    color: uiColors.textPrimary,
   },
   secondaryMuscleRowFamily: {
     fontSize: 11,
-    color: '#4b5563',
+    color: uiColors.textSecondary,
   },
   secondaryMuscleRowControls: {
     flexDirection: 'row',
@@ -997,7 +998,7 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     borderRadius: 8,
-    backgroundColor: '#b3261e',
+    backgroundColor: uiColors.actionDanger,
     paddingHorizontal: 10,
     paddingVertical: 8,
     alignItems: 'center',
@@ -1005,7 +1006,7 @@ const styles = StyleSheet.create({
     minHeight: 38,
   },
   removeButtonText: {
-    color: '#ffffff',
+    color: uiColors.surfaceDefault,
     fontWeight: '700',
     fontSize: 12,
   },
@@ -1016,38 +1017,38 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    backgroundColor: uiColors.overlayScrim,
   },
   modalCard: {
     height: '80%',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#d6dbe2',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
     padding: 14,
     gap: 12,
   },
   deleteModalCard: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#d6dbe2',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
     padding: 14,
     gap: 10,
   },
   actionMenuCard: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#d6dbe2',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
     padding: 14,
     gap: 8,
   },
   actionMenuButton: {
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#d6dbe2',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
     paddingVertical: 10,
     paddingHorizontal: 12,
     minHeight: 42,
@@ -1055,15 +1056,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionMenuButtonText: {
-    color: '#1f2937',
+    color: uiColors.textPrimary,
     fontWeight: '700',
   },
   actionMenuDeleteButton: {
-    borderColor: '#f3c5c5',
-    backgroundColor: '#fff5f5',
+    borderColor: uiColors.actionDangerSubtleBorder,
+    backgroundColor: uiColors.actionDangerSubtleBg,
   },
   actionMenuDeleteButtonText: {
-    color: '#8a2323',
+    color: uiColors.actionDangerText,
     fontWeight: '700',
   },
   modalHeaderRow: {
@@ -1076,7 +1077,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
+    color: uiColors.textPrimary,
   },
   modalScroll: {
     flex: 1,
@@ -1092,15 +1093,15 @@ const styles = StyleSheet.create({
   },
   selectorOverlayBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.28)',
+    backgroundColor: uiColors.overlayScrimSoft,
     borderRadius: 14,
   },
   selectorOverlayCard: {
     height: '80%',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#d6dbe2',
-    backgroundColor: '#ffffff',
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
     padding: 14,
     gap: 10,
   },
@@ -1110,9 +1111,9 @@ const styles = StyleSheet.create({
   },
   selectorListRow: {
     borderWidth: 1,
-    borderColor: '#d6dbe2',
+    borderColor: uiColors.borderMuted,
     borderRadius: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: uiColors.surfaceDefault,
     paddingHorizontal: 10,
     paddingVertical: 8,
     flexDirection: 'row',
@@ -1127,16 +1128,16 @@ const styles = StyleSheet.create({
   selectorListRowTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#111827',
+    color: uiColors.textPrimary,
   },
   selectorListRowMeta: {
     fontSize: 11,
-    color: '#4b5563',
+    color: uiColors.textSecondary,
   },
   selectorListRowAction: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#0f5cc0',
+    color: uiColors.actionPrimary,
   },
   modalFooterRow: {
     flexDirection: 'row',

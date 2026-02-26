@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260226-06`
 - Title: M8 refactor current screens to tokens/primitives (convergence without behavior changes)
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-26`
 - Session interaction mode: `interactive (default)`
@@ -145,8 +145,21 @@ Refactor the current mobile screens to use the new tokens/primitives and converg
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Refactored the current user-facing route screens (`session-list`, `session-recorder`, `exercise-catalog`, `completed-session/[sessionId]`) to use shared UI tokens (`uiColors`) instead of screen-local raw color literals, preserving route behavior and screen logic.
+  - Expanded `apps/mobile/components/ui/tokens.ts` with additional semantic/status/overlay/disabled color tokens used by the refactored screens.
+  - Cleared the temporary raw-color guardrail allowlist entries in `apps/mobile/scripts/ui-guardrails.config.js` (now empty) because the legacy route-screen exceptions are no longer needed.
+  - Updated `docs/specs/ui/components-catalog.md` and `docs/specs/ui/ux-rules.md` to reflect token convergence completion, guardrail exception removal, and remaining candidate primitive extractions.
+  - Reviewed `docs/specs/ui/screen-map.md` and `docs/specs/ui/navigation-contract.md`; no route/param/transition changes were made, so no updates were required.
 - What tests ran:
+  - `npm run lint:ui-guardrails -- --include-allowlisted` (from `apps/mobile`)
+  - `npm run typecheck` (from `apps/mobile`)
+  - `npm run lint:ui-guardrails` (from `apps/mobile`)
+  - `npm run test -- app/__tests__/session-list-screen.test.tsx app/__tests__/exercise-catalog-screen.test.tsx app/__tests__/session-recorder-screen.test.tsx app/__tests__/completed-session-detail-screen.test.tsx` (from `apps/mobile`)
+  - `npm run lint` (from `apps/mobile`) - passed with existing warnings in `app/__tests__/ui-guardrails-script.test.ts`
+  - `npm run typecheck` (from `apps/mobile`)
+  - `npm run test` (from `apps/mobile`)
 - What remains:
+  - Optional M8 follow-up primitive extraction for repeated route-local button/row/modal patterns (tracked as pending candidates in `docs/specs/ui/components-catalog.md`).
 
 ## Status update checklist (mandatory at closeout)
 
@@ -154,4 +167,3 @@ Refactor the current mobile screens to use the new tokens/primitives and converg
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-
