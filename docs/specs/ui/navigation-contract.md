@@ -1,0 +1,92 @@
+# Navigation Contract (Authoritative Current Flows)
+
+## Purpose
+
+Brief entrypoint contract for current mobile routes, query/path params, and allowed route transitions.
+
+- This doc answers: "which routes exist, what params matter, and how screens navigate between them?"
+- Source files remain authoritative for exact navigation call sites and edge-case behavior.
+
+## Sources
+
+- `docs/specs/ui/screen-map.md`
+- `docs/specs/ui/repo-discovery-baseline.md`
+- Route files under `apps/mobile/app/**`
+
+## Router baseline (current)
+
+- Router system: `expo-router` (file-based routes in `apps/mobile/app/`)
+- Root stack/layout: `apps/mobile/app/_layout.tsx`
+- Navigation is currently string-path based (no centralized typed route helper layer)
+
+## Route + param summary (current)
+
+1. `/` (alias)
+- File: `apps/mobile/app/index.tsx`
+- Params:
+  - none
+- Behavior:
+  - re-exports `/session-list`
+
+2. `/session-list`
+- File: `apps/mobile/app/session-list.tsx`
+- Params:
+  - none
+- Behavior:
+  - focus refreshes data via local reload token
+
+3. `/session-recorder`
+- File: `apps/mobile/app/session-recorder.tsx`
+- Query params:
+  - `mode` (optional; `completed-edit` enables completed-session edit flow)
+  - `sessionId` (optional; used by completed-edit flow)
+- Behavior:
+  - missing/invalid completed-edit inputs are handled by route UI state (no crash)
+
+4. `/exercise-catalog`
+- File: `apps/mobile/app/exercise-catalog.tsx`
+- Params:
+  - none
+
+5. `/completed-session/[sessionId]`
+- File: `apps/mobile/app/completed-session/[sessionId].tsx`
+- Path params:
+  - `sessionId` (required dynamic segment)
+- Query params:
+  - `intent` (optional; `edit` redirects to `session-recorder` completed-edit mode)
+
+## Allowed route transitions (current high-level flows)
+
+1. `/` -> `/session-list`
+   - default route alias behavior
+2. `/session-list` -> `/session-recorder`
+   - start/open active session
+3. `/session-list` -> `/completed-session/<sessionId>`
+   - open completed session detail
+4. `/session-list` -> `/session-recorder?mode=completed-edit&sessionId=<sessionId>`
+   - edit completed session from session actions
+5. `/session-list` <-> `/exercise-catalog`
+   - top-level tabs
+6. `/completed-session/<sessionId>` -> `/session-recorder?mode=completed-edit&sessionId=<sessionId>`
+   - edit action
+7. `/completed-session/<sessionId>?intent=edit` -> `/session-recorder?mode=completed-edit&sessionId=<sessionId>`
+   - route-side redirect (`replace`)
+8. `/completed-session/<sessionId>` -> `/`
+   - successful reopen (`dismissTo('/')`)
+9. `/session-recorder...` -> `/`
+   - successful submit/save (`dismissTo('/')`)
+
+Note:
+
+- Modal opens/closes are in-route UI state transitions, not route transitions.
+
+## Header titles (current, high level)
+
+- Static titles for `index`, `session-list`, `session-recorder`, `exercise-catalog` are set in `apps/mobile/app/_layout.tsx`
+- `completed-session/[sessionId]` sets its title inside the route file (current title: `View Session`)
+
+## Documentation boundary
+
+- Keep this doc concise and contract-oriented.
+- Do not duplicate every navigation call site or all route edge cases from source.
+- If a task changes route paths, params, redirects, or screen-to-screen transitions, update this doc in the same session.

@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260226-05`
 - Title: M8 authoritative UI docs bundle (UX rules, screen map, navigation contract, components catalog)
-- Status: `planned`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-26`
 - Session interaction mode: `interactive (default)`
@@ -103,13 +103,25 @@ Create the authoritative UI docs bundle (reality-based and AI-friendly) that doc
 
 - UI docs bundle file list + link map summary.
 - Manual verification summary (required when CI is absent/partial):
+  - Verified current route files and navigation calls against `apps/mobile/app/**` (`_layout`, `index`, `session-list`, `session-recorder`, `exercise-catalog`, `completed-session/[sessionId]`).
+  - Verified UI primitives/shared component exports and prop surfaces against `apps/mobile/components/ui/**`, `apps/mobile/components/navigation/top-level-tabs.tsx`, and `apps/mobile/components/session-recorder/session-content-layout.tsx`.
+  - Verified UI docs cross-links and file existence for `docs/specs/ui/README.md`, `ux-rules.md`, `screen-map.md`, `navigation-contract.md`, `components-catalog.md`, plus discovery/audit docs.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable: `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed:
+  - Added authoritative UI docs bundle index + missing route docs: `docs/specs/ui/README.md`, `docs/specs/ui/screen-map.md`, `docs/specs/ui/navigation-contract.md`.
+  - Upgraded seeded docs into authoritative current-state docs: `docs/specs/ui/ux-rules.md`, `docs/specs/ui/components-catalog.md`.
+  - Cross-linked UI docs to discovery/audit inputs and distinguished current behavior vs pending/planned items.
+  - User-requested process update: added direct-`main` start/end sync workflow + human-controlled commit/push handoff rule to `docs/specs/04-ai-development-playbook.md`.
 - What tests ran:
+  - `N/A` (docs-only task; no runtime code changes).
+  - Manual route/param sanity review against `apps/mobile/app/**`.
+  - Manual cross-link/path verification across `docs/specs/ui/**`.
 - What remains:
+  - Milestone remains `in_progress`; Task `T-20260226-06` (screen refactor to tokens/primitives) and later M8 docs/template integration tasks are still open.
+  - `docs/specs/09-project-structure.md` already documented `docs/specs/ui/` as canonical, so no update was required in this task.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -117,4 +129,3 @@ Create the authoritative UI docs bundle (reality-based and AI-friendly) that doc
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-

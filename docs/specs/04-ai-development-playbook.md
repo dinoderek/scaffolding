@@ -14,6 +14,7 @@ Define the minimum scaffolding required before feature development, and standard
    - `docs/specs/06-testing-strategy.md`
    - `docs/specs/09-project-structure.md`
    - `docs/specs/08-ux-delivery-standard.md` (required for UI tasks)
+   - `docs/specs/ui/README.md` (required for UI tasks; load relevant bundle docs from there)
 2. This playbook exists and is followed.
 3. A milestone spec exists for the active milestone.
 4. A task card exists for the active coding session.
@@ -99,6 +100,21 @@ Rule: task cards must list the exact gate commands they require; this section on
    - update this playbook if execution/verification workflow changes,
    - update relevant template(s) if future tasks need new required fields or checks.
 
+## Git sync workflow (current repo policy)
+
+This repo currently executes task sessions directly on `main` unless a human explicitly instructs otherwise.
+
+Required session sync steps:
+
+1. Start-of-session sync (before edits):
+   - sync local `main` with remote `main` (`origin/main`) before reading/writing task files.
+2. End-of-task sync (after verification and doc/status updates, before handoff):
+   - sync with remote again,
+   - resolve merge/rebase conflicts locally if they occur,
+   - re-run the smallest relevant verification checks if conflict resolution changes task files.
+3. Commit/push ownership:
+   - after end-of-task sync and conflict resolution, wait for human input before committing and pushing.
+
 ## Task execution protocol (quality-first)
 
 Use this sequence for every task card:
@@ -151,8 +167,31 @@ Provide these references at execution start:
 4. Any changed parent specs
 5. `docs/specs/09-project-structure.md` (always load for context; update only when task changes paths/layout/conventions)
 6. `docs/specs/08-ux-delivery-standard.md` (for UI tasks)
-7. `docs/specs/10-api-authn-authz-guidelines.md` (for backend API/auth work and API-consuming integration tasks)
-8. `supabase/session-sync-api-contract.md` (for session sync API work and FE/backend sync integration tasks, when present)
+7. `docs/specs/ui/README.md` (for UI tasks; use as the index to load only the relevant UI docs)
+8. Relevant `docs/specs/ui/*.md` bundle docs for the task (UI tasks only; usually `ux-rules`, `screen-map`, `navigation-contract`, `components-catalog`)
+9. `docs/specs/10-api-authn-authz-guidelines.md` (for backend API/auth work and API-consuming integration tasks)
+10. `supabase/session-sync-api-contract.md` (for session sync API work and FE/backend sync integration tasks, when present)
+
+## UI docs bundle usage (UI tasks)
+
+Use `docs/specs/ui/README.md` as the entrypoint for app-specific UI docs.
+
+Update the relevant UI docs in the same task/session when UI-affecting changes land:
+
+1. `screen-map.md`
+   - route inventory, screen purpose, or high-level state set changes
+2. `navigation-contract.md`
+   - route paths, params, redirects, or screen-to-screen transitions change
+3. `components-catalog.md`
+   - reusable UI tokens/primitives/shared components are added/removed/renamed or their purpose changes
+4. `ux-rules.md`
+   - app-specific UI semantics/guardrails/pattern conventions change
+
+Authoring rule for `docs/specs/ui/**`:
+
+- keep docs synthetic and overview-first (entrypoint docs),
+- link to source files for exact props/variants/implementation details,
+- avoid duplicating source code structure/API documentation unless a compact contract summary is necessary to prevent ambiguity.
 
 ## Task card rules
 
@@ -163,6 +202,7 @@ Provide these references at execution start:
 2. Task card must define:
    - In-scope / out-of-scope
    - UX contract with key user flows (for UI tasks)
+   - UI docs impact / docs touched plan (for UI tasks; which `docs/specs/ui/*.md` files must be updated and why, or explicit `no UI docs update` rationale)
    - Acceptance criteria
    - Testing and verification approach (commands/checks)
    - test-layer ownership and execution triggers for non-trivial backend/deployment/E2E work

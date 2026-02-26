@@ -17,6 +17,7 @@
 - Testing strategy: `docs/specs/06-testing-strategy.md`
 - Project structure: `docs/specs/09-project-structure.md` (always load for context; update only when task changes paths/layout/conventions)
 - UX standard (UI/UX tasks only; remove for non-UX tasks): `docs/specs/08-ux-delivery-standard.md`
+- UI docs bundle index (UI/UX tasks only; remove for non-UI tasks): `docs/specs/ui/README.md`
 
 ## Objective
 
@@ -56,6 +57,19 @@ What this session must accomplish.
 1. 
 2. 
 3. 
+
+## UI docs impact / Docs touched (UI/UX tasks only; remove for non-UI tasks)
+
+- UI docs update required?: `yes | no`
+- If `yes`, list exact files under `docs/specs/ui/` and why:
+  - `screen-map.md` (route inventory/screen purpose/high-level state changes)
+  - `navigation-contract.md` (route paths/params/redirects/transitions changes)
+  - `components-catalog.md` (reusable UI tokens/primitives/shared components added/removed/renamed or purpose changed)
+  - `ux-rules.md` (app-specific UI semantics/guardrails/pattern conventions changed)
+- If `no`, provide rationale:
+- Authoring rule for UI docs:
+  - keep docs synthetic/overview-first and source-linked
+  - do not duplicate detailed props/variants/implementation notes that are better read from source files
 
 ## Testing and verification approach (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
@@ -99,5 +113,6 @@ What this session must accomplish.
 
 - Update `Status` to `completed` or `blocked`.
 - Ensure completion note is filled before handoff.
+- For UI/UX tasks, update the relevant `docs/specs/ui/*.md` files (or record explicit `no update` rationale) and keep entries synthetic/overview-first.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.

@@ -8,6 +8,20 @@ Define a repeatable, lightweight process for specifying and iterating on UX qual
 
 Applies to all user-facing mobile UI tasks across screens, components, and cross-screen flows.
 
+## Relationship to the UI docs bundle (`docs/specs/ui/**`)
+
+Use `docs/specs/ui/README.md` as the entrypoint for app-specific UI documentation (screen map, navigation contract, components catalog, app-specific UX rules).
+
+Document boundary:
+
+1. This document (`08`) owns cross-task UX process, task contract expectations, UX quality principles, and reusable UX patterns.
+2. `docs/specs/ui/**` owns current app-specific UI reality (routes, navigation behavior, reusable UI component inventory, app-specific semantics/guardrails).
+3. UI docs under `docs/specs/ui/**` should stay synthetic/overview-first and source-linked:
+   - summarize what exists and why it matters,
+   - avoid duplicating source-file prop/API details unless a compact contract summary is needed.
+4. If a UI task changes app-specific UI behavior/docs, update the relevant `docs/specs/ui/*.md` files in the same session.
+5. Update this document in the same task only when the change affects shared UX process/pattern standards (not just one screen/component implementation).
+
 ## UX consistency and pattern management
 
 1. Maintain a living `UX patterns` section in this document.
@@ -131,4 +145,5 @@ Do not mark a UI task complete if any are true:
 ## Adoption notes
 
 1. This standard complements `docs/specs/04-ai-development-playbook.md` and `docs/specs/06-testing-strategy.md`.
-2. If a UI task needs exceptions, record them explicitly in that task card with reason and impact.
+2. For app-specific UI inventory/navigation/component docs, use `docs/specs/ui/README.md` and the linked UI docs bundle.
+3. If a UI task needs exceptions, record them explicitly in that task card with reason and impact.

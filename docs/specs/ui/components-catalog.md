@@ -1,85 +1,94 @@
-# Components Catalog (Seed, M8 Task 03)
+# Components Catalog (Authoritative Current UI Components)
 
 ## Purpose
 
-Seed the authoritative UI components/primitives catalog with the initial token/primitives foundation introduced in `T-20260226-03`.
+Brief entrypoint inventory of the current reusable UI component set.
 
-This is a partial draft. `T-20260226-05` owns final catalog structure/coverage.
+- This doc answers: "what exists, where it lives, and what it is for?"
+- Source files remain the authority for exact props, variants, and implementation details.
+
+## Sources
+
+- UI docs index: `docs/specs/ui/README.md`
+- UI pattern audit (candidate rationale): `docs/specs/ui/ui-pattern-audit.md`
+- UX rules/semantics: `docs/specs/ui/ux-rules.md`
 
 ## Canonical locations (current)
 
-- UI tokens source of truth: `apps/mobile/components/ui/tokens.ts:1`
-- UI primitives barrel exports: `apps/mobile/components/ui/index.ts:1`
-- UI primitives folder (canonical): `apps/mobile/components/ui/`
+- `apps/mobile/components/ui/`
+  - canonical tokens + primitive UI building blocks
+- `apps/mobile/components/navigation/`
+  - shared navigation-specific UI (app-specific, not generic primitives)
+- `apps/mobile/components/session-recorder/`
+  - shared session-recorder/session-detail UI composition components and supporting UI modules
 
-## Implemented in Task 03 (foundation set)
+## Current component set (authoritative)
 
-### Tokens
+### Tokens and primitive exports
 
-1. `uiTokens` + token groups (`colors`, `space`, `radius`, `typography`, `border`)
-- File: `apps/mobile/components/ui/tokens.ts:66`
-- Notes:
-  - Semantic token naming (for example `actionPrimary`, `surfaceDefault`, `textSecondary`)
-  - Derived from audited current literals/patterns, not a redesign
+1. `uiTokens` (and token groups)
+- File: `apps/mobile/components/ui/tokens.ts`
+- Purpose:
+  - single source of truth for shared UI token values (colors, spacing, radius, typography, border)
 
-### Primitives
+2. `UiText`
+- File: `apps/mobile/components/ui/text.tsx`
+- Purpose:
+  - shared text primitive for semantic text roles used across reusable UI components
 
-1. `UiText`
-- File: `apps/mobile/components/ui/text.tsx:24`
-- Current role:
-  - semantic text variants for labels/titles/subtitles/button/tab text
-- Notes:
-  - Variants are intentionally lightweight and may be consolidated/renamed in Task 05 docs after broader adoption
+3. `UiSurface`
+- File: `apps/mobile/components/ui/surface.tsx`
+- Purpose:
+  - shared surface/card/panel wrapper for bordered rounded containers
 
-2. `UiSurface`
-- File: `apps/mobile/components/ui/surface.tsx:13`
-- Current role:
-  - bordered card/panel surface primitive (`card`, `panelMuted`)
-- Notes:
-  - Base for panel/card convergence without forcing screen-specific wrappers into generic primitives
+4. `UiButton`
+- File: `apps/mobile/components/ui/button.tsx`
+- Purpose:
+  - shared semantic button primitive (including tab-style usage for top-level navigation)
 
-3. `UiButton`
-- File: `apps/mobile/components/ui/button.tsx:20`
-- Current role:
-  - semantic button primitive (`primary`, `secondary`, `danger`, `tab`)
-- Notes:
-  - Includes tab selected-state accessibility wiring for `TopLevelTabs`
-  - Prop surface is intentionally small for the first iteration
+5. `ui` barrel exports
+- File: `apps/mobile/components/ui/index.ts`
+- Purpose:
+  - single import entrypoint for current tokens and UI primitives
 
-## Proof integrations completed in Task 03
-
-1. `TopLevelTabs` now consumes `UiButton` + `UiSurface` + tokens
-- File: `apps/mobile/components/navigation/top-level-tabs.tsx:13`
-
-2. `SessionContentLayout` now consumes `UiSurface` + `UiText` + tokens
-- File: `apps/mobile/components/session-recorder/session-content-layout.tsx:40`
-
-## Specialized shared components (remain specialized)
+### Specialized shared components (reusable, not generic primitives)
 
 1. `TopLevelTabs`
-- File: `apps/mobile/components/navigation/top-level-tabs.tsx:13`
-- Status:
-  - specialized navigation component using primitives (not itself a generic primitive)
+- File: `apps/mobile/components/navigation/top-level-tabs.tsx`
+- Purpose:
+  - app-specific top-level Sessions/Exercises tab strip used on `session-list` and `exercise-catalog`
 
 2. `SessionContentLayout`
-- File: `apps/mobile/components/session-recorder/session-content-layout.tsx:40`
-- Status:
-  - specialized session/exercise/set layout scaffold using primitives
+- File: `apps/mobile/components/session-recorder/session-content-layout.tsx`
+- Purpose:
+  - shared layout scaffold for session exercise/set content used by `session-recorder` and completed-session detail screens
 
-3. `session-recorder/types.ts`
-- File: `apps/mobile/components/session-recorder/types.ts:1`
-- Status:
-  - UI-supporting state/types/constants module (non-visual)
+### UI-supporting shared module (non-visual)
 
-## Deferred primitive candidates (tracked from audit)
+1. `session-recorder/types.ts`
+- File: `apps/mobile/components/session-recorder/types.ts`
+- Purpose:
+  - shared UI state/types/constants used by the session-recorder screen flow
 
-These remain audit-approved candidates but are not implemented in Task 03 to keep scope bounded:
+## Excluded from this catalog (document elsewhere)
+
+- Route-level screen shells (for example `SessionListScreenShell`, `CompletedSessionDetailScreenShell`)
+  - Document in `docs/specs/ui/screen-map.md` and `docs/specs/ui/navigation-contract.md`
+  - Reason: they are route composition/test helpers, not reusable UI building blocks
+
+## Pending / planned (not current components)
+
+Audit-approved candidates that are not yet implemented/finalized:
 
 - `ScreenContainer` / `ScreenScrollContainer`
 - `EmptyState` / state panels
 - `ModalSurface` / `ModalBackdrop`
-- `FormField` composition helper
+- `FormField`
 - `PressableRowCard`
 - `IconActionButton`
 
-Reference source: `docs/specs/ui/ui-pattern-audit.md:402`
+Reference: `docs/specs/ui/ui-pattern-audit.md`
+
+## Maintenance rule
+
+If a task adds/removes/renames reusable UI components or changes their role, update this doc in the same session.

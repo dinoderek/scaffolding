@@ -4,6 +4,11 @@
 
 Define the top-level testing stack and working practices for MVP.
 
+Scope boundary:
+
+- This doc owns testing strategy and verification policy.
+- App-specific UI route/component inventories and navigation summaries live in `docs/specs/ui/**` (entrypoint: `docs/specs/ui/README.md`) and should remain brief/source-linked.
+
 ## Decisions and rationale
 
 1. `Vitest` for unit/domain tests.

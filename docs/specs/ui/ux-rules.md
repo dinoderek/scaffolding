@@ -1,56 +1,119 @@
-# UX Rules (Seed, M8 Task 04)
+# UX Rules (Authoritative Current UI Semantics)
 
 ## Purpose
 
-Seed the authoritative UI rules doc with the first practical enforcement rule introduced in `T-20260226-04`.
+Document app-specific UI semantics and guardrails for the current mobile app.
 
-This is a partial draft. `T-20260226-05` owns final structure/coverage.
+- This doc is a reality-based source of truth for current behavior and conventions.
+- It complements (does not replace) `docs/specs/08-ux-delivery-standard.md`, which defines cross-task UX process requirements.
 
-## Related UI docs (current)
+## Sources
 
+- UI docs index: `docs/specs/ui/README.md`
 - Repo discovery baseline: `docs/specs/ui/repo-discovery-baseline.md`
-- UI pattern audit: `docs/specs/ui/ui-pattern-audit.md`
-- Components catalog (seed): `docs/specs/ui/components-catalog.md`
+- UI pattern audit (evidence): `docs/specs/ui/ui-pattern-audit.md`
+- Screen map: `docs/specs/ui/screen-map.md`
+- Navigation contract: `docs/specs/ui/navigation-contract.md`
+- Components catalog: `docs/specs/ui/components-catalog.md`
 
-## Guardrail rules (current, enforced)
+## Status legend
+
+- `Current behavior (authoritative)`: verified against current app code.
+- `Pending / planned`: approved direction or audit-derived target not fully implemented yet.
+
+## Current behavior (authoritative)
+
+### 1. Action semantics
+
+1. Primary actions are filled/high-emphasis actions used for the main next step in a section/screen.
+   - Examples:
+     - `Start Session`
+     - `Submit Session` / `Save Changes`
+     - `New Exercise`
+2. Secondary actions are neutral/outline actions used for non-destructive alternatives or dismiss/close flows.
+   - Examples:
+     - `Cancel`
+     - `Done`
+     - `Reopen` (when enabled)
+3. Danger actions are explicitly destructive and visually distinct.
+   - Examples:
+     - delete session
+     - delete exercise
+     - remove destructive menu actions
+4. Tab actions (`TopLevelTabs`) are navigation controls, not generic primary actions.
+   - They use tab semantics (`accessibilityRole="tab"` / tablist) and active-state visuals.
+
+### 2. Modal and overlay semantics
+
+1. Most secondary workflows in current screens use in-route modal/overlay UI state instead of route changes.
+   - Examples:
+     - session list action menus
+     - exercise catalog editor/action/delete modals
+     - session recorder gym/exercise pickers/managers/editors
+2. Modal open/close is treated as state within the current route and should not be documented as a navigation transition.
+3. Dismiss overlays via backdrop press are common and expected when the flow is not destructive-final.
+
+### 3. Screen layout and spacing conventions (current app behavior)
+
+1. Current user-facing screens use vertical layouts with no horizontal scrolling on phone widths.
+2. Page backgrounds are muted light surfaces (`surfacePage`-like behavior), with card/panel surfaces layered on top.
+3. Spacing rhythm is already close to 8pt increments (common values cluster around `8/10/12/14/16/20`) and should remain consistent.
+4. Bottom tab navigation remains visible on `session-list` and `exercise-catalog` across primary states (including loading/error in `exercise-catalog`).
+
+### 4. List and row interaction conventions
+
+1. Pressable list rows commonly separate:
+   - main row press target (open/edit primary action)
+   - trailing kebab/icon action for secondary actions
+2. This split interaction pattern is used in both `session-list` and `exercise-catalog`, and should be preserved during refactors unless behavior intentionally changes.
+3. Deleted/archived visibility is controlled via toggles and state hints, not separate routes.
+
+### 5. Forms and validation conventions
+
+1. Text inputs, picker triggers, and read-only fields are visually similar but currently implemented in multiple screen-local styles.
+2. Exercise catalog uses explicit field labels + inline validation/error messages and is the strongest current form pattern reference.
+3. `session-recorder` completed-edit mode includes start/end validation and an autosave-paused notice when timestamps are invalid.
+4. Validation/error feedback should remain near the relevant field/control whenever possible.
+
+### 6. Loading, empty, error, and feedback state handling
+
+1. Whole-screen loading/error states are used when route data cannot render meaningful content yet.
+   - `exercise-catalog`: centered state + bottom tabs remain visible
+   - `completed-session/[sessionId]`: centered state variants with route title preserved
+2. In-section state panels are used inside `session-list` history region (loading/error/empty).
+3. Inline helper/success/error text is used for form feedback and post-action feedback (`exercise-catalog`, completed-session action bar).
+4. State presentation style varies by screen today; refactors may unify visuals, but the semantic distinction (whole-screen vs in-section vs inline) should remain explicit.
+
+### 7. Completed-session detail screen semantics
+
+1. Completed-session detail uses a sticky action bar for edit/reopen/delete actions above the detail content.
+2. `Reopen` can be disabled when another active session exists; the UI shows a textual hint explaining why.
+3. `intent=edit` on the completed-session route is a redirect behavior, not a separate screen.
+
+### 8. Navigation/query semantics (UI-facing rule)
+
+1. Route mode/state changes that affect screen behavior (for example `session-recorder` completed-edit mode) must be documented in `docs/specs/ui/navigation-contract.md`.
+2. Route alias behavior (`/` -> `session-list`) should be treated as a navigation entry alias, not a unique screen design.
+
+### 9. UI guardrail enforcement (current enforced rule)
 
 1. Do not add raw color literals (`#hex`, `rgb(...)`, `rgba(...)`) directly in screen/component `.tsx` files.
-2. Use UI tokens from `apps/mobile/components/ui/tokens.ts` (directly or through primitives).
-3. Raw color literals are only allowed in the token source of truth and explicitly allowlisted legacy files during incremental migration.
+2. Use UI tokens from `apps/mobile/components/ui/tokens.ts` directly or through primitives in `apps/mobile/components/ui/`.
+3. Temporary exceptions require an explicit allowlist entry and rationale in `apps/mobile/scripts/ui-guardrails.config.js`.
 
-## Guardrail command
+Guardrail command:
 
-- Run from `apps/mobile/`:
-  - `npm run lint:ui-guardrails`
-- Audit mode (includes allowlisted legacy files in output without treating them as blocking):
-  - `npm run lint:ui-guardrails -- --include-allowlisted`
+- Run from `apps/mobile/`: `npm run lint:ui-guardrails`
+- Audit mode: `npm run lint:ui-guardrails -- --include-allowlisted`
 
-### What the command checks
+### 10. Documentation maintenance rule (UI semantics)
 
-- Scans `app/**/*.tsx` and `components/**/*.tsx`
-- Excludes tests/snapshots (`__tests__`, `__snapshots__`, `*.test.tsx`, `*.spec.tsx`)
-- Flags raw color literals
-- Skips explicit allowlisted legacy files by default
+1. If a task changes current UI semantics (action roles, state treatment, modal conventions, list interactions, validation behavior), update this file in the same task/session.
+2. If the change is route-path/param/transition related, update `navigation-contract.md` in the same task.
+3. If the change is component/primitives API related, update `components-catalog.md` in the same task.
 
-## Exceptions / allowlist process
+## Pending / planned (not current behavior)
 
-Use exceptions only for temporary legacy migration scope or unavoidable platform/runtime edge cases.
-
-### How to add an exception
-
-1. Add the file path + reason to `apps/mobile/scripts/ui-guardrails.config.js`.
-2. Keep the reason specific (what is blocked and which task will remove it).
-3. Record the exception in the active task card `Completion note` if introduced/expanded.
-
-### Current allowlisted files (Task 04 baseline)
-
-- `app/session-list.tsx` - pending `T-20260226-06` screen refactor to tokens/primitives.
-- `app/session-recorder.tsx` - pending `T-20260226-06` screen refactor to tokens/primitives.
-- `app/exercise-catalog.tsx` - pending `T-20260226-06` screen refactor to tokens/primitives.
-- `app/completed-session/[sessionId].tsx` - pending `T-20260226-06` screen refactor to tokens/primitives.
-
-## Reviewer usage (M8)
-
-1. Run `npm run lint:ui-guardrails` for UI-affecting changes.
-2. If it fails, replace raw literals with tokens/primitives or add a narrowly scoped temporary exception with rationale.
-3. Use audit mode when evaluating remaining migration work in allowlisted legacy screens.
+1. Broader primitive adoption is expected to reduce local style duplication across screens (tracked in M8 follow-up tasks).
+2. Additional primitives from the audit (for example `ScreenContainer`, `EmptyState`, `ModalSurface`) are candidates, not current required APIs.
+3. The raw-color guardrail allowlist should shrink as legacy screens are refactored onto tokens/primitives.
