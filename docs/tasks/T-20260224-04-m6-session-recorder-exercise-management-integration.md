@@ -12,7 +12,7 @@
 ## Parent references (required)
 
 - Project directives: `docs/specs/README.md`
-- MVP deliverables: `docs/specs/00-mvp-deliverables.md#explicitly-deferred-after-mvp`
+- Product overview: `docs/specs/00-product.md`
 - Milestone spec: `docs/specs/milestones/M6-exercise-taxonomy-and-muscle-analytics-foundation.md`
 - Architecture (if relevant): `docs/specs/03-technical-architecture.md`
 - Testing strategy: `docs/specs/06-testing-strategy.md`

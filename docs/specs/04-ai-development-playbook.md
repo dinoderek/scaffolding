@@ -4,20 +4,19 @@
 
 Define the minimum scaffolding required before feature development, and standardize how AI sessions consume project context.
 
-
 ## Minimum scaffolding 
 
 1. Project directives/specs exist and are current:
    - `docs/specs/README.md`
-   - `docs/specs/00-mvp-deliverables.md`
+   - `docs/specs/00-product.md`
    - `docs/specs/03-technical-architecture.md`
    - `docs/specs/06-testing-strategy.md`
    - `docs/specs/09-project-structure.md`
    - `docs/specs/08-ux-delivery-standard.md` (required for UI tasks)
    - `docs/specs/ui/README.md` (required for UI tasks; load relevant bundle docs from there)
 2. This playbook exists and is followed.
-3. A milestone spec exists for the active milestone.
-4. A task card exists for the active coding session.
+3. (If executing a task) A milestone spec exists for the active milestone.
+4. (If executing a task) A task card exists for the active coding session.
 
 ## Reference hierarchy (source-of-truth chain)
 
@@ -26,11 +25,9 @@ Define the minimum scaffolding required before feature development, and standard
    - `docs/specs/03-technical-architecture.md`
    - `docs/specs/06-testing-strategy.md`
    - `docs/specs/09-project-structure.md`
-2. MVP level:
-   - `docs/specs/00-mvp-deliverables.md`
-3. Milestone level:
+2. Milestone level:
    - `docs/specs/milestones/<milestone-id>.md`
-4. Task level:
+3. Task level:
    - `docs/tasks/<task-id>.md`
 
 Rule: each lower level must link to its parent(s).

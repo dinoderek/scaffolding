@@ -12,8 +12,7 @@
 ## Parent references (required)
 
 - Project directives: `docs/specs/README.md`
-- MVP deliverables: `docs/specs/00-mvp-deliverables.md#3-fe-auth-integrated-with-backend`
-- MVP deliverables: `docs/specs/00-mvp-deliverables.md#4-session-sync-between-fe-and-backend`
+- Product overview: `docs/specs/00-product.md`
 - Milestone spec: `docs/specs/milestones/M5-backend-foundation-authz-and-sync-api.md` (deferred follow-up context; not part of M5 closeout)
 - Architecture (if relevant): `docs/specs/03-technical-architecture.md`
 - Testing strategy: `docs/specs/06-testing-strategy.md`

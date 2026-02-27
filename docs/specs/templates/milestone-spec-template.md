@@ -9,7 +9,7 @@
 ## Parent references
 
 - Project directives: `docs/specs/README.md`
-- MVP deliverables: `docs/specs/00-mvp-deliverables.md`
+- Product overview: `docs/specs/00-product.md`
 - Architecture: `docs/specs/03-technical-architecture.md`
 - Testing strategy: `docs/specs/06-testing-strategy.md`
 - Project structure: `docs/specs/09-project-structure.md`

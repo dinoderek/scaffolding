@@ -1,6 +1,6 @@
 ---
-# Minimal machine-readable task metadata (recommended for new task cards; keep values current)
-task_id: T-YYYYMMDD-XX-short-name
+# Minimal machine-readable task metadata 
+task_id: <Milestone ID>-<Task Sequence>-<Task short name>
 milestone_id: "M#"
 status: planned
 ui_impact: "yes|no"
@@ -24,7 +24,6 @@ docs_touched: "comma-separated paths or none"
 ## Parent references (required)
 
 - Project directives: `docs/specs/README.md`
-- MVP deliverables: `docs/specs/00-mvp-deliverables.md#...`
 - Milestone spec: `docs/specs/milestones/<milestone-id>.md`
 - Architecture (if relevant): `docs/specs/03-technical-architecture.md`
 - Testing strategy: `docs/specs/06-testing-strategy.md`
@@ -109,14 +108,9 @@ UI task acceptance boilerplate (include/adapt when `UI Impact = yes`; remove for
 - Planned docs/spec files to update and why (list exact paths; write `none` + rationale if no docs/spec changes expected):
   - `<path>` - `<why>`
 - If `UI Impact = yes`, complete all of the following:
-  - Canonical UI docs maintenance trigger map lives in `docs/specs/ui/README.md` (`Maintenance rules`); keep this section as a task-local summary only.
+  - Canonical UI docs maintenance trigger map lives in `docs/specs/ui/README.md` (`Maintenance rules`).
   - UI docs update required?: `yes | no`
-  - If `yes`, list exact files under `docs/specs/ui/` and why using this trigger map:
-    - `screen-map.md` (route inventory, screen purpose/sections, high-level state/entry-exit changes)
-    - `navigation-contract.md` (route paths, params/query behavior, redirects, transitions)
-    - `components-catalog.md` (reusable tokens/primitives/shared components added/removed/renamed, variants/purpose changes)
-    - `ux-rules.md` (app-specific UI semantics/guardrails/pattern conventions changed)
-    - `repo-discovery-baseline.md` / `ui-pattern-audit.md` (only when inventory/audit facts or evidence references materially change)
+  - If `yes`, list exact files under `docs/specs/ui/` and why, mapped to that canonical trigger map.
   - If `no`, provide explicit rationale (for example: visual-only spacing tweak within existing documented pattern, no route/component contract change)
   - Tokens/primitives compliance statement (required for UI tasks):
     - Reuse plan:
