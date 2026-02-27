@@ -4,7 +4,7 @@
 
 - Milestone ID: `M7`
 - Title: Completed session detail, reopen, and edit
-- Status: `in_progress`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Target window: `2026-02` / `2026-03`
 
@@ -111,7 +111,7 @@ Ship a completed-session detail flow that lets a user open a completed session f
 1. `docs/tasks/T-20260225-01-m7-completed-session-detail-route-and-read-only-ui.md` - add completed-row navigation, detail route shell, recorder-like read-only rendering, and UX contract. (`completed`)
 2. `docs/tasks/T-20260225-02-m7-completed-session-data-contracts-edit-and-reopen.md` - implement load-by-id session graph, completed-session edit persistence, reopen mutation, and single-active invariant tests. (`completed`)
 3. `docs/tasks/T-20260225-03-m7-mode-aware-recorder-completed-edit-flow.md` - add recorder/detail mode support, completed edit autosave, start/end time editing, validation, and save-return-to-list UX. (`completed`)
-4. `docs/tasks/T-20260225-04-m7-integration-tests-and-ux-evidence.md` - end-to-end/integration flow tests, regressions, and UX evidence closeout. (`blocked`)
+4. `docs/tasks/T-20260225-04-m7-integration-tests-and-ux-evidence.md` - end-to-end/integration flow tests, regressions, and UX evidence closeout. (`completed`)
 5. `docs/tasks/T-20260226-01-m7-remove-draft-status-and-migrate-to-active-completed-lifecycle.md` - remove persisted `draft` status, migrate legacy rows to `active`, and align repository lifecycle contracts/tests to `active|completed`. (`completed`)
 
 ## Risks / dependencies
@@ -143,8 +143,17 @@ Ship a completed-session detail flow that lets a user open a completed session f
 ## Completion note (fill when milestone closes)
 
 - What changed:
+  - Delivered completed-session detail navigation, read-only recorder-like rendering, reopen-in-place behavior with single-active-session enforcement, and mode-aware completed-session editing with start/end time validation and autosave.
+  - Closed M7 integration/verification work with cross-screen Jest journeys plus regression coverage for list/detail/recorder paths, including reopen/delete error feedback and completed-edit edge paths.
+  - Captured M7 UX evidence screenshots for happy and edge flows via local iOS Maestro artifacts under `apps/mobile/artifacts/maestro/T-20260225-04/20260227-100755-94690`.
 - Verification summary:
+  - `npm run lint` (apps/mobile) ✅ (warnings only in unrelated `app/__tests__/ui-guardrails-script.test.ts`)
+  - `npm run typecheck` (apps/mobile) ✅
+  - `npm run test -- --runInBand` (apps/mobile) ✅
+  - `npm run test:e2e:ios:smoke` ✅
+  - `npm run test:e2e:ios:data-smoke` ✅
 - What remains:
+  - None for M7 scope.
 
 ## Status update checklist (mandatory during task closeout)
 

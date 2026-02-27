@@ -552,7 +552,7 @@ export const createDrizzleSessionDraftStore = (): SessionDraftStore => ({
       const activeConflict = tx
         .select({ id: sessions.id })
         .from(sessions)
-        .where(and(inArray(sessions.status, DRAFT_STATUSES), isNull(sessions.deletedAt)))
+        .where(and(eq(sessions.status, 'active'), isNull(sessions.deletedAt)))
         .all()
         .find((row) => row.id !== input.sessionId);
 

@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260225-04`
 - Title: M7 completed-session view/edit/reopen integration tests and UX evidence closeout
-- Status: `blocked`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-25`
 - Session interaction mode: `interactive (default)`
@@ -154,16 +154,19 @@ Evidence captured this session:
   - Reopen happy + disabled conflict explanation -> `session-completed-journey.test.tsx`, `completed-session-detail-screen.test.tsx`, `session-list-screen.test.tsx`
   - History row body vs menu actions + delete/undelete regression -> `session-list-screen.test.tsx`
   - Invalid time edit path blocked -> `session-recorder-submit.test.tsx` and autosave invalid-time pause -> `session-recorder-persistence.test.tsx`
-- Visual evidence / manual UX limitation:
-  - Attempted local iOS Maestro smoke run (`npm run test:e2e:ios:smoke`) to capture screenshots and validate simulator reachability.
-  - Run failed before reaching app UI (`session-list-screen` visibility assertion failed), so required M7 visual screenshots/manual walkthrough evidence were not captured in this environment.
-  - Artifacts from failed attempt:
-    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-175124-64552/maestro-output/screenshots/01-app-launch.png`
-    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-175124-64552/maestro-output/2026-02-26_175159/ai-report-smoke-launch.html`
-    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-175124-64552/expo-start.log`
-    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-175124-64552/simulator.log`
+- Visual evidence (happy-path + edge-path):
+  - Local iOS smoke gates passed and artifacts were captured:
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-180417-79692` (`npm run test:e2e:ios:smoke`)
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260226-180537-81093` (`npm run test:e2e:ios:data-smoke`)
+  - Dedicated M7 UX-evidence flow captured required completed-session screenshots:
+    - `apps/mobile/artifacts/maestro/T-20260225-04/20260227-100755-94690/maestro-output/screenshots/m7-01-completed-list.png`
+    - `apps/mobile/artifacts/maestro/T-20260225-04/20260227-100755-94690/maestro-output/screenshots/m7-02-completed-detail-actions.png`
+    - `apps/mobile/artifacts/maestro/T-20260225-04/20260227-100755-94690/maestro-output/screenshots/m7-03-completed-edit.png`
+    - `apps/mobile/artifacts/maestro/T-20260225-04/20260227-100755-94690/maestro-output/screenshots/m7-04-list-after-save.png`
+    - `apps/mobile/artifacts/maestro/T-20260225-04/20260227-100755-94690/maestro-output/screenshots/m7-05-reopen-disabled-edge.png`
+    - `apps/mobile/artifacts/maestro/T-20260225-04/20260227-100755-94690/maestro-output/2026-02-27_100829/ai-report-m7-ux-evidence.html`
 - Manual verification summary:
-  - Not completed in this session due local simulator/runtime smoke failure prior to app screen visibility; M7 UX screenshot/manual flow evidence remains outstanding.
+  - Automated simulator walkthrough now covers the M7 happy path (`completed row -> detail -> edit -> save -> list refresh`) and disabled-reopen edge path screenshot requirement, with artifacts recorded above.
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
@@ -171,15 +174,17 @@ Evidence captured this session:
   - Added missing Jest coverage for M7 list/detail/recorder paths: list-menu reopen happy/failure, detail disabled-reopen explanation and action error feedback, completed-edit cleanup prompts, completed-edit load/error/beforeRemove flush, and two new cross-screen M7 journey tests.
   - Added `apps/mobile/app/__tests__/session-completed-journey.test.tsx` for end-to-end app-screen journeys across session list, completed detail, and completed edit/reopen flows using an in-memory mocked repository.
   - Removed an unreachable completed-edit `dateTimeValue` JSX branch in `apps/mobile/app/session-recorder.tsx` (metadata section is hidden in completed-edit mode, so that branch was never rendered).
+  - Fixed a synced-head compile regression in `apps/mobile/src/data/session-drafts.ts` by replacing a stale `DRAFT_STATUSES` reference with the new `active` lifecycle predicate in reopen conflict checks.
 - What tests ran:
   - `npm test -- --runInBand app/__tests__/session-list-screen.test.tsx app/__tests__/completed-session-detail-screen.test.tsx app/__tests__/session-recorder-submit.test.tsx app/__tests__/session-recorder-persistence.test.tsx app/__tests__/session-completed-journey.test.tsx` (from `apps/mobile`) ✅
   - `npm run lint` (from `apps/mobile`) ✅ (warnings only in unrelated `app/__tests__/ui-guardrails-script.test.ts`)
   - `npm run typecheck` (from `apps/mobile`) ✅
   - `npm run test -- --runInBand` (from `apps/mobile`) ✅
-  - `npm run test:e2e:ios:smoke` (from `apps/mobile`) ❌ (`session-list-screen` not visible at launch in local simulator/runtime)
+  - `npm run test:e2e:ios:smoke` (from `apps/mobile`) ✅
+  - `npm run test:e2e:ios:data-smoke` (from `apps/mobile`) ✅
+  - `/tmp/run-maestro-flow.sh /tmp/m7-ux-evidence.yaml T-20260225-04` (from repo root) ✅
 - What remains:
-  - Capture required M7 UX visual evidence/manual walkthrough screenshots (happy path + edge path states) once the local simulator smoke issue is resolved.
-  - Re-run the local iOS smoke flow successfully and attach final artifact paths; then update this task from `blocked` to `completed`.
+  - None.
 
 ## Status update checklist (mandatory at closeout)
 
