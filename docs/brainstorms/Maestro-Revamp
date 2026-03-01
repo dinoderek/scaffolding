@@ -1,0 +1,108 @@
+# Objective
+Great Maestro iOS Testing
+
+# Context
+Our current development model is the following:
+- Multiple copies of the project in different directories
+- Each directory is owned by a coding agent
+- Coding agents might want to run Maestro tests in parallel 
+- Humans might want to run Maestro or use the Simulator in parallel
+
+# Key desired outcomes
+1. Explore the project and find everything you can about how maestro testing works now. Use markdown files as a starting point but DO NOT blindly trust them. You MUST verify this in code. You must complete this step to ensure we have a clear picture of the curent state of affairs. 
+2. We want different agents (remember - with completely different working folders) to be able to run Maestro tests in parallel (i.e. they need dedicated Expo code server and Simulator) 
+3. We want Maestro tests to be reliable
+4. We want Maestro tests to be as fast as possible
+5. We want synthetic, but thorough, documentation of the Simulator + Expo + Maestro for future agent sessions
+6. We want synthetic documentaion of the testing approach for Maestro, in particular when when to use full reset of application, data only reset, debug routes / deep links. 
+
+# Solution sketch 
+Non mandatory but makes sense based on current analysis and assumption.
+
+"Zero-Config" automation infrastructure designed for parallel AI development.
+
+**The Problem:** Multiple AI agents (or human developers) operate on the same host machine, each within their own isolated repository checkout. They cannot share global resources (ports, simulator instances) without causing collisions.
+
+**The Solution:** A portable "Toolkit" of scripts included in the repository. These scripts dynamically provision isolated iOS Simulators and Expo Servers based on environment variables unique to the current agent's session.
+
+## Key runtime components
+
+## Shared Development Build binary 
+To avoid redundant compilation (which takes ~20 mins), agents **do not** build the native app.
+
+* **Artifact:** `ExpoDevClient.app` (A generic "Development Build" binary).
+* **Location:** A shared directory outside the checkout (e.g., `../shared_builds/`) or a pre-downloaded path within the repo.
+* **Function:** This binary acts as a "shell" that can load *any* JavaScript bundle from *any* local port.
+
+This build is executed only when needed (i.e. native dependencies change). We should have a dedicated build rule. 
+
+### The Isolated Runtime (One per agent)
+Each agent operates in a closed loop:
+1.  **Unique Identity:** Assigned a `BOT_ID` (e.g., `agent_001`).
+2.  **Unique Device:** Provisions a simulator named `Maestro_Bot_agent_001`.
+3.  **Unique Port:** Starts Expo Metro Bundler on a specific port (e.g., `8082`).
+
+The variables are assigned in the agent workspce (folder) by a well known fixed configuraton file
+
+## The Environment Contract
+
+The automation scripts must be stateless and driven entirely by Environment Variables. The variables are configured by a config file in the work directory. This file is NOT checked in, though a sammple is. We should record the fact that this configuration is needed in a "first time setup" guide for the human and AI.
+
+**Required Variables:**
+
+| Variable | Description | Example |
+| :--- | :--- | :--- |
+| `BOT_ID` | Unique identifier for the agent/session. | `One` |
+| `EXPO_PORT` | The port for Metro Bundler. Must be unique. | `8082` |
+| `APP_BINARY_PATH` | Path to the pre-compiled `.app` file. | `/tmp/ios/build/ExpoDevClient.app` |
+
+**Derived Variables (Internal):**
+
+| Variable | Logic | Purpose |
+| :--- | :--- | :--- |
+| `MAESTRO_DEVICE_NAME` | `Boga_Bot_${BOT_ID}` | Target specific simulator |
+| `METRO_PORT` | `${EXPO_PORT}` | Sync with Expo |
+
+## Detailed artifacts
+
+### Sample environment file & documentation
+- There should be a sample environemnt file checked in
+- There should be a document describing all the one-time setup actions post checkout
+
+### Device provisioning script
+Provisions a dedicated simulator with the application installed.
+
+Pre-requisite: BOT_ID is set
+
+1.  **Check:** Run `xcrun simctl list` to check if `$MAESTRO_DEVICE_NAME` exists.
+2.  **Create:** If missing, run `xcrun simctl create "$MAESTRO_DEVICE_NAME" "iPhone 15" ...`.
+3.  **Boot:** If state is `Shutdown`, run `xcrun simctl boot "$MAESTRO_DEVICE_NAME"`.
+    * *Retry Logic:* If boot fails (timeout), wait 10s and retry once.
+4.  **Install:** Run `xcrun simctl install booted "$APP_BINARY_PATH"`.
+5.  **Output:** Export the device `UDID` to a local file `.env.runtime` for downstream scripts.
+
+### Simulator launch script
+Starts the Expo Server and link it to the simulator.
+
+Pre-requisites: EXPO_PORT, MAESTRO_DEVICE_NAME set 
+
+**Logic:**
+1.  **Port Check:** Verify `$EXPO_PORT` is free. If busy, exit with error.
+2.  **Start Server:**
+    * Command: `npx expo start --port $EXPO_PORT --localhost`
+    * Mode: Background process (`&`).
+3.  **PID Tracking:** Write the process ID to `.server.pid`.
+4.  **Health Check:** Loop `curl localhost:$EXPO_PORT` until 200 OK.
+5.  **Deep Link (The Handshake):**
+    * Construct URL: `exp+<slug>://expo-development-client/?url=http%3A%2F%2Flocalhost%3A$EXPO_PORT`
+    * Command: `xcrun simctl openurl "$MAESTRO_DEVICE_NAME" "$URL"`
+
+### Teardown script
+Release resources to reduce memory pressure on local machine
+
+**Logic:**
+1.  **Kill Server:** Read `.server.pid` and kill the process.
+2.  **Shutdown Simulator:** `xcrun simctl shutdown "$MAESTRO_DEVICE_NAME"`.
+
+### Package.json integration
+There should be convenient "run e2e tests using the scripts above" shortcuts in Maestro
