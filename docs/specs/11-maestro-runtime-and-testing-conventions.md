@@ -12,9 +12,9 @@ It has two jobs:
 ## Status / scope
 
 - Scope: iOS Maestro runtime/tooling, flow execution conventions, and the related documentation ownership model for `apps/mobile/**`.
-- Current-state status: the implemented runtime is still `Expo Go` based.
-- Target-state status: M10 will migrate the automation runtime to an Expo development client workflow.
-- Phase-1 foundation status (`2026-03-01`): the shared development-client config/build contract is implemented, but the smoke/data-smoke runners still target `Expo Go` until later M10 tasks migrate them.
+- Current-state status: the implemented runtime uses an Expo development client, shared host-local build reuse, and explicit provision/launch/teardown scripts.
+- Target-state status: M10 still has follow-up work for harness-based reset/navigation and broader docs/runbook integration.
+- Phase-2 runtime-toolkit status (`2026-03-01`): the shared development-client runtime toolkit is implemented and the smoke/data-smoke runners now execute through it on real iOS simulator runs.
 - Authority rule:
   - this doc is normative for Maestro runtime/testing conventions;
   - milestone/task docs may scope work, but must not redefine this contract;
@@ -38,7 +38,7 @@ Rules:
 2. Secondary runbooks should stay operational and link back here instead of duplicating the full contract.
 3. The brainstorm and old task docs are context only; they are not source-of-truth once this doc exists.
 
-## Implemented phase-1 foundation (`2026-03-01`)
+## Implemented runtime toolkit (`2026-03-01`)
 
 - Checked-in config sample:
   - `apps/mobile/.maestro/maestro.env.sample`
@@ -46,12 +46,20 @@ Rules:
   - `apps/mobile/.maestro/maestro.env.local`
 - Shared env helper:
   - `apps/mobile/scripts/maestro-env.sh`
+- Shared runtime helper:
+  - `apps/mobile/scripts/maestro-ios-runtime.sh`
 - Shared build/reuse entrypoint:
   - `apps/mobile/scripts/maestro-ios-dev-client-build.sh`
+- Shared lifecycle entrypoints:
+  - `apps/mobile/scripts/maestro-ios-provision.sh`
+  - `apps/mobile/scripts/maestro-ios-launch.sh`
+  - `apps/mobile/scripts/maestro-ios-teardown.sh`
+- Shared scenario runner:
+  - `apps/mobile/scripts/maestro-ios-run-flow.sh`
 - Current implementation note:
-  - the helper and build script are implemented;
-  - the existing smoke/data-smoke runners source the same env contract;
-  - runtime migration to use the shared dev client is still owned by later M10 tasks.
+  - the shared env/build contract remains in place;
+  - the smoke/data-smoke runners are now thin wrappers over the shared lifecycle toolkit;
+  - app-side harness/deep-link state shaping is still owned by later M10 tasks.
 
 ## Verified current-state baseline (`2026-03-01`)
 
@@ -60,54 +68,60 @@ Rules:
 - There are exactly two committed Maestro flows:
   - `apps/mobile/.maestro/flows/smoke-launch.yaml`
   - `apps/mobile/.maestro/flows/data-runtime-smoke.yaml`
-- Both flows target `appId: host.exp.Exponent`, which confirms the current automation target is `Expo Go`, not a development client.
+- Both flows now commit against the development-client bundle identifier surface instead of `host.exp.Exponent`.
+- The shared scenario runner also rewrites a runtime-local flow copy under the artifact root so the executed `appId` always matches the installed development-client bundle id from the built `.app`.
 - Both flows drive setup through visible UI taps rather than deep-link/harness setup:
   - `smoke-launch.yaml` taps through sessions, starts or resumes a session, logs a squat set, and submits it.
   - `data-runtime-smoke.yaml` follows a similar path and asserts history visibility.
+- Both flows include optional dismissals for current development-client onboarding/dev-menu overlays so the scenario assertions target the app rather than the shell chrome.
 - Verified against:
-  - `apps/mobile/.maestro/flows/smoke-launch.yaml:1-38`
-  - `apps/mobile/.maestro/flows/data-runtime-smoke.yaml:1-40`
+  - `apps/mobile/.maestro/flows/smoke-launch.yaml`
+  - `apps/mobile/.maestro/flows/data-runtime-smoke.yaml`
 
 ### Current runner behavior
 
 - The current entrypoints are `npm run test:e2e:ios:smoke` and `npm run test:e2e:ios:data-smoke`, which call:
   - `apps/mobile/scripts/maestro-ios-smoke.sh`
   - `apps/mobile/scripts/maestro-ios-data-smoke.sh`
-- Both runner scripts currently:
-  - acquire a shared slot via `maestro-ios-slot-lock.sh`,
+- Both runner scripts now:
+  - delegate immediately to `apps/mobile/scripts/maestro-ios-run-flow.sh`,
+  - acquire a shared slot via `maestro-ios-slot-lock.sh` and record the long-lived runner PID as slot ownership,
   - derive the Expo port from `EXPO_DEV_SERVER_BASE_PORT + slot index` unless `EXPO_DEV_SERVER_PORT` is explicitly set,
   - resolve a simulator from `IOS_SIM_UDID_POOL`, then `IOS_SIM_DEVICE_POOL`, then `IOS_SIM_DEVICE`,
   - create artifacts under `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`,
-  - boot the simulator,
-  - optionally uninstall/reset `host.exp.Exponent`,
-  - start `npx expo start --ios --non-interactive --port <port>`,
-  - sleep for `EXPO_START_WAIT_SECONDS` (default `30`),
-  - launch `host.exp.Exponent`,
-  - open `exp://127.0.0.1:<port>` on the simulator,
-  - execute `maestro test`.
+  - write `runtime.env` before provisioning so downstream lifecycle steps and teardown share one state file,
+  - call `maestro-ios-provision.sh` to ensure the shared development-client build exists, boot the simulator, and install the `.app`,
+  - call `maestro-ios-launch.sh` to start `npx expo start --dev-client --host localhost --scheme <scheme> --port <port>`, wait on Metro `/status`, and open `exp+<scheme>://expo-development-client/?url=http://127.0.0.1:<port>`,
+  - create a runtime-local flow copy with the resolved development-client bundle id,
+  - execute `maestro test`,
+  - call `maestro-ios-teardown.sh` on both success and failure to stop Expo and release the slot.
 - Verified against:
   - `apps/mobile/package.json:17-18`
-  - `apps/mobile/scripts/maestro-ios-smoke.sh:7-96`
-  - `apps/mobile/scripts/maestro-ios-data-smoke.sh:7-96`
+  - `apps/mobile/scripts/maestro-ios-smoke.sh`
+  - `apps/mobile/scripts/maestro-ios-data-smoke.sh`
+  - `apps/mobile/scripts/maestro-ios-run-flow.sh`
+  - `apps/mobile/scripts/maestro-ios-provision.sh`
+  - `apps/mobile/scripts/maestro-ios-launch.sh`
+  - `apps/mobile/scripts/maestro-ios-teardown.sh`
 
 ### Current simulator helper behavior
 
 - `apps/mobile/scripts/ios-sim-boot.sh` only resolves an existing simulator by `IOS_SIM_UDID` or `IOS_SIM_DEVICE`, boots it, waits for boot readiness, and echoes the resolved UDID.
 - It does not create dedicated simulators.
-- It does not install an app binary.
-- It does not emit a reusable runtime state file.
+- App installation and runtime-state emission now live in `maestro-ios-provision.sh`, which wraps the helper instead of expanding `ios-sim-boot.sh` itself.
 - Verified against:
-  - `apps/mobile/scripts/ios-sim-boot.sh:4-49`
+  - `apps/mobile/scripts/ios-sim-boot.sh`
+  - `apps/mobile/scripts/maestro-ios-provision.sh`
 
 ### Current slot-lock behavior
 
 - `apps/mobile/scripts/maestro-ios-slot-lock.sh` implements host-level lock directories under `MAESTRO_IOS_SLOT_LOCK_ROOT` and uses `mkdir` as the lock primitive.
 - Default slots are `slot-1,slot-2,slot-3`.
-- It writes the owning PID into `<lock-dir>/pid`.
+- It writes the owning runner PID into `<lock-dir>/pid` using `MAESTRO_IOS_SLOT_OWNER_PID` (falling back to `PPID`) so the lock remains valid for the lifetime of the actual scenario process instead of the short-lived lock helper.
 - It can recover stale locks when the recorded PID no longer exists.
 - It returns `"<slot-id> <slot-index>"` on acquisition.
 - Verified against:
-  - `apps/mobile/scripts/maestro-ios-slot-lock.sh:4-99`
+  - `apps/mobile/scripts/maestro-ios-slot-lock.sh`
 
 ### Current app/build assumptions
 
@@ -119,16 +133,20 @@ Rules:
 
 ### Current artifact/log shape
 
-- Current smoke/data-smoke runners already create:
+- Current smoke/data-smoke runners now create:
   - `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`
+  - `runtime.env`
+  - `provision.log`
+  - `launch.log`
+  - `teardown.log`
   - `maestro-output/`
   - `maestro-debug/`
   - `expo-start.log`
-  - `simulator.log`
   - `maestro-junit.xml`
 - Verified against:
-  - `apps/mobile/scripts/maestro-ios-smoke.sh:44-49`
-  - `apps/mobile/scripts/maestro-ios-data-smoke.sh:44-49`
+  - `apps/mobile/scripts/maestro-ios-run-flow.sh`
+  - successful runtime artifacts under `apps/mobile/artifacts/maestro/ad-hoc/20260301-191439-59787/`
+  - successful runtime artifacts under `apps/mobile/artifacts/maestro/ad-hoc/20260301-191537-60914/`
 
 ### Current documentation gaps
 
@@ -242,7 +260,7 @@ Auth/log-in note:
 
 ### 5. Canonical toolkit script surface
 
-Future M10 tasks must implement or align on this script surface:
+Implemented script surface:
 
 - `apps/mobile/scripts/maestro-ios-dev-client-build.sh`
 - `apps/mobile/scripts/maestro-ios-provision.sh`
@@ -250,6 +268,7 @@ Future M10 tasks must implement or align on this script surface:
 - `apps/mobile/scripts/maestro-ios-teardown.sh`
 - `apps/mobile/scripts/maestro-ios-smoke.sh`
 - `apps/mobile/scripts/maestro-ios-data-smoke.sh`
+- `apps/mobile/scripts/maestro-ios-run-flow.sh`
 
 Responsibility split:
 
@@ -284,19 +303,25 @@ Minimum `runtime.env` fields:
 
 - `TASK_ID`
 - `MAESTRO_ARTIFACT_ROOT`
+- `MAESTRO_RUNTIME_ENV_FILE`
 - `MAESTRO_IOS_SLOT_ID`
 - `MAESTRO_IOS_SLOT_INDEX`
+- `MAESTRO_IOS_SLOT_OWNER_PID`
 - `IOS_SIM_UDID`
 - `IOS_SIM_DEVICE`
 - `EXPO_DEV_SERVER_PORT`
 - `MAESTRO_IOS_DEV_CLIENT_APP_PATH`
+- `MAESTRO_IOS_DEV_CLIENT_BUNDLE_ID`
+- `MAESTRO_IOS_DEV_CLIENT_URL`
+- `MAESTRO_FLOW_FILE`
+- `MAESTRO_RUNNER_PID`
 - `EXPO_PID`
 
-Transition note:
+Implementation note:
 
-- current scripts emit `expo-start.log` and `simulator.log`;
-- M10 canonical lifecycle logs are `provision.log`, `launch.log`, and `teardown.log`;
-- follow-up tasks may keep the old files temporarily during migration, but the contract above is the destination surface.
+- the current toolkit also emits `expo-start.log` as the raw Expo process log;
+- `simulator.log` is no longer part of the canonical runtime artifact surface;
+- the lifecycle contract is now implemented rather than merely planned.
 
 ### 7. Parallel isolation contract
 

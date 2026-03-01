@@ -1,11 +1,23 @@
-appId: host.exp.Exponent
+appId: com.dinoderek.mobile
 ---
 - takeScreenshot: "01-app-launch"
+- tapOn:
+    text: "Open"
+    optional: true
 - tapOn:
     text: "mobile"
     optional: true
 - tapOn:
     text: "Sessions"
+    optional: true
+- tapOn:
+    text: "Open"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Close"
     optional: true
 - assertVisible:
     id: "session-list-screen"
@@ -17,6 +29,9 @@ appId: host.exp.Exponent
     optional: true
 - assertVisible:
     id: "session-recorder-screen"
+- tapOn:
+    text: "Continue"
+    optional: true
 - tapOn: "Log new exercise"
 - tapOn: "Select exercise Barbell Back Squat"
 - tapOn: "Weight for exercise 1 set 1"
@@ -32,6 +47,12 @@ appId: host.exp.Exponent
     optional: true
 - tapOn:
     text: "Remove empty exercises and submit"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Close"
     optional: true
 - assertVisible:
     id: "session-list-screen"

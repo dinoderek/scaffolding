@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/maestro-ios-runtime.sh"
+maestro_source_env
+
+RUNTIME_ENV_FILE="${1:-}"
+[[ -n "$RUNTIME_ENV_FILE" ]] || maestro_fail "Usage: $0 <runtime-env-file>"
+[[ -f "$RUNTIME_ENV_FILE" ]] || exit 0
+
+maestro_load_runtime_env "$RUNTIME_ENV_FILE"
+
+: "${TEARDOWN_LOG_FILE:=$MAESTRO_ARTIFACT_ROOT/teardown.log}"
+mkdir -p "$MAESTRO_ARTIFACT_ROOT"
+exec > >(tee -a "$TEARDOWN_LOG_FILE") 2>&1
+
+echo "[maestro-ios-teardown] Runtime env: $RUNTIME_ENV_FILE"
+
+if [[ -n "${EXPO_PID:-}" ]] && maestro_process_alive "$EXPO_PID"; then
+  echo "[maestro-ios-teardown] Stopping Expo process $EXPO_PID"
+  kill "$EXPO_PID" >/dev/null 2>&1 || true
+  if ! maestro_wait_for_process_exit "$EXPO_PID" 10; then
+    echo "[maestro-ios-teardown] Expo process did not exit cleanly; sending SIGKILL"
+    kill -9 "$EXPO_PID" >/dev/null 2>&1 || true
+  fi
+else
+  echo "[maestro-ios-teardown] No active Expo process recorded"
+fi
+
+if [[ -n "${IOS_SIM_UDID:-}" && -n "${MAESTRO_IOS_DEV_CLIENT_BUNDLE_ID:-}" ]]; then
+  echo "[maestro-ios-teardown] Terminating app $MAESTRO_IOS_DEV_CLIENT_BUNDLE_ID on $IOS_SIM_UDID"
+  xcrun simctl terminate "$IOS_SIM_UDID" "$MAESTRO_IOS_DEV_CLIENT_BUNDLE_ID" >/dev/null 2>&1 || true
+fi
+
+if [[ -n "${MAESTRO_IOS_SLOT_ID:-}" ]]; then
+  echo "[maestro-ios-teardown] Releasing slot $MAESTRO_IOS_SLOT_ID"
+  "$SCRIPT_DIR/maestro-ios-slot-lock.sh" release "$MAESTRO_IOS_SLOT_ID" >/dev/null 2>&1 || true
+fi
+
+echo "[maestro-ios-teardown] Teardown complete"

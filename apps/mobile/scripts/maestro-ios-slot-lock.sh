@@ -8,6 +8,7 @@ LOCK_ROOT="${MAESTRO_IOS_SLOT_LOCK_ROOT:-/tmp/scaffolding2-maestro-ios-slots}"
 SLOT_IDS_RAW="${MAESTRO_IOS_SLOT_IDS:-slot-1,slot-2,slot-3}"
 WAIT_SECONDS="${MAESTRO_IOS_SLOT_WAIT_SECONDS:-120}"
 POLL_SECONDS="${MAESTRO_IOS_SLOT_POLL_SECONDS:-1}"
+OWNER_PID="${MAESTRO_IOS_SLOT_OWNER_PID:-$PPID}"
 
 IFS=',' read -r -a SLOT_IDS <<< "$SLOT_IDS_RAW"
 
@@ -48,7 +49,7 @@ acquire_slot() {
 
       lock_dir="$(slot_lock_dir "$slot_id")"
       if mkdir "$lock_dir" 2>/dev/null; then
-        echo "$$" > "$lock_dir/pid"
+        echo "$OWNER_PID" > "$lock_dir/pid"
         echo "$slot_id $index"
         return 0
       fi
@@ -61,7 +62,7 @@ acquire_slot() {
       if [[ -n "$existing_pid" ]] && ! kill -0 "$existing_pid" >/dev/null 2>&1; then
         rm -rf "$lock_dir"
         if mkdir "$lock_dir" 2>/dev/null; then
-          echo "$$" > "$lock_dir/pid"
+          echo "$OWNER_PID" > "$lock_dir/pid"
           echo "$slot_id $index"
           return 0
         fi
