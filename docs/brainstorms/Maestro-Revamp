@@ -106,3 +106,36 @@ Release resources to reduce memory pressure on local machine
 
 ### Package.json integration
 There should be convenient "run e2e tests using the scripts above" shortcuts in Maestro
+
+## Maestro testing guidelines
+Proposal:
+
+**Core Principle:** Minimize UI interaction for setup. Use Expo Router/Deep Links to teleport.
+
+**1. Installation & Permissions (The "Cold" Layer)**
+* **Command:** `launchApp: { clearState: true }`
+* **CRITICAL REQUIREMENT:** You **must** use an **Expo Development Build** (Prebuild). Do *not* use Expo Go.
+    * *Why:* `clearState` uninstalls the app package. If you use Expo Go, it uninstalls the Expo client itself, breaking the test loop.
+* **Scope:** Only for Onboarding, Permissions, and First-Run Auth flows.
+
+**2. State Injection (The "Harness" Layer)**
+* **Implementation:** Create a dedicated hidden route (e.g., `app/test-harness/[action].tsx`).
+* **Strategy:** Maestro opens `exp+myapp://test-harness/reset-store` to clear `AsyncStorage`/`MMKV` or seed data.
+* **Rule:** The harness route must render nothing (or a spinner), perform the logic synchronously, and then replace-navigate to the target screen.
+
+**3. Navigation (The "Teleport" Layer)**
+* **Strategy:** Use Expo Router deep links to bypass navigation stacks.
+* **Example:** `- openLink: "exp+myapp://product/123"` instead of tapping "Home" -> "Search" -> "Item".
+
+
+## Deliverable checklist
+The following items must be implemented:
+
+[ ] Dev build creation script: Creates the shared dev build when necessary in a well known path.
+[ ] Provision script: Implements creation, booting, and installation logic.
+[ ] Launch script: Implements server start, PID tracking, and Deep Linking.
+[ ] Teardown script: Implements robust cleanup (even if previous steps failed).
+[ ] app.json / eas.json Check: Ensure the app config supports generic development builds (no hardcoded production bundle IDs that might conflict).
+[ ] Maestro + Simulator + iOS Documentation: Updated Maestro + Simulator + Scripts documentation for future agents. 
+[ ] Maestro Testing Convention: Maestro testing convention guiding AI on how to write tests added to our testing strategy docs.
+[ ] First time setup documentation: Update documentation on what first run setup is needed
