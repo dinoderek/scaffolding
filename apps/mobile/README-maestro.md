@@ -1,99 +1,110 @@
-# Maestro iOS Smoke Runbook
+# Maestro iOS Runtime Runbook
 
-This runbook defines the iOS smoke checks used for UI and local-data runtime validation.
+The authoritative Maestro runtime/testing contract lives in [`docs/specs/11-maestro-runtime-and-testing-conventions.md`](../../docs/specs/11-maestro-runtime-and-testing-conventions.md).
 
-## Scope
+Use this runbook for the operational commands only.
 
-- Platform: iOS simulator only.
-- Flows:
-  - `apps/mobile/.maestro/flows/smoke-launch.yaml` (UI reachability smoke)
-  - `apps/mobile/.maestro/flows/data-runtime-smoke.yaml` (runtime migration + smoke record insert/read signal)
+## Current phase boundary
 
-## Prerequisites
+- The shared iOS development-client build foundation is implemented in this repo.
+- The committed smoke/data-smoke runner scripts still launch the current Expo Go runtime until later M10 toolkit tasks migrate them.
+- Build the shared dev client now so later M10 tasks can assume the simulator artifact already exists.
 
-1. `maestro` is installed and on `PATH`.
-2. Xcode simulator runtime is installed and visible via `xcrun simctl list devices available`.
-3. Run commands from `/Users/dinohughes/Projects/scaffolding/apps/mobile`.
+## Canonical config files
 
-## Run commands
+- Checked-in sample: `apps/mobile/.maestro/maestro.env.sample`
+- Per-worktree local config: `apps/mobile/.maestro/maestro.env.local`
 
-Run smoke flow:
+Create the local config once per worktree:
+
+```bash
+cd apps/mobile
+cp .maestro/maestro.env.sample .maestro/maestro.env.local
+```
+
+## First-time setup
+
+Run from `apps/mobile` unless a command says otherwise.
+
+1. Install JavaScript dependencies:
+
+```bash
+npm install
+```
+
+2. Install CocoaPods if `pod --version` is missing:
+
+```bash
+brew install cocoapods
+```
+
+3. Create your local Maestro config:
+
+```bash
+cp .maestro/maestro.env.sample .maestro/maestro.env.local
+```
+
+4. Build or reuse the shared simulator dev client:
+
+```bash
+./scripts/maestro-ios-dev-client-build.sh
+```
+
+Notes:
+
+- The default shared build root is `$HOME/.cache/boga/maestro/ios-dev-client`.
+- The default shared `.app` path is `$HOME/.cache/boga/maestro/ios-dev-client/mobile-dev-client.app`.
+- The local build path does not require Expo/EAS login.
+- `eas.json` includes `development-simulator` only as an explicit simulator-capable EAS profile for optional future/manual EAS usage.
+
+## Shared dev-client commands
+
+Check current shared-build status without rebuilding:
+
+```bash
+./scripts/maestro-ios-dev-client-build.sh --status
+```
+
+Print the resolved `.app` path after ensuring the artifact exists:
+
+```bash
+./scripts/maestro-ios-dev-client-build.sh --print-app-path
+```
+
+Force a rebuild even when the fingerprint matches:
+
+```bash
+./scripts/maestro-ios-dev-client-build.sh --force
+```
+
+## Rebuild triggers
+
+The shared dev client rebuilds when any of these are true:
+
+- the `.app` artifact is missing,
+- the build metadata file is missing,
+- the native-input fingerprint changed,
+- `--force` is passed.
+
+The native-input fingerprint currently covers:
+
+- `apps/mobile/app.json`
+- `apps/mobile/eas.json`
+- `apps/mobile/package.json`
+- `apps/mobile/package-lock.json`
+
+## Existing smoke commands
+
+These commands are still valid, but they still use the current Expo Go runtime until later M10 tasks migrate them:
 
 ```bash
 npm run test:e2e:ios:smoke
-```
-
-Run data runtime smoke flow:
-
-```bash
 npm run test:e2e:ios:data-smoke
 ```
 
-Run smoke flow with task-aware artifact path:
+## Artifact locations
 
-```bash
-TASK_ID=T-20260220-01 npm run test:e2e:ios:smoke
-```
-
-Run data runtime smoke flow with task-aware artifact path:
-
-```bash
-TASK_ID=T-20260220-01 npm run test:e2e:ios:data-smoke
-```
-
-Run two agents in parallel with deterministic slot/device mapping:
-
-```bash
-MAESTRO_IOS_SLOT_IDS=slot-a,slot-b \
-IOS_SIM_DEVICE_POOL="iPhone 17 Pro,iPhone 17 Pro Max" \
-EXPO_DEV_SERVER_BASE_PORT=8082 \
-npm run test:e2e:ios:smoke
-```
-
-Optional environment variables:
-
-- `TASK_ID`: task identifier for artifact grouping. Default: `ad-hoc`.
-- `IOS_SIM_DEVICE`: simulator device name. Default: `iPhone 17 Pro`.
-- `EXPO_DEV_SERVER_BASE_PORT`: base Expo dev server port for slot mapping. Default: `8082`.
-- `EXPO_DEV_SERVER_PORT`: explicit fixed Expo dev server port override (bypasses slot-derived port).
-- `EXPO_START_WAIT_SECONDS`: wait before Maestro starts. Default: `30`.
-- `MAESTRO_IOS_SLOT_IDS`: comma-separated slot IDs for locking. Default: `slot-1,slot-2,slot-3`.
-- `MAESTRO_IOS_SLOT_WAIT_SECONDS`: max wait for slot acquisition. Default: `120`.
-- `MAESTRO_IOS_SLOT_POLL_SECONDS`: slot polling interval. Default: `1`.
-- `MAESTRO_IOS_SLOT_LOCK_ROOT`: slot lock directory. Default: `/tmp/scaffolding2-maestro-ios-slots`.
-- `IOS_SIM_DEVICE_POOL`: comma-separated simulator names mapped by slot index.
-- `IOS_SIM_UDID_POOL`: comma-separated simulator UDIDs mapped by slot index (preferred for deterministic parallel mapping).
-
-## Artifacts
-
-Artifacts are stored at:
-
-`apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`
-
-Expected screenshot files under `maestro-output`:
-
-- `01-app-launch.png`
-- `02-session-recorder-visible.png`
-- `03-data-runtime-smoke-start.png` (when running data smoke flow)
-- `04-data-runtime-smoke-success.png` (when running data smoke flow)
-
-Other outputs:
-
-- `expo-start.log`
-- `simulator.log`
-- `maestro-junit.xml`
-- `maestro-debug/`
-
-## Troubleshooting
-
-1. Device not found:
-   - Set `IOS_SIM_DEVICE` to an available name from `xcrun simctl list devices available`.
-2. App not visible when Maestro starts:
-   - Increase `EXPO_START_WAIT_SECONDS` and rerun.
-3. Maestro cannot launch:
-   - Verify `maestro --version` and ensure Java is installed.
-4. Expo start fails with port conflict:
-   - Set `EXPO_DEV_SERVER_PORT` (single run) or adjust `EXPO_DEV_SERVER_BASE_PORT` (slot mapping).
-5. Parallel runs block each other:
-   - Increase `MAESTRO_IOS_SLOT_IDS` count and provide matching simulator pool values.
-   - Or increase `MAESTRO_IOS_SLOT_WAIT_SECONDS` if queueing is acceptable.
+- Shared dev-client root: `$HOME/.cache/boga/maestro/ios-dev-client`
+- Shared dev-client metadata: `$HOME/.cache/boga/maestro/ios-dev-client/dev-client-build.env`
+- Shared dev-client build log: `$HOME/.cache/boga/maestro/ios-dev-client/build.log`
+- Maestro run artifacts: `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`

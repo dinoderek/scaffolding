@@ -14,6 +14,7 @@ It has two jobs:
 - Scope: iOS Maestro runtime/tooling, flow execution conventions, and the related documentation ownership model for `apps/mobile/**`.
 - Current-state status: the implemented runtime is still `Expo Go` based.
 - Target-state status: M10 will migrate the automation runtime to an Expo development client workflow.
+- Phase-1 foundation status (`2026-03-01`): the shared development-client config/build contract is implemented, but the smoke/data-smoke runners still target `Expo Go` until later M10 tasks migrate them.
 - Authority rule:
   - this doc is normative for Maestro runtime/testing conventions;
   - milestone/task docs may scope work, but must not redefine this contract;
@@ -36,6 +37,21 @@ Rules:
 1. The full runtime/testing contract lives here.
 2. Secondary runbooks should stay operational and link back here instead of duplicating the full contract.
 3. The brainstorm and old task docs are context only; they are not source-of-truth once this doc exists.
+
+## Implemented phase-1 foundation (`2026-03-01`)
+
+- Checked-in config sample:
+  - `apps/mobile/.maestro/maestro.env.sample`
+- Canonical untracked local config:
+  - `apps/mobile/.maestro/maestro.env.local`
+- Shared env helper:
+  - `apps/mobile/scripts/maestro-env.sh`
+- Shared build/reuse entrypoint:
+  - `apps/mobile/scripts/maestro-ios-dev-client-build.sh`
+- Current implementation note:
+  - the helper and build script are implemented;
+  - the existing smoke/data-smoke runners source the same env contract;
+  - runtime migration to use the shared dev client is still owned by later M10 tasks.
 
 ## Verified current-state baseline (`2026-03-01`)
 
@@ -150,6 +166,7 @@ Rules:
 1. Future runtime scripts must treat `apps/mobile/.maestro/maestro.env.local` as the canonical local config file.
 2. The sample file is the only checked-in example/config template.
 3. Scripts may still accept direct environment overrides, but the documented baseline is to source `maestro.env.local`.
+4. The shared helper for this contract is `apps/mobile/scripts/maestro-env.sh`, which currently sources the sample file first and then `maestro.env.local`.
 
 ### 3. Canonical environment terminology
 
@@ -182,6 +199,46 @@ The shared development-client artifact contract is:
    - `$HOME/.cache/boga/maestro/ios-dev-client`
 3. The exact `.app` path consumed by runtime scripts is passed through `MAESTRO_IOS_DEV_CLIENT_APP_PATH`.
 4. A dedicated build/reuse script owns creating or refreshing that artifact; smoke/data-smoke runners do not build native binaries directly.
+5. The current default resolved `.app` path is:
+   - `$HOME/.cache/boga/maestro/ios-dev-client/mobile-dev-client.app`
+6. The current build metadata file is:
+   - `$HOME/.cache/boga/maestro/ios-dev-client/dev-client-build.env`
+7. The current build log file is:
+   - `$HOME/.cache/boga/maestro/ios-dev-client/build.log`
+
+Current implemented build method:
+
+- `apps/mobile/scripts/maestro-ios-dev-client-build.sh` builds in a temp workspace under the shared build root.
+- It runs:
+  - `npx expo prebuild --platform ios --clean --npm`
+  - `xcodebuild ... -destination 'generic/platform=iOS Simulator' ... build`
+- It then copies the resulting simulator `.app` into `MAESTRO_IOS_DEV_CLIENT_APP_PATH`.
+
+Current rebuild invalidation rules:
+
+- rebuild when the `.app` artifact is missing;
+- rebuild when `dev-client-build.env` is missing;
+- rebuild when the native-input fingerprint changed;
+- rebuild when `--force` is passed.
+
+Current native-input fingerprint inputs:
+
+- `apps/mobile/app.json`
+- `apps/mobile/eas.json`
+- `apps/mobile/package.json`
+- `apps/mobile/package-lock.json`
+
+Current host-tool prerequisites for the local shared build:
+
+- `node`, `npm`, `npx`
+- `xcrun`, `xcodebuild`
+- `pod` (`CocoaPods`)
+- `rsync`, `ditto`, `shasum`
+
+Auth/log-in note:
+
+- the implemented local shared-build path does not require Expo/EAS login;
+- `eas.json` still keeps the development-client profiles explicit, including `development-simulator`, for optional manual or future EAS-based workflows.
 
 ### 5. Canonical toolkit script surface
 

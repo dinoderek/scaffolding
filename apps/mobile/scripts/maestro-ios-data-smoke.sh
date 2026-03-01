@@ -3,11 +3,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+source "$SCRIPT_DIR/maestro-env.sh"
+maestro_source_env
 
-TASK_ID="${TASK_ID:-ad-hoc}"
-IOS_SIM_DEVICE_DEFAULT="${IOS_SIM_DEVICE:-iPhone 17 Pro}"
-IOS_SIM_DEVICE_POOL="${IOS_SIM_DEVICE_POOL:-iPhone 17 Pro,iPhone 17 Pro Max,iPhone Air}"
-EXPO_DEV_SERVER_BASE_PORT="${EXPO_DEV_SERVER_BASE_PORT:-8082}"
+IOS_SIM_DEVICE_DEFAULT="$IOS_SIM_DEVICE"
 TIMESTAMP="$(date +"%Y%m%d-%H%M%S")-$$"
 FLOW_FILE="$APP_DIR/.maestro/flows/data-runtime-smoke.yaml"
 SLOT_ID=""
@@ -30,14 +29,14 @@ SLOT_DEVICE="$IOS_SIM_DEVICE_DEFAULT"
 if [[ -n "${IOS_SIM_UDID_POOL:-}" ]]; then
   IFS=',' read -r -a IOS_SIM_UDID_POOL_ITEMS <<< "$IOS_SIM_UDID_POOL"
   if (( SLOT_INDEX < ${#IOS_SIM_UDID_POOL_ITEMS[@]} )); then
-    SLOT_UDID="$(echo "${IOS_SIM_UDID_POOL_ITEMS[$SLOT_INDEX]}" | xargs)"
+    SLOT_UDID="$(maestro_trim "${IOS_SIM_UDID_POOL_ITEMS[$SLOT_INDEX]}")"
   fi
 fi
 
 if [[ -z "${SLOT_UDID:-}" ]]; then
   IFS=',' read -r -a IOS_SIM_DEVICE_POOL_ITEMS <<< "$IOS_SIM_DEVICE_POOL"
   if (( SLOT_INDEX < ${#IOS_SIM_DEVICE_POOL_ITEMS[@]} )); then
-    SLOT_DEVICE="$(echo "${IOS_SIM_DEVICE_POOL_ITEMS[$SLOT_INDEX]}" | xargs)"
+    SLOT_DEVICE="$(maestro_trim "${IOS_SIM_DEVICE_POOL_ITEMS[$SLOT_INDEX]}")"
   fi
 fi
 

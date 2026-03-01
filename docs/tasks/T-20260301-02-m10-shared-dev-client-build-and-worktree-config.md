@@ -1,7 +1,7 @@
 ---
 task_id: T-20260301-02
 milestone_id: "M10"
-status: planned
+status: completed
 ui_impact: "no"
 areas: "frontend"
 runtimes: "docs,expo,maestro"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/11-maestro-runtime-and-testing-conventions.md,apps/mob
 
 - Task ID: `T-20260301-02`
 - Title: M10 shared dev-client build and worktree config
-- Status: `planned`
+- Status: `completed`
 - Session date: `2026-03-01`
 - Session interaction mode: `interactive (default)`
 
@@ -32,10 +32,13 @@ docs_touched: "docs/specs/11-maestro-runtime-and-testing-conventions.md,apps/mob
 
 ## Context Freshness (required at session start; update before edits)
 
-- Verified current branch + HEAD commit: `TBD at execution start`
-- Start-of-session sync completed per `docs/specs/04-ai-development-playbook.md` git sync workflow?: `TBD`
+- Verified current branch + HEAD commit: `main @ b64581e265faa2b634614f996875c10c459d01bf`
+- Start-of-session sync completed per `docs/specs/04-ai-development-playbook.md` git sync workflow?: `yes` (`git fetch origin main`; local `main` already matched `origin/main`)
 - Parent refs opened in this session:
+  - `docs/specs/README.md`
   - `docs/specs/milestones/M10-maestro-parallel-runtime-and-testing-conventions.md`
+  - `docs/specs/03-technical-architecture.md`
+  - `docs/specs/04-ai-development-playbook.md`
   - `docs/specs/11-maestro-runtime-and-testing-conventions.md`
   - `docs/specs/06-testing-strategy.md`
   - `docs/specs/09-project-structure.md`
@@ -44,7 +47,7 @@ docs_touched: "docs/specs/11-maestro-runtime-and-testing-conventions.md,apps/mob
   - `apps/mobile/eas.json`
   - existing mobile scripts under `apps/mobile/scripts/**`
 - Known stale references or assumptions:
-  - exact local build mechanism for the shared simulator `.app` artifact must be chosen against the current Expo toolchain at execution time
+  - none
 - Optional helper command:
   - `./scripts/task-bootstrap.sh docs/tasks/T-20260301-02-m10-shared-dev-client-build-and-worktree-config.md`
 
@@ -145,16 +148,30 @@ Establish the reusable native-binary foundation for M10 by adding a shared dev-c
 
 ## Evidence
 
-- Config file path/sample summary.
-- Shared build artifact contract summary, including rebuild triggers.
-- Fast-gate result summary.
-- Manual verification summary (CI absent), including any host-tool prerequisites encountered.
+- Config file path/sample summary:
+  - checked-in sample: `apps/mobile/.maestro/maestro.env.sample`
+  - untracked local path: `apps/mobile/.maestro/maestro.env.local`
+  - shared helper: `apps/mobile/scripts/maestro-env.sh`
+- Shared build artifact contract summary, including rebuild triggers:
+  - shared build root: `$HOME/.cache/boga/maestro/ios-dev-client`
+  - shared simulator app path: `$HOME/.cache/boga/maestro/ios-dev-client/mobile-dev-client.app`
+  - metadata file: `$HOME/.cache/boga/maestro/ios-dev-client/dev-client-build.env`
+  - rebuilds when artifact or metadata is missing, when the fingerprint over `app.json`, `eas.json`, `package.json`, or `package-lock.json` changes, or when `--force` is passed
+- Fast-gate result summary:
+  - `./scripts/quality-fast.sh frontend` passed
+  - lint emitted pre-existing warnings only
+  - tests emitted pre-existing `act(...)` console warnings only
+- Manual verification summary:
+  - installed missing host prerequisite `cocoapods` via `brew install cocoapods`
+  - executed `apps/mobile/scripts/maestro-ios-dev-client-build.sh` successfully
+  - build completed with bundle id `com.dinoderek.mobile`
+  - follow-up `--status` and default invocation both reported `status=ready` / `reason=fingerprint-match`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: added the canonical Maestro env sample/local-config contract and helper, added `expo-dev-client` plus explicit simulator dev-client config, implemented the shared build/reuse script, and updated the Maestro/human-testing docs with first-time setup and rebuild rules.
+- What tests ran: `bash -n apps/mobile/scripts/maestro-env.sh apps/mobile/scripts/maestro-ios-dev-client-build.sh apps/mobile/scripts/maestro-ios-smoke.sh apps/mobile/scripts/maestro-ios-data-smoke.sh`; `apps/mobile/scripts/maestro-ios-dev-client-build.sh --status`; `apps/mobile/scripts/maestro-ios-dev-client-build.sh`; `apps/mobile/scripts/maestro-ios-dev-client-build.sh --status` (post-build no-op verification); `apps/mobile/scripts/maestro-ios-dev-client-build.sh` (post-build no-op verification); `./scripts/quality-fast.sh frontend`.
+- What remains: later M10 tasks still need to migrate provision/launch/teardown and the smoke/data-smoke runners from Expo Go to the shared development-client runtime.
 
 ## Status update checklist (mandatory at closeout)
 

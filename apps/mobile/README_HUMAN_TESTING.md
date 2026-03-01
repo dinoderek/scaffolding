@@ -1,146 +1,164 @@
 # Mobile App Development Guide
 
-This guide is optimized for fast human validation on a physical phone.
+This guide is the human-operator entrypoint for local mobile validation.
 
-## Code organization
+For the authoritative Maestro runtime/testing policy, use [`docs/specs/11-maestro-runtime-and-testing-conventions.md`](../../docs/specs/11-maestro-runtime-and-testing-conventions.md). For the operational Maestro commands, use [`apps/mobile/README-maestro.md`](./README-maestro.md).
 
-### Top-level folders
+## Run location
 
-- `app/`: Expo Router route files, route layouts, and route-level UI tests.
-- `assets/`: App images/icons/splash and other static assets bundled with the app.
-- `components/`: Shared or feature UI/domain types that are not route files.
-- `drizzle/`: Generated SQL migrations and Drizzle metadata snapshots.
-- `src/`: Non-route app code (data access, schema, and future domain logic).
-- `.vscode/`: Local editor settings/recommendations for this app workspace.
-- `.expo/` and `node_modules/`: Generated local/runtime artifacts (do not edit manually).
-
-### Root files
-
-- `package.json`: Dependencies and developer scripts (`start`, `test`, `db:generate`, etc.).
-- `app.json`: Expo app configuration (bundle metadata, plugins, platform settings).
-- `eas.json`: EAS build/submit profile configuration.
-- `tsconfig.json`: TypeScript compiler settings and path aliases.
-- `eslint.config.js`: Lint rules and ignore configuration.
-- `jest.config.js` and `jest.setup.ts`: Jest test config and runtime setup.
-- `drizzle.config.ts`: Drizzle migration generation config.
-- `.gitignore`: Ignore rules for generated/local files.
-- `README.md`: Development workflows and code organization policy.
-
-## Test placement policy
-
-- `Route/screen integration tests`: place in `app/__tests__/` and test user flows through route components.
-- `Feature/domain unit tests`: colocate near feature code using `__tests__/` folders (for example, `src/**/__tests__/` or `components/**/__tests__/`).
-- `Data layer tests`: place under `src/data/__tests__/` and focus on schema, queries, and repository behavior.
-- `Pure utility tests`: colocate with the utility module using `*.test.ts`.
-
-Use the smallest test scope that validates behavior:
-- prefer unit tests for state and pure logic,
-- use route integration tests for navigation/UI interaction wiring,
-- avoid duplicating the same assertion across multiple test types.
+Run commands from `apps/mobile`.
 
 ## Prerequisites
 
-Run all commands from `/Users/dinohughes/Projects/scaffolding-quality/apps/mobile`.
-
-1. Install dependencies:
+1. Install JavaScript dependencies:
 
 ```bash
 npm install
 ```
 
-2. Authenticate with Expo Application Services:
+2. Install CocoaPods if `pod --version` is missing:
 
 ```bash
-npx eas-cli@latest login
+brew install cocoapods
 ```
 
-## Workflow A: Instant Local Loop (fastest while coding)
+3. Copy the Maestro sample config for this worktree:
 
-Use this when you want immediate UI feedback while both laptop and phone are on the same network.
+```bash
+cp .maestro/maestro.env.sample .maestro/maestro.env.local
+```
 
-1. Start Metro:
+Notes:
+
+- The local shared dev-client build does not require Expo/EAS login.
+- If you choose to use hosted EAS builds later, log in with `npx eas-cli login`.
+
+## Workflow A: Instant local loop
+
+Use this for the normal JS/TS iteration loop.
 
 ```bash
 npx expo start
 ```
 
-2. Open the app on your phone:
-   - Expo Go for standard managed Expo features.
-   - Development build (dev client) if you introduce custom native modules.
-3. Keep the app open while coding; changes hot reload in seconds.
+Open the app in:
 
-## Workflow B: Preview Publish Loop (shareable on-device checkpoint)
+- Expo Go for standard managed Expo work.
+- A development client once a native dev build exists.
 
-Use this when you want a stable, installable preview build and fast remote updates.
+## Workflow B: Shared iOS dev-client foundation
 
-### One-time setup
+Use this once per machine or when native inputs changed.
 
-1. Link this app to an EAS project:
+Build or reuse the shared simulator-compatible development client:
 
 ```bash
-npx eas-cli@latest init
+./scripts/maestro-ios-dev-client-build.sh
 ```
 
-2. Configure EAS Update for this app/runtime:
+Useful variants:
 
 ```bash
-npx eas-cli@latest update:configure
+./scripts/maestro-ios-dev-client-build.sh --status
+./scripts/maestro-ios-dev-client-build.sh --print-app-path
+./scripts/maestro-ios-dev-client-build.sh --force
 ```
 
-3. Ensure `preview` channel points to `preview` branch:
+Contract summary:
+
+- Shared build root: `$HOME/.cache/boga/maestro/ios-dev-client`
+- Default `.app` path: `$HOME/.cache/boga/maestro/ios-dev-client/mobile-dev-client.app`
+- Rebuild inputs: `app.json`, `eas.json`, `package.json`, `package-lock.json`
+
+Install the shared dev client into the currently booted simulator:
 
 ```bash
-npx eas-cli@latest channel:create preview --branch preview
-# if the channel already exists, use:
-npx eas-cli@latest channel:edit preview --branch preview
+open -a Simulator
+xcrun simctl boot "iPhone 17 Pro" || true
+xcrun simctl install booted "$HOME/.cache/boga/maestro/ios-dev-client/mobile-dev-client.app"
+xcrun simctl launch booted com.dinoderek.mobile
 ```
 
-4. Build and install a preview app on device:
+If you want the script to print the exact current `.app` path first:
 
 ```bash
-npx eas-cli@latest build -p ios --profile preview
-# or
-npx eas-cli@latest build -p android --profile preview
+xcrun simctl install booted "$(./scripts/maestro-ios-dev-client-build.sh --print-app-path)"
 ```
 
-### Day-to-day preview loop
-
-1. Make UI changes locally.
-2. Publish an update to the preview branch:
-
-```bash
-npx eas-cli@latest update --branch preview --message "ui: <short note>"
-```
-
-3. Open/reload the installed preview app on device and validate.
-
-Notes:
-- Native dependency/config changes require a new preview build.
-- JS/TS/UI changes usually ship via update without rebuilding the binary.
-
-## Workflow C: Dev Client Loop (native modules + fast iteration)
-
-Use this if Expo Go is not enough.
-
-1. Build and install development client once:
-
-```bash
-npx eas-cli@latest build -p ios --profile development
-# or
-npx eas-cli@latest build -p android --profile development
-```
-
-2. Start Metro for the dev client:
+After the app is installed, start Metro for the dev client:
 
 ```bash
 npx expo start --dev-client
 ```
 
-3. Open the installed dev client and connect to Metro.
+Then open the installed app in Simulator and connect it to the local bundler.
+
+## Workflow C: Real iPhone dev build
+
+Use this when you need the development client on a physical device instead of the simulator.
+
+Hosted EAS build path:
+
+```bash
+npx eas-cli login
+npx eas-cli init
+npx eas-cli build -p ios --profile development
+```
+
+Notes:
+
+- `npx eas-cli init` is only needed if the app has not been linked to an EAS project yet.
+- The `development` profile builds a real-device development client; the local simulator `.app` from Workflow B cannot be installed on a phone.
+- EAS will prompt for Apple signing/device-registration setup if it is not already configured for your account/project.
+
+When the build finishes:
+
+1. Open the build page/link from the EAS output.
+2. Install the generated iOS development build onto the phone.
+3. On the Mac, start Metro with `npx expo start --dev-client`.
+4. Open the installed dev client on the phone and connect it to the local bundler.
+
+## Workflow D: Preview publish loop
+
+Use this when you want a stable installable preview build and remote updates.
+
+One-time setup:
+
+```bash
+npx eas-cli login
+npx eas-cli init
+npx eas-cli update:configure
+npx eas-cli channel:create preview --branch preview
+```
+
+If the `preview` channel already exists:
+
+```bash
+npx eas-cli channel:edit preview --branch preview
+```
+
+Build a preview app:
+
+```bash
+npx eas-cli build -p ios --profile preview
+```
+
+Day-to-day preview update:
+
+```bash
+npx eas-cli update --branch preview --message "ui: <short note>"
+```
+
+## Workflow E: Maestro smoke commands
+
+These commands are still on the current Expo Go runtime until later M10 tasks migrate them to the shared development client:
+
+```bash
+npm run test:e2e:ios:smoke
+npm run test:e2e:ios:data-smoke
+```
 
 ## Local data lane-1 canary
-
-Run migration generation canary command:
 
 ```bash
 npm run db:generate:canary

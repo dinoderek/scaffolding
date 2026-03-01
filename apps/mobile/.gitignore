@@ -44,3 +44,4 @@ app-example
 
 # Maestro artifacts
 artifacts/
+.maestro/maestro.env.local
