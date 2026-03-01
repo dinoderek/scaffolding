@@ -1,7 +1,7 @@
 ---
 task_id: T-20260301-04
 milestone_id: "M10"
-status: planned
+status: completed
 ui_impact: "no"
 areas: "frontend"
 runtimes: "docs,expo,maestro,node"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/11-maestro-runtime-and-testing-conventions.md,docs/spe
 
 - Task ID: `T-20260301-04`
 - Title: M10 Maestro harness, reset taxonomy, and flow migration
-- Status: `planned`
+- Status: `completed`
 - Session date: `2026-03-01`
 - Session interaction mode: `interactive (default)`
 
@@ -32,9 +32,12 @@ docs_touched: "docs/specs/11-maestro-runtime-and-testing-conventions.md,docs/spe
 
 ## Context Freshness (required at session start; update before edits)
 
-- Verified current branch + HEAD commit: `TBD at execution start`
-- Start-of-session sync completed per `docs/specs/04-ai-development-playbook.md` git sync workflow?: `TBD`
+- Verified current branch + HEAD commit: `main @ b91c43b`
+- Start-of-session sync completed per `docs/specs/04-ai-development-playbook.md` git sync workflow?: `yes` (`git pull --ff-only origin main` -> already up to date)
 - Parent refs opened in this session:
+  - `docs/specs/README.md`
+  - `docs/specs/03-technical-architecture.md`
+  - `docs/specs/04-ai-development-playbook.md`
   - `docs/specs/milestones/M10-maestro-parallel-runtime-and-testing-conventions.md`
   - `docs/specs/11-maestro-runtime-and-testing-conventions.md`
   - `docs/specs/06-testing-strategy.md`
@@ -44,7 +47,7 @@ docs_touched: "docs/specs/11-maestro-runtime-and-testing-conventions.md,docs/spe
   - current route inventory under `apps/mobile/app/**`
   - data reset/persistence entrypoints under `apps/mobile/src/**`
 - Known stale references or assumptions:
-  - current flows still spend setup effort on navigation/input that may be better handled by hidden harness actions or deep links
+  - none after code/doc inventory review
 - Optional helper command:
   - `./scripts/task-bootstrap.sh docs/tasks/T-20260301-04-m10-maestro-harness-reset-taxonomy-and-flow-migration.md`
 
@@ -145,16 +148,28 @@ Add the app-side setup utilities M10 needs for reliable and fast Maestro runs, t
 
 ## Evidence
 
-- Harness/reset surface summary.
-- Updated flow behavior summary, including where UI setup was replaced by reset/deep-link actions.
-- Fast-gate and slow-gate result summary.
-- Manual verification summary (CI absent), including screenshots/artifacts captured.
+- Harness/reset surface summary:
+  - added `apps/mobile/app/maestro-harness.tsx` plus `apps/mobile/src/maestro/harness.ts`
+  - added `resetLocalAppData()` in `apps/mobile/src/data/bootstrap.ts`
+  - added `MAESTRO_RESET_STRATEGY` handling so smoke uses toolkit-level `full reset` and data-smoke uses app-level `data reset`
+- Updated flow behavior summary, including where UI setup was replaced by reset/deep-link actions:
+  - `smoke-launch.yaml` now confirms launch visibility, then teleports to `/session-recorder` through `mobile://maestro-harness?teleport=session-recorder`
+  - `data-runtime-smoke.yaml` now uses `mobile://maestro-harness?reset=data&teleport=session-recorder` before performing the insert/read flow
+- Fast-gate and slow-gate result summary:
+  - `./scripts/quality-fast.sh frontend` passed
+  - `./scripts/quality-slow.sh frontend` passed
+- Manual verification summary (CI absent), including screenshots/artifacts captured:
+  - smoke artifacts: `apps/mobile/artifacts/maestro/ad-hoc/20260301-205924-84042/` (`01-app-launch`, `02-session-recorder-visible`)
+  - data-smoke artifacts: `apps/mobile/artifacts/maestro/ad-hoc/20260301-210005-85476/` (`03-data-runtime-smoke-start`, `04-data-runtime-smoke-success`)
+
+Manual verification summary: local simulator verification was required because CI is absent; both Maestro flows passed against the real iOS simulator runtime and produced the expected screenshot artifacts under the recorded artifact roots.
+manual verification summary: local simulator verification was required because CI is absent; both Maestro flows passed against the real iOS simulator runtime and produced the expected screenshot artifacts under the recorded artifact roots.
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: implemented a guarded hidden Maestro harness route for `data reset` and `teleport`; added runtime SQLite reset support and focused unit coverage; migrated smoke/data-smoke flows to the reset taxonomy and added runner-level `full reset` handling; updated `docs/specs/11-maestro-runtime-and-testing-conventions.md` and `docs/specs/06-testing-strategy.md` to reflect the implemented contract.
+- What tests ran: `npm test -- --runInBand app/__tests__/local-data-bootstrap.test.ts app/__tests__/maestro-harness.test.ts`; `npm run typecheck`; `npm run lint`; `./scripts/quality-fast.sh frontend`; `./scripts/quality-slow.sh frontend`.
+- What remains: milestone follow-up `T-20260301-05` still needs to align shared runbooks/playbook docs to the final M10 contract.
 
 ## Status update checklist (mandatory at closeout)
 

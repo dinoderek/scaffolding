@@ -163,6 +163,9 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - Current required Maestro coverage is a single iOS smoke flow:
   - app launch visible state
   - session recorder visible state
+- Reset/setup policy for this flow:
+  - use `full reset` only because smoke is the cold-start coverage lane;
+  - prefer `teleport` to the recorder over tapping through setup UI once launch visibility is confirmed.
 - Required screenshots for smoke flow:
   - `01-app-launch`
   - `02-session-recorder-visible`
@@ -178,6 +181,10 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - Command:
   - `npm run test:e2e:ios:data-smoke`
   - (also covered by `./scripts/quality-slow.sh frontend`)
+- Reset/setup policy for this flow:
+  - use `data reset` to clear app-owned SQLite state without re-testing install semantics;
+  - use `teleport` to land directly on the recorder before performing the write/read assertions;
+  - avoid `full reset` here unless the task specifically needs cold-install evidence.
 - Required when any of these are true:
   - `apps/mobile/src/data/bootstrap.ts` changes.
   - `apps/mobile/src/data/migrations/**` changes.

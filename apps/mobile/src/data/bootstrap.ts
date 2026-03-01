@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
-import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
+import { deleteDatabaseAsync, openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite';
 
 import { localRuntimeMigrations } from './migrations';
 import { seedSystemExerciseCatalog } from './exercise-catalog-seeds';
@@ -79,6 +79,22 @@ export const bootstrapLocalDataLayer = async () => {
   await runRuntimeMigrations(localDatabase);
   await runRuntimeExerciseCatalogSeed(localDatabase);
   return localDatabase;
+};
+
+export const resetLocalAppData = async () => {
+  const databaseToClose = sqliteDatabase;
+
+  sqliteDatabase = null;
+  localDatabase = null;
+  runtimeMigrationsComplete = false;
+  runtimeMigrationPromise = null;
+  runtimeExerciseCatalogSeedComplete = false;
+  runtimeExerciseCatalogSeedPromise = null;
+
+  await databaseToClose?.closeAsync();
+  await deleteDatabaseAsync(LOCAL_DATABASE_NAME);
+
+  return bootstrapLocalDataLayer();
 };
 
 export const __resetLocalDataLayerForTests = () => {

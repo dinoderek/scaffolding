@@ -2,6 +2,7 @@ export {
   __resetLocalDataLayerForTests,
   bootstrapLocalDataLayer,
   getSqliteDatabase,
+  resetLocalAppData,
   type LocalDatabase,
 } from './bootstrap';
 export {

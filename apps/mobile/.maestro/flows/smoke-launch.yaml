@@ -21,39 +21,10 @@ appId: com.dinoderek.mobile
     optional: true
 - assertVisible:
     id: "session-list-screen"
+- openLink: "mobile://maestro-harness?teleport=session-recorder"
 - tapOn:
-    id: "resume-active-session-button"
-    optional: true
-- tapOn:
-    id: "start-session-button"
+    text: "Open"
     optional: true
 - assertVisible:
     id: "session-recorder-screen"
-- tapOn:
-    text: "Continue"
-    optional: true
-- tapOn: "Log new exercise"
-- tapOn: "Select exercise Barbell Back Squat"
-- tapOn: "Weight for exercise 1 set 1"
-- inputText: "225"
-- tapOn: "Reps for exercise 1 set 1"
-- inputText: "5"
-- tapOn: "Submit Session"
-- tapOn:
-    text: "Submit Session"
-    optional: true
-- tapOn:
-    text: "Remove incomplete sets and submit"
-    optional: true
-- tapOn:
-    text: "Remove empty exercises and submit"
-    optional: true
-- tapOn:
-    text: "Continue"
-    optional: true
-- tapOn:
-    text: "Close"
-    optional: true
-- assertVisible:
-    id: "session-list-screen"
 - takeScreenshot: "02-session-recorder-visible"

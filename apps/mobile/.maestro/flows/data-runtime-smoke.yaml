@@ -24,11 +24,9 @@ appId: com.dinoderek.mobile
 - assertVisible:
     id: "session-list-screen"
 - takeScreenshot: "03-data-runtime-smoke-start"
+- openLink: "mobile://maestro-harness?reset=data&teleport=session-recorder"
 - tapOn:
-    id: "resume-active-session-button"
-    optional: true
-- tapOn:
-    id: "start-session-button"
+    text: "Open"
     optional: true
 - assertVisible:
     id: "session-recorder-screen"

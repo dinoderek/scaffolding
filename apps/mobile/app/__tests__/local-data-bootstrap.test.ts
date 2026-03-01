@@ -1,11 +1,13 @@
 /* eslint-disable import/first */
 
 const mockOpenDatabaseSync = jest.fn();
+const mockDeleteDatabaseAsync = jest.fn();
 const mockDrizzle = jest.fn();
 const mockMigrate = jest.fn();
 const mockSeedSystemExerciseCatalog = jest.fn();
 
 jest.mock('expo-sqlite', () => ({
+  deleteDatabaseAsync: (...args: unknown[]) => mockDeleteDatabaseAsync(...args),
   openDatabaseSync: (...args: unknown[]) => mockOpenDatabaseSync(...args),
 }));
 
@@ -21,13 +23,14 @@ jest.mock('@/src/data/exercise-catalog-seeds', () => ({
   seedSystemExerciseCatalog: (...args: unknown[]) => mockSeedSystemExerciseCatalog(...args),
 }));
 
-import { __resetLocalDataLayerForTests, bootstrapLocalDataLayer } from '@/src/data/bootstrap';
+import { __resetLocalDataLayerForTests, bootstrapLocalDataLayer, resetLocalAppData } from '@/src/data/bootstrap';
 import { localRuntimeMigrations } from '@/src/data/migrations';
 
 describe('bootstrapLocalDataLayer', () => {
   beforeEach(() => {
     __resetLocalDataLayerForTests();
     mockOpenDatabaseSync.mockReset();
+    mockDeleteDatabaseAsync.mockReset();
     mockDrizzle.mockReset();
     mockMigrate.mockReset();
     mockSeedSystemExerciseCatalog.mockReset();
@@ -93,6 +96,37 @@ describe('bootstrapLocalDataLayer', () => {
     expect(mockOpenDatabaseSync).toHaveBeenCalledTimes(1);
     expect(mockDrizzle).toHaveBeenCalledTimes(1);
     expect(mockMigrate).toHaveBeenCalledTimes(1);
+    expect(mockSeedSystemExerciseCatalog).toHaveBeenCalledTimes(2);
+  });
+
+  it('resets runtime app data by closing the database, deleting it, and re-running bootstrap', async () => {
+    const sqliteClient = {
+      closeAsync: jest.fn().mockResolvedValue(undefined),
+      name: 'sqlite-client',
+    };
+    const resetSqliteClient = {
+      closeAsync: jest.fn().mockResolvedValue(undefined),
+      name: 'sqlite-client-after-reset',
+    };
+    const localDatabase = { name: 'local-db' };
+    const resetLocalDatabase = { name: 'local-db-after-reset' };
+
+    mockOpenDatabaseSync.mockReturnValueOnce(sqliteClient).mockReturnValueOnce(resetSqliteClient);
+    mockDeleteDatabaseAsync.mockResolvedValue(undefined);
+    mockDrizzle.mockReturnValueOnce(localDatabase).mockReturnValueOnce(resetLocalDatabase);
+    mockMigrate.mockResolvedValue(undefined);
+    mockSeedSystemExerciseCatalog.mockReturnValue(undefined);
+
+    await bootstrapLocalDataLayer();
+    const resetDatabase = await resetLocalAppData();
+
+    expect(resetDatabase).toBe(resetLocalDatabase);
+    expect(sqliteClient.closeAsync).toHaveBeenCalledTimes(1);
+    expect(resetSqliteClient.closeAsync).not.toHaveBeenCalled();
+    expect(mockDeleteDatabaseAsync).toHaveBeenCalledWith('scaffolding-local.db');
+    expect(mockOpenDatabaseSync).toHaveBeenCalledTimes(2);
+    expect(mockDrizzle).toHaveBeenCalledTimes(2);
+    expect(mockMigrate).toHaveBeenCalledTimes(2);
     expect(mockSeedSystemExerciseCatalog).toHaveBeenCalledTimes(2);
   });
 });

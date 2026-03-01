@@ -21,6 +21,7 @@ maestro_require_command xcrun "Install Xcode and the iOS simulator runtime."
 echo "[maestro-ios-provision] Runtime env: $RUNTIME_ENV_FILE"
 echo "[maestro-ios-provision] Artifact root: $MAESTRO_ARTIFACT_ROOT"
 echo "[maestro-ios-provision] Slot: ${MAESTRO_IOS_SLOT_ID:-unset} (index=${MAESTRO_IOS_SLOT_INDEX:-unset})"
+echo "[maestro-ios-provision] Reset strategy: ${MAESTRO_RESET_STRATEGY:-data}"
 
 MAESTRO_IOS_DEV_CLIENT_APP_PATH="$("$SCRIPT_DIR/maestro-ios-dev-client-build.sh" --print-app-path)"
 MAESTRO_IOS_DEV_CLIENT_BUNDLE_ID="$(maestro_dev_client_bundle_id "$MAESTRO_IOS_DEV_CLIENT_APP_PATH")"
@@ -38,6 +39,11 @@ echo "[maestro-ios-provision] Simulator ready: $IOS_SIM_DEVICE ($IOS_SIM_UDID)"
 
 open -a Simulator --args -CurrentDeviceUDID "$IOS_SIM_UDID" >/dev/null 2>&1 || true
 xcrun simctl bootstatus "$IOS_SIM_UDID" -b
+
+if [[ "${MAESTRO_RESET_STRATEGY:-data}" == "full" ]]; then
+  echo "[maestro-ios-provision] Performing full reset by uninstalling the dev client before reinstall"
+  xcrun simctl uninstall "$IOS_SIM_UDID" "$MAESTRO_IOS_DEV_CLIENT_BUNDLE_ID" >/dev/null 2>&1 || true
+fi
 
 for attempt in 1 2; do
   if xcrun simctl install "$IOS_SIM_UDID" "$MAESTRO_IOS_DEV_CLIENT_APP_PATH"; then

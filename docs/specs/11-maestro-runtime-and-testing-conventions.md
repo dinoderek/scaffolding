@@ -13,7 +13,7 @@ It has two jobs:
 
 - Scope: iOS Maestro runtime/tooling, flow execution conventions, and the related documentation ownership model for `apps/mobile/**`.
 - Current-state status: the implemented runtime uses an Expo development client, shared host-local build reuse, and explicit provision/launch/teardown scripts.
-- Target-state status: M10 still has follow-up work for harness-based reset/navigation and broader docs/runbook integration.
+- Target-state status: M10 now has the reset taxonomy and harness-based navigation implemented; broader docs/runbook integration remains in follow-up work.
 - Phase-2 runtime-toolkit status (`2026-03-01`): the shared development-client runtime toolkit is implemented and the smoke/data-smoke runners now execute through it on real iOS simulator runs.
 - Authority rule:
   - this doc is normative for Maestro runtime/testing conventions;
@@ -59,7 +59,7 @@ Rules:
 - Current implementation note:
   - the shared env/build contract remains in place;
   - the smoke/data-smoke runners are now thin wrappers over the shared lifecycle toolkit;
-  - app-side harness/deep-link state shaping is still owned by later M10 tasks.
+  - app-side harness-driven data reset and teleport setup are now implemented.
 
 ## Verified current-state baseline (`2026-03-01`)
 
@@ -70,9 +70,9 @@ Rules:
   - `apps/mobile/.maestro/flows/data-runtime-smoke.yaml`
 - Both flows now commit against the development-client bundle identifier surface instead of `host.exp.Exponent`.
 - The shared scenario runner also rewrites a runtime-local flow copy under the artifact root so the executed `appId` always matches the installed development-client bundle id from the built `.app`.
-- Both flows drive setup through visible UI taps rather than deep-link/harness setup:
-  - `smoke-launch.yaml` taps through sessions, starts or resumes a session, logs a squat set, and submits it.
-  - `data-runtime-smoke.yaml` follows a similar path and asserts history visibility.
+- Flow setup now uses the M10 taxonomy instead of tapping through setup screens:
+  - `smoke-launch.yaml` relies on runner-owned `full reset` plus a harness `teleport` to the recorder.
+  - `data-runtime-smoke.yaml` uses a harness `data reset + teleport` to land on the recorder before performing the actual data insert/read assertions.
 - Both flows include optional dismissals for current development-client onboarding/dev-menu overlays so the scenario assertions target the app rather than the shell chrome.
 - Verified against:
   - `apps/mobile/.maestro/flows/smoke-launch.yaml`
@@ -85,12 +85,14 @@ Rules:
   - `apps/mobile/scripts/maestro-ios-data-smoke.sh`
 - Both runner scripts now:
   - delegate immediately to `apps/mobile/scripts/maestro-ios-run-flow.sh`,
+  - set `MAESTRO_RESET_STRATEGY` before entering the shared runner (`full` for smoke, `data` for data-smoke),
   - acquire a shared slot via `maestro-ios-slot-lock.sh` and record the long-lived runner PID as slot ownership,
   - derive the Expo port from `EXPO_DEV_SERVER_BASE_PORT + slot index` unless `EXPO_DEV_SERVER_PORT` is explicitly set,
   - resolve a simulator from `IOS_SIM_UDID_POOL`, then `IOS_SIM_DEVICE_POOL`, then `IOS_SIM_DEVICE`,
   - create artifacts under `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`,
   - write `runtime.env` before provisioning so downstream lifecycle steps and teardown share one state file,
   - call `maestro-ios-provision.sh` to ensure the shared development-client build exists, boot the simulator, and install the `.app`,
+  - let `maestro-ios-provision.sh` convert `MAESTRO_RESET_STRATEGY=full` into a simulator uninstall/reinstall cycle before launch,
   - call `maestro-ios-launch.sh` to start `npx expo start --dev-client --host localhost --scheme <scheme> --port <port>`, wait on Metro `/status`, and open `exp+<scheme>://expo-development-client/?url=http://127.0.0.1:<port>`,
   - create a runtime-local flow copy with the resolved development-client bundle id,
   - execute `maestro test`,
@@ -127,9 +129,13 @@ Rules:
 
 - `apps/mobile/app.json` already defines `scheme: "mobile"`, which gives M10 a usable app/deep-link scheme baseline.
 - `apps/mobile/eas.json` already defines a `development` build profile with `developmentClient: true`.
+- `apps/mobile/app/maestro-harness.tsx` is the hidden route used for app-owned data reset and screen teleportation.
+- `apps/mobile/src/maestro/harness.ts` owns the guard, param parsing, and route resolution logic for that hidden route.
 - Verified against:
   - `apps/mobile/app.json:3-46`
   - `apps/mobile/eas.json:6-19`
+  - `apps/mobile/app/maestro-harness.tsx`
+  - `apps/mobile/src/maestro/harness.ts`
 
 ### Current artifact/log shape
 
@@ -193,6 +199,7 @@ Existing environment names that are already implemented remain canonical:
 - `TASK_ID`
 - `EXPO_DEV_SERVER_BASE_PORT`
 - `EXPO_DEV_SERVER_PORT`
+- `MAESTRO_RESET_STRATEGY`
 - `MAESTRO_IOS_SLOT_IDS`
 - `MAESTRO_IOS_SLOT_WAIT_SECONDS`
 - `MAESTRO_IOS_SLOT_POLL_SECONDS`
@@ -304,6 +311,7 @@ Minimum `runtime.env` fields:
 - `TASK_ID`
 - `MAESTRO_ARTIFACT_ROOT`
 - `MAESTRO_RUNTIME_ENV_FILE`
+- `MAESTRO_RESET_STRATEGY`
 - `MAESTRO_IOS_SLOT_ID`
 - `MAESTRO_IOS_SLOT_INDEX`
 - `MAESTRO_IOS_SLOT_OWNER_PID`
@@ -341,12 +349,15 @@ M10 locks these exact terms:
 1. `full reset`
    - cold-start/install-level reset;
    - may reinstall the dev client or use `launchApp`/`clearState` when permission/onboarding/install behavior is under test;
+   - current implementation: the smoke runner sets `MAESTRO_RESET_STRATEGY=full`, and `maestro-ios-provision.sh` uninstalls the dev client before reinstalling it on the simulator;
    - not the default for ordinary smoke setup.
 2. `data reset`
    - clears app-owned persisted data while keeping the installed binary/runtime in place;
+   - current implementation: the hidden harness route calls `resetLocalAppData()` to close the SQLite handle, delete the local database, and re-bootstrap migrations/seeds;
    - preferred when a clean app data state is needed without re-testing install semantics.
 3. `teleport`
    - uses deep links or a hidden harness route to land directly in the target screen/state;
+   - current implementation: flows open `mobile://maestro-harness?...` and the harness route `replace`s into the requested screen after reset work completes;
    - default setup method for routine flow positioning because it minimizes slow UI tapping.
 
 Priority rule:
@@ -358,8 +369,13 @@ Priority rule:
 ### 9. Harness and deep-link contract
 
 1. The app-level setup/navigation layer must use the existing app scheme baseline (`mobile`) rather than `Expo Go`-specific URLs.
-2. Hidden reset/setup routes or actions are allowed for M10, but they must be guarded so they are only available in allowed development/test contexts.
-3. Exact route implementation is deferred to later M10 tasks; the contract being locked here is that harness/deep-link setup is the preferred setup layer.
+2. The canonical hidden route is `mobile://maestro-harness`.
+3. Supported harness query parameters are:
+   - `reset=data` to perform app-owned persisted-data reset;
+   - `teleport=session-list|session-recorder|exercise-catalog|completed-session` to land on the target screen;
+   - optional `mode`, `intent`, and `sessionId` when the target route needs them.
+4. The route is guarded by `__DEV__ && Constants.executionEnvironment !== storeClient`; blocked contexts render an error state instead of executing reset/setup behavior.
+5. Harness-driven setup is preferred to visible UI tapping whenever the flow is not explicitly testing that setup UI.
 
 ## Brainstorm adoption summary
 
@@ -382,7 +398,6 @@ Deferred to later M10 tasks:
 
 - exact dev-client build invalidation logic
 - exact simulator creation naming convention
-- exact harness route/action implementation details
 
 ## M10 closeout note
 
