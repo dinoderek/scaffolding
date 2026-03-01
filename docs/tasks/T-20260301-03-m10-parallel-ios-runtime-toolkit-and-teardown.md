@@ -91,7 +91,9 @@ Implement the reusable runtime toolkit for M10 by separating provision, launch, 
    - artifact/log directory.
 4. Teardown is safe after partial failure and does not leave stale slot/runtime ownership without a documented reason.
 5. The current smoke/data-smoke entrypoints run through the shared toolkit rather than duplicated ad hoc boot/start logic.
-6. A local frontend slow gate run validates the reworked runtime path on real iOS simulator execution.
+6. A local frontend slow gate run validates the reworked runtime path on real iOS simulator execution. 
+
+CRUCIAL: THE TESTS MUST RUN ON DEVELOPMENT BUILD NOW. NO EXPO GO ALLOWED.
 
 ## Docs touched (required)
 
