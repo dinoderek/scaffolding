@@ -60,16 +60,17 @@ Establish the reusable native-binary foundation for M10 by adding a shared dev-c
 - Add a build/reuse script that can:
   - create a simulator-compatible Expo development client `.app` artifact at a documented host-local path,
   - detect when the artifact is already usable,
-  - rebuild when the chosen native-input invalidation rule says it is required,
+  - (if feasible) rebuild when the chosen native-input invalidation rule says it is required,
   - fail with actionable diagnostics when required host tools are missing.
 - Verify or harden `apps/mobile/app.json` and `apps/mobile/eas.json` for the development-client contract.
-- Document first-time setup steps for a fresh checkout:
+- Document first-time setup steps for a fresh checkout and record them:
   - required host tools,
   - required auth/login state if applicable,
   - config-file creation,
   - shared artifact location,
   - rebuild trigger rules.
 - Record the finalized contract in the Maestro spec/runbook docs.
+- Sucessfully execute a Expo development build in the documented host-local path.
 
 ### Out of scope
 
@@ -89,6 +90,7 @@ Establish the reusable native-binary foundation for M10 by adding a shared dev-c
 3. The chosen artifact workflow is outside the checkout or otherwise shared safely across worktrees, and the path contract is documented.
 4. `app.json` / `eas.json` are verified or updated so the development-client workflow is explicit and compatible with M10.
 5. First-time setup instructions are present and sufficient for a new agent or human session to prepare the shared binary and local config.
+6. (might require human intervention) creation of the development client build. 
 
 ## Docs touched (required)
 
