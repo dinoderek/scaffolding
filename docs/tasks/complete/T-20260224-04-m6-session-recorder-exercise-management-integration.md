@@ -7,7 +7,7 @@ areas: "frontend,docs"
 runtimes: "node,expo,maestro"
 gates_fast: "./scripts/quality-fast.sh frontend"
 gates_slow: "./scripts/quality-slow.sh frontend"
-docs_touched: "docs/tasks/T-20260224-04-m6-session-recorder-exercise-management-integration.md,docs/specs/ui/navigation-contract.md,docs/specs/ui/screen-map.md,docs/specs/ui/ux-rules.md,docs/specs/ui/components-catalog.md,docs/specs/milestones/M6-exercise-taxonomy-and-muscle-analytics-foundation.md"
+docs_touched: "docs/tasks/complete/T-20260224-04-m6-session-recorder-exercise-management-integration.md,docs/specs/ui/navigation-contract.md,docs/specs/ui/screen-map.md,docs/specs/ui/ux-rules.md,docs/specs/ui/components-catalog.md,docs/specs/milestones/M6-exercise-taxonomy-and-muscle-analytics-foundation.md"
 ---
 
 # Task Card
@@ -137,7 +137,7 @@ Integrate the M6 exercise catalog management/editing experience into the session
 ## Docs touched (required)
 
 - Planned docs/spec files to update and why:
-  - `docs/tasks/T-20260224-04-m6-session-recorder-exercise-management-integration.md` - scope extension + test-flow plan
+  - `docs/tasks/complete/T-20260224-04-m6-session-recorder-exercise-management-integration.md` - scope extension + test-flow plan
   - `docs/specs/ui/navigation-contract.md` - update transitions if recorder manage opens catalog route and add-new behavior changes
   - `docs/specs/ui/screen-map.md` - update recorder/catalog screen-purpose notes for integrated flow semantics
   - `docs/specs/ui/ux-rules.md` - update list/deleted-state semantics for exercise catalog if behavior contract changes

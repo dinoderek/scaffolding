@@ -66,7 +66,7 @@ Document the historical behavior options for edited exercise-to-muscle mappings 
 
 - Planned files/areas allowed to change:
   - `docs/specs/milestones/M6-exercise-taxonomy-and-muscle-analytics-foundation.md`
-  - `docs/tasks/T-20260224-05-m6-historical-mapping-behavior-options.md`
+  - `docs/tasks/complete/T-20260224-05-m6-historical-mapping-behavior-options.md`
   - optional follow-on spec docs if the decision is elevated beyond M6
 - Constraints/assumptions:
   - Do not block M6 taxonomy/mapping/editing implementation on a fully finalized analytics design.

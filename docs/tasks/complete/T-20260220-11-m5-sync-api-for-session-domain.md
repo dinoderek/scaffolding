@@ -85,7 +85,7 @@ Implement `Supabase`-backed API methods to read/write user-scoped gym and sessio
   - `apps/backend/**` (if auxiliary backend/test harness workspace exists)
   - `docs/specs/03-technical-architecture.md` (if API-layer architecture decisions need codification)
   - `docs/specs/milestones/M5-backend-foundation-authz-and-sync-api.md`
-  - `docs/tasks/T-20260220-11-m5-sync-api-for-session-domain.md`
+  - `docs/tasks/complete/T-20260220-11-m5-sync-api-for-session-domain.md`
 - Constraints/assumptions:
   - Must build on auth/authz baseline from `T-20260220-10`.
   - Must keep the external sync contract provider-neutral even if implemented with Supabase-specific primitives.

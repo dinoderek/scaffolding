@@ -49,7 +49,7 @@ docs_touched: "docs/specs/11-maestro-runtime-and-testing-conventions.md,docs/spe
 - Known stale references or assumptions:
   - none after code/doc inventory review
 - Optional helper command:
-  - `./scripts/task-bootstrap.sh docs/tasks/T-20260301-04-m10-maestro-harness-reset-taxonomy-and-flow-migration.md`
+  - `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260301-04-m10-maestro-harness-reset-taxonomy-and-flow-migration.md`
 
 ## Objective
 
@@ -142,7 +142,7 @@ Add the app-side setup utilities M10 needs for reliable and fast Maestro runs, t
 
 - Standard local fast gate: `./scripts/quality-fast.sh frontend`
 - Standard local slow gate: `./scripts/quality-slow.sh frontend`
-- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/T-20260301-04-m10-maestro-harness-reset-taxonomy-and-flow-migration.md`
+- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-04-m10-maestro-harness-reset-taxonomy-and-flow-migration.md`
 - Additional gate(s), if any:
   - targeted harness/deep-link test commands if added during implementation
 
@@ -177,4 +177,4 @@ manual verification summary: local simulator verification was required because C
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-- Run `./scripts/task-closeout-check.sh docs/tasks/T-20260301-04-m10-maestro-harness-reset-taxonomy-and-flow-migration.md` (or document why `N/A`) before handoff.
+- Run `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-04-m10-maestro-harness-reset-taxonomy-and-flow-migration.md` (or document why `N/A`) before handoff.

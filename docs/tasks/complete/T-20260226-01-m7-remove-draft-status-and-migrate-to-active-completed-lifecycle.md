@@ -20,8 +20,8 @@
 - Supporting references:
   - `docs/specs/milestones/M3-session-domain-local-autosave.md`
   - `docs/specs/milestones/M4-session-list-screen-and-data-wiring.md`
-  - `docs/tasks/T-20260225-02-m7-completed-session-data-contracts-edit-and-reopen.md`
-  - `docs/tasks/T-20260225-03-m7-mode-aware-recorder-completed-edit-flow.md`
+  - `docs/tasks/complete/T-20260225-02-m7-completed-session-data-contracts-edit-and-reopen.md`
+  - `docs/tasks/complete/T-20260225-03-m7-mode-aware-recorder-completed-edit-flow.md`
 
 ## Objective
 
@@ -120,7 +120,7 @@ Remove the internal `draft` session status from the local schema and app data mo
   - `npm run typecheck` (from `apps/mobile`) ✅
   - `./scripts/quality-fast.sh frontend` ✅ (`lint`, `typecheck`, full mobile `jest` suite)
 - What remains:
-  - M7 feature tasks for completed-session data contracts/edit flow/integration evidence remain open (`docs/tasks/T-20260225-02`, `-03`, `-04`).
+  - No M7 feature tasks remained open after follow-up closeout; the related cards now live under `docs/tasks/complete/`.
 
 ## Status update checklist (mandatory at closeout)
 

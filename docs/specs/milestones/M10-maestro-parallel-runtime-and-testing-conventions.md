@@ -29,7 +29,7 @@
   - `apps/mobile/scripts/maestro-ios-data-smoke.sh`
   - `apps/mobile/README-maestro.md`
   - `apps/mobile/README_HUMAN_TESTING.md`
-  - `docs/tasks/T-20260220-01-m1-ios-maestro-ai-testing-loop.md`
+  - `docs/tasks/complete/T-20260220-01-m1-ios-maestro-ai-testing-loop.md`
 
 Completed implementation note (`2026-03-01`):
 
@@ -205,11 +205,11 @@ Rule: because this milestone changes runtime/testing workflow and introduces a n
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md` - convert the verified current-state audit into an authoritative M10 contract doc and lock exact file/env/runtime conventions. (`completed`)
-2. `docs/tasks/T-20260301-02-m10-shared-dev-client-build-and-worktree-config.md` - add shared dev-client build/reuse workflow, sample config, and first-time setup rules. (`completed`)
-3. `docs/tasks/T-20260301-03-m10-parallel-ios-runtime-toolkit-and-teardown.md` - implement provision/launch/teardown toolkit and refactor runners onto it. (`completed`)
-4. `docs/tasks/T-20260301-04-m10-maestro-harness-reset-taxonomy-and-flow-migration.md` - add harness/deep-link reset utilities and migrate flows to the development-client runtime model. (`completed`)
-5. `docs/tasks/T-20260301-05-m10-maestro-docs-and-policy-integration.md` - align shared docs, runbooks, and policy docs to the implemented M10 workflow. (`completed`)
+1. `docs/tasks/complete/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md` - convert the verified current-state audit into an authoritative M10 contract doc and lock exact file/env/runtime conventions. (`completed`)
+2. `docs/tasks/complete/T-20260301-02-m10-shared-dev-client-build-and-worktree-config.md` - add shared dev-client build/reuse workflow, sample config, and first-time setup rules. (`completed`)
+3. `docs/tasks/complete/T-20260301-03-m10-parallel-ios-runtime-toolkit-and-teardown.md` - implement provision/launch/teardown toolkit and refactor runners onto it. (`completed`)
+4. `docs/tasks/complete/T-20260301-04-m10-maestro-harness-reset-taxonomy-and-flow-migration.md` - add harness/deep-link reset utilities and migrate flows to the development-client runtime model. (`completed`)
+5. `docs/tasks/complete/T-20260301-05-m10-maestro-docs-and-policy-integration.md` - align shared docs, runbooks, and policy docs to the implemented M10 workflow. (`completed`)
 
 ## Risks / dependencies
 

@@ -47,7 +47,7 @@ docs_touched: "docs/specs/11-maestro-runtime-and-testing-conventions.md,docs/spe
 - Known stale references or assumptions:
   - none after inventory refresh; runtime migration work remained to be implemented in this task
 - Optional helper command:
-  - `./scripts/task-bootstrap.sh docs/tasks/T-20260301-03-m10-parallel-ios-runtime-toolkit-and-teardown.md`
+  - `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260301-03-m10-parallel-ios-runtime-toolkit-and-teardown.md`
 
 ## Objective
 
@@ -139,7 +139,7 @@ CRUCIAL: THE TESTS MUST RUN ON DEVELOPMENT BUILD NOW. NO EXPO GO ALLOWED.
 
 - Standard local fast gate: `./scripts/quality-fast.sh frontend`
 - Standard local slow gate: `./scripts/quality-slow.sh frontend`
-- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/T-20260301-03-m10-parallel-ios-runtime-toolkit-and-teardown.md`
+- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-03-m10-parallel-ios-runtime-toolkit-and-teardown.md`
 - Additional gate(s), if any:
   - targeted provision/launch/teardown command evidence if the slow gate alone does not expose enough lifecycle detail
 
@@ -176,4 +176,4 @@ manual verification summary: local simulator-only verification was required beca
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-- Run `./scripts/task-closeout-check.sh docs/tasks/T-20260301-03-m10-parallel-ios-runtime-toolkit-and-teardown.md` (or document why `N/A`) before handoff.
+- Run `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-03-m10-parallel-ios-runtime-toolkit-and-teardown.md` (or document why `N/A`) before handoff.

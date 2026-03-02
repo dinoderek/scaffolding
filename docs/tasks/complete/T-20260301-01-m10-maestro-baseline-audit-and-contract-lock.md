@@ -49,7 +49,7 @@ docs_touched: "docs/specs/README.md,docs/specs/11-maestro-runtime-and-testing-co
 - Known stale references or assumptions:
   - `apps/mobile/README-maestro.md` and `apps/mobile/README_HUMAN_TESTING.md` still contain stale absolute paths and remain secondary docs until later M10 cleanup
 - Optional helper command:
-  - `./scripts/task-bootstrap.sh docs/tasks/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md`
+  - `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md`
 
 ## Objective
 
@@ -140,7 +140,7 @@ Create the authoritative source-of-truth Maestro runtime/testing contract for M1
 
 - Standard local fast gate: `N/A (docs-only)`
 - Standard local slow gate: `N/A (docs-only)`
-- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md`
+- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md`
 
 ## Evidence
 
@@ -152,7 +152,7 @@ Create the authoritative source-of-truth Maestro runtime/testing contract for M1
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed: Added `docs/specs/11-maestro-runtime-and-testing-conventions.md` as the authoritative Maestro runtime/testing contract, updated `docs/specs/README.md` to link to it, aligned the M10 milestone spec to the locked config paths/toolkit surface/artifact contract/reset taxonomy, and refreshed this task card with concrete context freshness and closeout data.
-- What tests ran: `./scripts/task-bootstrap.sh docs/tasks/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md`; code/document inventory review with `rg`, `sed`, and `nl` across `apps/mobile/.maestro/flows/**`, `apps/mobile/scripts/**`, `apps/mobile/app.json`, `apps/mobile/eas.json`, `apps/mobile/README-maestro.md`, and `apps/mobile/README_HUMAN_TESTING.md`; `git diff --check`; `./scripts/task-closeout-check.sh docs/tasks/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md`
+- What tests ran: `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md`; code/document inventory review with `rg`, `sed`, and `nl` across `apps/mobile/.maestro/flows/**`, `apps/mobile/scripts/**`, `apps/mobile/app.json`, `apps/mobile/eas.json`, `apps/mobile/README-maestro.md`, and `apps/mobile/README_HUMAN_TESTING.md`; `git diff --check`; `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md`
 - What remains: Later M10 tasks still need to implement the shared dev-client build/config/toolkit surfaces and reduce the stale app runbooks to thin entrypoints.
 
 ## Status update checklist (mandatory at closeout)
@@ -161,4 +161,4 @@ Create the authoritative source-of-truth Maestro runtime/testing contract for M1
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-- Run `./scripts/task-closeout-check.sh docs/tasks/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md` (or document why `N/A`) before handoff.
+- Run `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-01-m10-maestro-baseline-audit-and-contract-lock.md` (or document why `N/A`) before handoff.

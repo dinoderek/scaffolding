@@ -54,8 +54,8 @@ Validate the on-device persistence machinery end-to-end using minimal Drizzle + 
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260219-04-m2-drizzle-bootstrap-and-smoke-schema.md` - add dependencies, DB bootstrap, single smoke table schema, and initial migration artifacts.
-2. `docs/tasks/T-20260219-05-m2-migration-runtime-and-smoke-integration-tests.md` - wire runtime migration execution, smoke read/write path, integration coverage, native smoke evidence, and testing-strategy doc update.
+1. `docs/tasks/complete/T-20260219-04-m2-drizzle-bootstrap-and-smoke-schema.md` - add dependencies, DB bootstrap, single smoke table schema, and initial migration artifacts.
+2. `docs/tasks/complete/T-20260219-05-m2-migration-runtime-and-smoke-integration-tests.md` - wire runtime migration execution, smoke read/write path, integration coverage, native smoke evidence, and testing-strategy doc update.
 
 ## Risks / dependencies
 

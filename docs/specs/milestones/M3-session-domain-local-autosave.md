@@ -60,9 +60,9 @@ Implement the first production-oriented local workout domain data model (`Gym`, 
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260220-02-m3-domain-schema-and-migrations.md` - define and migrate domain schema and constraints. (`completed`)
-2. `docs/tasks/T-20260220-03-m3-continuous-autosave-and-draft-lifecycle.md` - implement recorder autosave SLA and lifecycle flush semantics. (`completed`)
-3. `docs/tasks/T-20260220-04-m3-session-completion-duration-and-architecture-update.md` - complete session finalization/duration persistence and update architecture spec. (`completed`)
+1. `docs/tasks/complete/T-20260220-02-m3-domain-schema-and-migrations.md` - define and migrate domain schema and constraints. (`completed`)
+2. `docs/tasks/complete/T-20260220-03-m3-continuous-autosave-and-draft-lifecycle.md` - implement recorder autosave SLA and lifecycle flush semantics. (`completed`)
+3. `docs/tasks/complete/T-20260220-04-m3-session-completion-duration-and-architecture-update.md` - complete session finalization/duration persistence and update architecture spec. (`completed`)
 
 ## Risks / dependencies
 

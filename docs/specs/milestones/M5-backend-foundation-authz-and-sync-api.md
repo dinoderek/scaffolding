@@ -106,16 +106,16 @@ Decide and lock the backend platform for MVP, stand up a minimal backend that ru
   - provider choice is locked unless a blocking issue is found,
   - sync API contract remains provider-neutral,
   - ownership enforcement must be backend-enforced (not FE-only).
-- Full comparison and rationale: `docs/tasks/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md`
+- Full comparison and rationale: `docs/tasks/complete/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md`
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md` - evaluate backend options and finalize architecture decision. (`completed`)
-2. `docs/tasks/T-20260220-08-m5-minimal-backend-local-runtime.md` - scaffold local backend runtime, reset/seed baseline, and backend testing conventions. (`completed`)
+1. `docs/tasks/complete/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md` - evaluate backend options and finalize architecture decision. (`completed`)
+2. `docs/tasks/complete/T-20260220-08-m5-minimal-backend-local-runtime.md` - scaffold local backend runtime, reset/seed baseline, and backend testing conventions. (`completed`)
 3. `docs/tasks/T-20260220-09-m5-backend-deployment-strategy-and-environments.md` - define deployment strategy, environments, and operational safeguards. (`planned`)
-4. `docs/tasks/T-20260220-10-m5-user-auth-authz-and-security-baseline.md` - implement user model, auth/authz rules, and backend hardening baseline. (`completed`)
-5. `docs/tasks/T-20260220-11-m5-sync-api-for-session-domain.md` - implement authenticated sync API for session domain entities with contract tests. (`completed`)
-6. `docs/tasks/T-20260225-12-m5-quality-gate-command-and-testing-checklist-rationalization.md` - define/implement a standard fast local quality gate and simplify task verification checklists. (`completed`)
+4. `docs/tasks/complete/T-20260220-10-m5-user-auth-authz-and-security-baseline.md` - implement user model, auth/authz rules, and backend hardening baseline. (`completed`)
+5. `docs/tasks/complete/T-20260220-11-m5-sync-api-for-session-domain.md` - implement authenticated sync API for session domain entities with contract tests. (`completed`)
+6. `docs/tasks/complete/T-20260225-12-m5-quality-gate-command-and-testing-checklist-rationalization.md` - define/implement a standard fast local quality gate and simplify task verification checklists. (`completed`)
 
 ## Deferred follow-up tasks (not required for M5 closeout)
 

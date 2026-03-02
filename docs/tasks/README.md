@@ -1,6 +1,8 @@
 # Task Cards
 
-Store per-session task cards here.
+Store active task cards here.
+
+Completed task cards must be moved to `docs/tasks/complete/` as part of closeout when their status becomes `completed`.
 
 ## Naming
 
@@ -13,6 +15,16 @@ Example:
 Legacy naming (historical only):
 - `T-YYYYMMDD-01-<short-name>.md`
 - `T-YYYYMMDD-02-<short-name>.md`
+
+## Lifecycle
+
+- `docs/tasks/`
+  - active task cards only: `planned`, `in_progress`, or `blocked`
+- `docs/tasks/complete/`
+  - completed task-card archive
+- Rule:
+  - once a task card is marked `completed`, move the file from `docs/tasks/` to `docs/tasks/complete/` in the same session
+  - update any affected doc references when the file moves
 
 ## Source of truth
 

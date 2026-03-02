@@ -47,9 +47,9 @@ Establish the minimum policy, app scaffold baseline, and quality gates required 
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260215-01-m0-bootstrap-execution-policy.md` - define bootstrap exception and create this milestone spec.
-2. `docs/tasks/T-20260215-02-m0-expo-smoke-app.md` - scaffold Expo Router app and root smoke message.
-3. `docs/tasks/T-20260215-03-m0-testing-and-quality-gates.md` - add smoke test, quality scripts, and remove bootstrap exception.
+1. `docs/tasks/complete/T-20260215-01-m0-bootstrap-execution-policy.md` - define bootstrap exception and create this milestone spec.
+2. `docs/tasks/complete/T-20260215-02-m0-expo-smoke-app.md` - scaffold Expo Router app and root smoke message.
+3. `docs/tasks/complete/T-20260215-03-m0-testing-and-quality-gates.md` - add smoke test, quality scripts, and remove bootstrap exception.
 
 ## Risks / dependencies
 

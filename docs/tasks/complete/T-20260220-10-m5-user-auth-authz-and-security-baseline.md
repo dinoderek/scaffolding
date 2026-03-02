@@ -79,7 +79,7 @@ Implement MVP backend user identity model on `Supabase`, a controlled user-provi
   - `apps/backend/**` (if auxiliary backend/test harness workspace exists)
   - `docs/specs/03-technical-architecture.md` (if auth/authz decision details need to be codified)
   - `docs/specs/milestones/M5-backend-foundation-authz-and-sync-api.md`
-  - `docs/tasks/T-20260220-10-m5-user-auth-authz-and-security-baseline.md`
+  - `docs/tasks/complete/T-20260220-10-m5-user-auth-authz-and-security-baseline.md`
 - Constraints/assumptions:
   - Must build on backend scaffold from `T-20260220-08`.
   - Must implement the `Supabase Auth + Postgres RLS` primary path from `T-20260220-07` unless a milestone-level blocker is documented.

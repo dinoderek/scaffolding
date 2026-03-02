@@ -18,7 +18,7 @@
 - Testing strategy: `docs/specs/06-testing-strategy.md`
 - Project structure: `docs/specs/09-project-structure.md` (always load for context; update only when task changes paths/layout/conventions)
 - UX standard (UI/UX tasks only; remove for non-UX tasks): `docs/specs/08-ux-delivery-standard.md`
-- Tokens/primitives foundation (required): `docs/tasks/T-20260226-03-m8-ui-tokens-and-primitives-foundation.md`
+- Tokens/primitives foundation (required): `docs/tasks/complete/T-20260226-03-m8-ui-tokens-and-primitives-foundation.md`
 
 ## Objective
 

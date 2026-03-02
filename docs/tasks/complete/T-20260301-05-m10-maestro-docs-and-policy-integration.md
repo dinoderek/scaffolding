@@ -46,7 +46,7 @@ docs_touched: "docs/specs/04-ai-development-playbook.md,docs/specs/06-testing-st
 - Known stale references or assumptions:
   - none expected once earlier M10 implementation tasks are complete; stale path/command findings must be fixed in this task rather than deferred
 - Optional helper command:
-  - `./scripts/task-bootstrap.sh docs/tasks/T-20260301-05-m10-maestro-docs-and-policy-integration.md`
+  - `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260301-05-m10-maestro-docs-and-policy-integration.md`
 
 ## Objective
 
@@ -136,7 +136,7 @@ Finish M10 by aligning the shared docs and runbooks to the implemented runtime m
 
 - Standard local fast gate: `N/A (docs-only)`
 - Standard local slow gate: `N/A (docs-only unless command surfaces change)`
-- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/T-20260301-05-m10-maestro-docs-and-policy-integration.md`
+- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-05-m10-maestro-docs-and-policy-integration.md`
 
 ## Evidence
 
@@ -155,7 +155,7 @@ Finish M10 by aligning the shared docs and runbooks to the implemented runtime m
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
 - What changed: aligned the AI playbook, testing strategy, project-structure spec, and both mobile runbooks to the implemented M10 Maestro runtime; removed stale Expo Go transition guidance and stale absolute workspace paths; converted the runbooks into link-first operational entrypoints that defer policy to `docs/specs/11-maestro-runtime-and-testing-conventions.md`.
-- What tests ran: `./scripts/task-bootstrap.sh docs/tasks/T-20260301-05-m10-maestro-docs-and-policy-integration.md`; `git fetch origin main`; targeted `sed`/`rg` inventory review of Maestro scripts, flows, config, and docs; `./scripts/task-closeout-check.sh docs/tasks/T-20260301-05-m10-maestro-docs-and-policy-integration.md`.
+- What tests ran: `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260301-05-m10-maestro-docs-and-policy-integration.md`; `git fetch origin main`; targeted `sed`/`rg` inventory review of Maestro scripts, flows, config, and docs; `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-05-m10-maestro-docs-and-policy-integration.md`.
 - What remains: M10 milestone closeout is complete; no follow-up work remains for this task.
 
 ## Status update checklist (mandatory at closeout)
@@ -164,4 +164,4 @@ Finish M10 by aligning the shared docs and runbooks to the implemented runtime m
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-- Run `./scripts/task-closeout-check.sh docs/tasks/T-20260301-05-m10-maestro-docs-and-policy-integration.md` (or document why `N/A`) before handoff.
+- Run `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-05-m10-maestro-docs-and-policy-integration.md` (or document why `N/A`) before handoff.

@@ -22,7 +22,7 @@ Verified during `T-20260226-01` on `2026-02-26`.
 
 - `docs/specs/` is the authoritative specs root (project-level map lists playbook, templates, and future UI-related docs slots): `docs/specs/README.md:1`
 - `docs/specs/templates/` contains the milestone/task templates referenced by the playbook and milestone specs: `docs/specs/README.md:18`
-- `docs/tasks/` is the task-card location used by this task and future M8 task execution: `docs/specs/09-project-structure.md:37`
+- `docs/tasks/` is the active task-card location and `docs/tasks/complete/` is the completed-task archive: `docs/specs/09-project-structure.md:37`
 
 ### Exact AI development guidelines document path/name
 

@@ -104,9 +104,9 @@ Define and document the temporary execution-policy relaxation that allows implem
 ## Completion note (fill at end)
 
 - What changed: Created `docs/specs/milestones/M0-technology-foundations.md`; added `Milestone 0 bootstrap exception` section with explicit expiry/removal condition in `docs/specs/04-ai-development-playbook.md`; validated task linkage for `T-20260215-02` and `T-20260215-03`.
-- Tests run and outcome: `test -f docs/specs/milestones/M0-technology-foundations.md` (red fail before edits, green pass after edits); `rg -n "Milestone 0 bootstrap exception|expiry" docs/specs/04-ai-development-playbook.md` (red fail before edits, green pass after edits); cross-reference checks for milestone links in `docs/tasks/T-20260215-01-m0-bootstrap-execution-policy.md`, `docs/tasks/T-20260215-02-m0-expo-smoke-app.md`, and `docs/tasks/T-20260215-03-m0-testing-and-quality-gates.md` passed.
+- Tests run and outcome: `test -f docs/specs/milestones/M0-technology-foundations.md` (red fail before edits, green pass after edits); `rg -n "Milestone 0 bootstrap exception|expiry" docs/specs/04-ai-development-playbook.md` (red fail before edits, green pass after edits); cross-reference checks for milestone links in `docs/tasks/complete/T-20260215-01-m0-bootstrap-execution-policy.md`, `docs/tasks/complete/T-20260215-02-m0-expo-smoke-app.md`, and `docs/tasks/complete/T-20260215-03-m0-testing-and-quality-gates.md` passed.
 - Verify gate outcomes: `npm run lint`, `npm run typecheck`, `npm run test` marked temporarily exempt for this bootstrap policy task per the new Milestone 0 exception; required `rg`/structure/reference checks passed.
 - AI self-review findings/resolution: Acceptance criteria fully covered; no policy conflicts with parent specs; exception is bounded by explicit expiry tied to `T-20260215-03`.
 - CI result: `pending` (not configured for this docs-only bootstrap task).
-- Follow-up tasks: `docs/tasks/T-20260215-02-m0-expo-smoke-app.md`, `docs/tasks/T-20260215-03-m0-testing-and-quality-gates.md`.
+- Follow-up tasks: `docs/tasks/complete/T-20260215-02-m0-expo-smoke-app.md`, `docs/tasks/complete/T-20260215-03-m0-testing-and-quality-gates.md`.
 - Escalation link (if blocked): `n/a`

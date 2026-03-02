@@ -113,5 +113,5 @@ If `split`, define cards:
 - Verify gate outcomes: Attempted root-level `npm run lint` and it failed with `ENOENT` due missing `/home/dino/codex-tests/package.json`; `npm run typecheck` and `npm run test` are not implemented at repo root in this bootstrap stage. Per Milestone 0 bootstrap exception in `docs/specs/04-ai-development-playbook.md`, verify gates are temporarily exempt for this task while required scripts are not yet available.
 - AI self-review findings/resolution: Acceptance criteria fully met (scaffold exists, Expo Router root path present, exact message implemented, startup smoke evidence captured); no architecture or security impact beyond scaffold baseline.
 - CI result: `pending` (CI quality gates not configured in this bootstrap task).
-- Follow-up tasks: `docs/tasks/T-20260215-03-m0-testing-and-quality-gates.md`.
+- Follow-up tasks: `docs/tasks/complete/T-20260215-03-m0-testing-and-quality-gates.md`.
 - Escalation link (if blocked): `n/a`

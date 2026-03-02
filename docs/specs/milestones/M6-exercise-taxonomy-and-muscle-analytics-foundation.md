@@ -137,11 +137,11 @@ This illustrates the intended `non-normalized` interpretation: contributions are
 
 Planned task cards for M6 are listed below.
 
-1. `docs/tasks/T-20260224-01-m6-local-schema-for-muscle-taxonomy-and-exercise-mappings.md` - design local schema for exercise definitions, muscle groups, and weighted associations. (`completed`)
-2. `docs/tasks/T-20260224-02-m6-seed-muscle-taxonomy-and-system-exercises.md` - define and seed the non-editable muscle taxonomy plus the initial system exercise mapping set. (`completed`)
-3. `docs/tasks/T-20260224-03-m6-exercise-editing-muscle-linking-ui.md` - implement exercise editing support for linking muscle groups and weights on user-editable exercises. (`completed`)
-4. `docs/tasks/T-20260224-04-m6-session-recorder-exercise-management-integration.md` - connect session recorder exercise manage/add flows to the persistent exercise catalog editor and refresh recorder selection behavior after return. (`completed`)
-5. `docs/tasks/T-20260224-05-m6-historical-mapping-behavior-options.md` - define and narrow/lock the historical mapping behavior policy path before analytics implementation. (`completed`)
+1. `docs/tasks/complete/T-20260224-01-m6-local-schema-for-muscle-taxonomy-and-exercise-mappings.md` - design local schema for exercise definitions, muscle groups, and weighted associations. (`completed`)
+2. `docs/tasks/complete/T-20260224-02-m6-seed-muscle-taxonomy-and-system-exercises.md` - define and seed the non-editable muscle taxonomy plus the initial system exercise mapping set. (`completed`)
+3. `docs/tasks/complete/T-20260224-03-m6-exercise-editing-muscle-linking-ui.md` - implement exercise editing support for linking muscle groups and weights on user-editable exercises. (`completed`)
+4. `docs/tasks/complete/T-20260224-04-m6-session-recorder-exercise-management-integration.md` - connect session recorder exercise manage/add flows to the persistent exercise catalog editor and refresh recorder selection behavior after return. (`completed`)
+5. `docs/tasks/complete/T-20260224-05-m6-historical-mapping-behavior-options.md` - define and narrow/lock the historical mapping behavior policy path before analytics implementation. (`completed`)
 
 ## Risks / dependencies
 

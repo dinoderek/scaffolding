@@ -128,7 +128,7 @@ Create the smallest `Supabase`-based backend implementation baseline that runs l
   - `docs/specs/templates/task-card-template.md`
   - `docs/specs/templates/milestone-spec-template.md` (if template changes are required to encode backend-testing/project-structure expectations)
   - `docs/specs/milestones/M5-backend-foundation-authz-and-sync-api.md`
-  - `docs/tasks/T-20260220-08-m5-minimal-backend-local-runtime.md`
+  - `docs/tasks/complete/T-20260220-08-m5-minimal-backend-local-runtime.md`
 - Constraints/assumptions:
   - Must implement the `Supabase` primary decision from `T-20260220-07`; do not switch providers in this task.
   - Keep initial scaffold minimal and secure-by-default.

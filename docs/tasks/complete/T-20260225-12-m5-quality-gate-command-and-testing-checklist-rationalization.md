@@ -80,7 +80,7 @@ Define and implement a standard local fast quality-gate command path (or wrapper
   - `docs/specs/09-project-structure.md` (if canonical script locations/conventions change)
   - `docs/specs/templates/task-card-template.md`
   - `docs/specs/milestones/M5-backend-foundation-authz-and-sync-api.md`
-  - `docs/tasks/T-20260225-12-m5-quality-gate-command-and-testing-checklist-rationalization.md`
+  - `docs/tasks/complete/T-20260225-12-m5-quality-gate-command-and-testing-checklist-rationalization.md`
   - other M5 task cards that benefit from checklist simplification (as needed)
 - Project structure impact (new paths/conventions or explicit no-structure-change decision):
   - likely introduces or confirms a canonical repo-level script/wrapper location for quality gates.

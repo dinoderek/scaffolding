@@ -59,9 +59,9 @@ Ship the first usable gym logging interface where a user can compose a full sess
 
 ## Task breakdown
 
-1. `docs/tasks/T-20260219-01-m1-session-recorder-screen-shell.md` - route + UI shell + in-memory state + location add/select/delete.
-2. `docs/tasks/T-20260219-02-m1-exercise-set-builder-ui.md` - dynamic exercise/set interactions + static exercise presets.
-3. `docs/tasks/T-20260219-03-m1-validation-submit-and-tests.md` - validation UX, submit confirmation, and final test coverage.
+1. `docs/tasks/complete/T-20260219-01-m1-session-recorder-screen-shell.md` - route + UI shell + in-memory state + location add/select/delete.
+2. `docs/tasks/complete/T-20260219-02-m1-exercise-set-builder-ui.md` - dynamic exercise/set interactions + static exercise presets.
+3. `docs/tasks/complete/T-20260219-03-m1-validation-submit-and-tests.md` - validation UX, submit confirmation, and final test coverage.
 
 ## Risks / dependencies
 

@@ -29,7 +29,8 @@ Define the minimum scaffolding required before feature development, and standard
 2. Milestone level:
    - `docs/specs/milestones/<milestone-id>.md`
 3. Task level:
-   - `docs/tasks/<task-id>.md`
+   - active/in-flight: `docs/tasks/<task-id>.md`
+   - completed archive: `docs/tasks/complete/<task-id>.md`
 
 Rule: each lower level must link to its parent(s).
 Rule: each lower level may add detail but must not override or relax parent-level constraints.
@@ -91,6 +92,7 @@ Rule: task cards must list the exact gate commands they require; this section on
 4. Execute one task card per AI session (or a tightly related pair only).
 5. Update task and milestone docs at end of session:
    - set task `Status` (`completed` or `blocked`)
+   - move task cards marked `completed` from `docs/tasks/` to `docs/tasks/complete/`
    - fill task `Completion note`
    - update milestone `Status` and task breakdown item states
    - update decision log entries when decisions changed

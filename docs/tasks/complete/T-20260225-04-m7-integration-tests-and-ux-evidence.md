@@ -19,9 +19,9 @@
 - Project structure: `docs/specs/09-project-structure.md` (always load for context; update only when task changes paths/layout/conventions)
 - UX standard (UI/UX tasks only; remove for non-UX tasks): `docs/specs/08-ux-delivery-standard.md`
 - Dependency task cards:
-  - `docs/tasks/T-20260225-01-m7-completed-session-detail-route-and-read-only-ui.md`
-  - `docs/tasks/T-20260225-02-m7-completed-session-data-contracts-edit-and-reopen.md`
-  - `docs/tasks/T-20260225-03-m7-mode-aware-recorder-completed-edit-flow.md`
+  - `docs/tasks/complete/T-20260225-01-m7-completed-session-detail-route-and-read-only-ui.md`
+  - `docs/tasks/complete/T-20260225-02-m7-completed-session-data-contracts-edit-and-reopen.md`
+  - `docs/tasks/complete/T-20260225-03-m7-mode-aware-recorder-completed-edit-flow.md`
 
 ## Objective
 
@@ -112,7 +112,7 @@ Close out M7 with Jest/React Native Testing Library integration-focused test cov
 
 - Planned files/areas allowed to change:
 - `apps/mobile/app/__tests__/**` (Jest + React Native Testing Library)
-  - `docs/tasks/T-20260225-0{1,2,3,4}-*.md` (status/evidence/closeout updates)
+  - `docs/tasks/complete/T-20260225-0{1,2,3,4}-*.md` (status/evidence/closeout updates)
   - `docs/specs/milestones/M7-completed-session-detail-reopen-and-edit.md` (task status updates / completion note)
   - screenshot/evidence artifact paths used by the team workflow
 - Project structure impact (new paths/conventions or explicit no-structure-change decision):

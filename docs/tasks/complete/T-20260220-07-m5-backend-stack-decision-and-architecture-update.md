@@ -160,7 +160,7 @@ Select the MVP backend stack using explicit criteria for development velocity, f
 - Planned files/areas allowed to change:
   - `docs/specs/03-technical-architecture.md`
   - `docs/specs/milestones/M5-backend-foundation-authz-and-sync-api.md`
-  - `docs/tasks/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md`
+  - `docs/tasks/complete/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md`
 - Constraints/assumptions:
   - Do not lock implementation details not needed for milestone-level decisions.
   - Keep selection criteria concrete and auditable.

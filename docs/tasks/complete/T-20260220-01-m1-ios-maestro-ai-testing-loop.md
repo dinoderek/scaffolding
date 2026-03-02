@@ -106,7 +106,7 @@ Establish an iOS-only AI-executable UI testing loop for the session recorder usi
   - `apps/mobile/README.md`
   - `apps/mobile/README-maestro.md` (new)
   - `docs/specs/06-testing-strategy.md`
-  - `docs/tasks/T-20260220-01-m1-ios-maestro-ai-testing-loop.md`
+  - `docs/tasks/complete/T-20260220-01-m1-ios-maestro-ai-testing-loop.md`
 - Constraints/assumptions:
   - iOS-only coverage is acceptable for this task phase.
   - Host tools (`maestro`, `eas`, `xcrun simctl`) are available.

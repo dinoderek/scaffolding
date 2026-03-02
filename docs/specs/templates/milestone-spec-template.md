@@ -47,6 +47,10 @@ List planned task cards for this milestone.
 1. `docs/tasks/<task-id>.md` - short description
 2. `docs/tasks/<task-id>.md` - short description
 
+Rule:
+- use `docs/tasks/<task-id>.md` for active/planned/blocked cards
+- update references to `docs/tasks/complete/<task-id>.md` once a task card is completed and moved
+
 ## Risks / dependencies
 
 - 

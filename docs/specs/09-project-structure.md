@@ -9,7 +9,7 @@ Define the canonical repository structure, path ownership, and placement convent
 - Update this document in the same task/session when significant project-structure changes are made (for example new top-level folders, workspace moves, canonical test-location changes, or path-convention changes).
 - Minor file additions within an existing well-defined folder usually do not require updates.
 
-## Current repository structure (verified 2026-02-26)
+## Current repository structure (verified 2026-03-02)
 
 ```text
 /
@@ -35,7 +35,8 @@ Define the canonical repository structure, path ownership, and placement convent
   docs/
     specs/                       # Project/milestone/task process and technical specs
       ui/                        # Canonical UI discovery/audit/guardrail docs (M8+)
-    tasks/                       # Task cards
+    tasks/                       # Active task cards
+      complete/                  # Completed task-card archive
     brainstorms/                 # Working notes and brainstorming docs
 ```
 
@@ -57,7 +58,9 @@ Define the canonical repository structure, path ownership, and placement convent
 - `docs/specs/ui/`
   - owns authoritative UI discovery/audit/guardrail documentation produced in M8+ tasks.
 - `docs/tasks/`
-  - owns per-session execution task cards.
+  - owns active per-session execution task cards (`planned`, `in_progress`, `blocked`).
+- `docs/tasks/complete/`
+  - owns completed task cards after closeout.
 - `docs/brainstorms/`
   - owns non-authoritative ideation notes (helpful context, not source of truth).
 - `supabase/`
@@ -70,6 +73,9 @@ Define the canonical repository structure, path ownership, and placement convent
 - `docs/specs/ui/` (introduced in M8)
   - canonical location for authoritative UI discovery/audit/guardrail docs (for example repo discovery baseline, pattern audit, screen map, navigation contract, components catalog, UX rules).
   - keep UI docs under `docs/specs/ui/**` rather than `docs/brainstorms/**` once they become source-of-truth references.
+- `docs/tasks/complete/`
+  - canonical archive location for task cards whose status is `completed`.
+  - move a task card here in the same session that marks it `completed`.
 - `apps/mobile/.maestro/flows`
   - remains the canonical location for Maestro flow definitions.
 - `apps/mobile/.maestro/maestro.env.sample`

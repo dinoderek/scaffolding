@@ -49,7 +49,7 @@ docs_touched: "docs/specs/11-maestro-runtime-and-testing-conventions.md,apps/mob
 - Known stale references or assumptions:
   - none
 - Optional helper command:
-  - `./scripts/task-bootstrap.sh docs/tasks/T-20260301-02-m10-shared-dev-client-build-and-worktree-config.md`
+  - `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260301-02-m10-shared-dev-client-build-and-worktree-config.md`
 
 ## Objective
 
@@ -142,7 +142,7 @@ Establish the reusable native-binary foundation for M10 by adding a shared dev-c
 
 - Standard local fast gate: `./scripts/quality-fast.sh frontend`
 - Standard local slow gate: `N/A by default; run ./scripts/quality-slow.sh frontend only if task scope expands into runtime behavior`
-- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/T-20260301-02-m10-shared-dev-client-build-and-worktree-config.md`
+- Optional closeout helper: `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-02-m10-shared-dev-client-build-and-worktree-config.md`
 - Additional gate(s), if any:
   - targeted script invocation proving config discovery and rebuild/no-op behavior
 
@@ -179,4 +179,4 @@ Establish the reusable native-binary foundation for M10 by adding a shared dev-c
 - Ensure completion note is filled before handoff.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-- Run `./scripts/task-closeout-check.sh docs/tasks/T-20260301-02-m10-shared-dev-client-build-and-worktree-config.md` (or document why `N/A`) before handoff.
+- Run `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260301-02-m10-shared-dev-client-build-and-worktree-config.md` (or document why `N/A`) before handoff.
