@@ -35,6 +35,24 @@ Define the minimum scaffolding required before feature development, and standard
 Rule: each lower level must link to its parent(s).
 Rule: each lower level may add detail but must not override or relax parent-level constraints.
 
+## Cross-cutting docs maintenance (mandatory)
+
+Milestone specs and task cards capture scoped planning/execution detail, but they do not replace project-level source-of-truth docs.
+
+When a task materially changes cross-cutting behavior, update the relevant project-level docs in the same session:
+
+- `docs/specs/03-technical-architecture.md`
+  - for architecture/runtime behavior changes such as sync model, auth-gated sync behavior, conflict policy, offline/online semantics, or new subsystem boundaries
+- `docs/specs/04-ai-development-playbook.md`
+  - for execution/context-loading workflow changes future agents must follow
+- `docs/specs/06-testing-strategy.md`
+  - for new test layers, changed verification expectations, or changed sync/offline/auth coverage requirements
+
+Rule:
+
+- do not leave the authoritative description of significant sync/auth/offline behavior only in milestone/task docs;
+- promote stable behavior and verification expectations into the project-level docs above.
+
 ## Runtime terminology and gate profiles
 
 Use these definitions when a task says "runtime", "runtime-specific gates", or "runtime-appropriate equivalents".
@@ -96,8 +114,9 @@ Rule: task cards must list the exact gate commands they require; this section on
    - fill task `Completion note`
    - update milestone `Status` and task breakdown item states
    - update decision log entries when decisions changed
-6. If a task introduces a new runtime, deployment surface, or test layer:
+6. If a task introduces a new runtime, deployment surface, or test layer, or materially changes cross-cutting architecture/runtime behavior (for example sync/auth/offline/conflict semantics):
    - update `docs/specs/06-testing-strategy.md`,
+   - update `docs/specs/03-technical-architecture.md`,
    - update this playbook if execution/verification workflow changes,
    - update relevant template(s) if future tasks need new required fields or checks.
 

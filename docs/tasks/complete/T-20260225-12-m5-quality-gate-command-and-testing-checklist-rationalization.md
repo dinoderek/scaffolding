@@ -121,7 +121,7 @@ Define and implement a standard local fast quality-gate command path (or wrapper
 - `cd apps/mobile && npm run lint` -> passed (wrapper parity spot-check for one underlying workspace command)
 - Documentation diff/review across touched shared docs + task template -> completed
 - What remains:
-- M5 task `T-20260220-09` (deployment strategy/environments) remains pending for milestone closeout.
+- Historical note: at the time of this task, M5 task `T-20260220-09` was still pending; it was later marked `outdated` when M5 was re-scoped to close on the delivered local backend/auth/sync baseline.
 - Separate follow-up to fix existing `apps/mobile` typecheck errors is needed if we want `./scripts/quality-fast.sh frontend` to pass end-to-end on current branch.
 
 ## Status update checklist (mandatory at closeout)

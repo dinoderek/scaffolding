@@ -9,7 +9,7 @@ Capture top-level architecture decisions for MVP, with clear `Adopted` vs `Plann
 `Expo React Native UI`
 -> `Session domain + autosave orchestration`
 -> `Local repository layer (Drizzle + SQLite)`
--> `Sync outbox (planned)`
+-> `Auth-gated sync engine + outbox (planned)`
 -> `Supabase backend (M5 selected; local-first dev/test via Supabase local stack)`
 
 ## Decision register
@@ -26,7 +26,8 @@ Capture top-level architecture decisions for MVP, with clear `Adopted` vs `Plann
 | Exercise variation model is optional and key/value based, with user-extensible keys/values and exercise-owned variation definitions | `Adopted` | Supports expressive tracking while preserving fast logging defaults and avoiding premature analytics-model complexity. | `docs/specs/milestones/M9-exercise-variations-and-fast-selection-foundation.md`, `docs/brainstorms/M9-Exercise-Variations` |
 | Session exercise persistence should reference canonical exercise identity and optional variation identity | `Adopted` | Prevents name-only drift and establishes stable data contracts for history behavior and future analytics/grouping features. | `docs/specs/milestones/M9-exercise-variations-and-fast-selection-foundation.md` |
 | Exercise/variation/mapping metadata semantics are retroactive for history and analytics interpretation in current architecture (no versioned/snapshot metadata model in M9) | `Adopted` | Aligns with product expectation that edits apply globally and keeps near-term schema/runtime complexity lower before analytics materialization exists. | `docs/specs/00-product.md`, `docs/specs/milestones/M9-exercise-variations-and-fast-selection-foundation.md` |
-| Sync contract uses client outbox pattern from local store to cloud | `Planned` | Maintains offline-first guarantees while enabling reliable deferred sync when online. | N/A |
+| Sync contract uses client outbox pattern from local store to cloud | `Planned` | Maintains offline-first guarantees while enabling reliable deferred sync when online. | `docs/specs/milestones/M11-frontend-backend-sync-integration.md` |
+| Initial mobile sync behavior is auth-gated and non-blocking: local usage continues when logged out, offline, or backend-unavailable | `Planned` | Preserves local-first UX while allowing sync to run opportunistically when authenticated and connected. | `docs/specs/milestones/M11-frontend-backend-sync-integration.md` |
 | MVP backend platform (primary) is `Supabase (Postgres + Auth + RLS)` | `Adopted` | Best fit for M5 scope: secure auth/authz + sync API baseline with strong local-test fidelity and better SQL/data portability than the evaluated fallback (`Cloudflare Workers + D1`). | `docs/tasks/complete/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md`, `docs/specs/milestones/M5-backend-foundation-authz-and-sync-api.md` |
 | `Cloudflare Workers + D1` is documented as an M5 contingency fallback, not the primary MVP backend | `Planned (contingency)` | Preserves a zero-spend/lean edge path if needed, but increases auth/authz implementation scope and weakens SQL portability for this milestone. | `docs/tasks/complete/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md` |
 | M5 backend tasks must support a local backend runtime with high-fidelity local verification before deployment | `Adopted` | Local runtime/testing was elevated to a hard requirement to minimize post-deployment debugging and keep delivery iteration fast. | `docs/tasks/complete/T-20260220-07-m5-backend-stack-decision-and-architecture-update.md`, `docs/specs/milestones/M5-backend-foundation-authz-and-sync-api.md` |

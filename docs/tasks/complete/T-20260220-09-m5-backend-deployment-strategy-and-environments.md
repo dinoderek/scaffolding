@@ -4,7 +4,7 @@
 
 - Task ID: `T-20260220-09`
 - Title: M5 backend deployment strategy and environment model
-- Status: `planned`
+- Status: `outdated`
 - Owner: `AI + human reviewer`
 - Session date: `2026-02-20`
 - Session interaction mode: `interactive (default)`
@@ -19,12 +19,13 @@
 
 ## Objective
 
-Define and document the `Supabase` deployment path from free tier to paid scale with explicit environment boundaries and operational safeguards, while preserving the documented contingency fallback posture.
+This task originally aimed to define the `Supabase` deployment path from free tier to paid scale with explicit environment boundaries and operational safeguards.
 
 ## Scope
 
 ### In scope
 
+- historical record only; no further implementation in this task
 - Define environment topology:
   - `local`
   - `preview/staging`
@@ -50,13 +51,9 @@ Define and document the `Supabase` deployment path from free tier to paid scale 
 
 ## Acceptance criteria
 
-1. A `Supabase` deployment strategy doc exists and maps each environment to purpose, project topology, and controls.
-2. Secrets handling, rotation expectations, key-scope boundaries (`anon`/`service role`/function secrets), and non-commit rules are explicitly documented.
-3. Rollback and backup/restore expectations are documented and testable, including what is manual vs managed on the selected plan tier.
-4. Free-tier limits, paid-upgrade trigger conditions, and spend guardrails are explicit.
-5. Strategy documents how spending is constrained (zero-spend mode or predefined capped spend path) without relying on uncapped auto-spend, and includes Supabase-specific caveats/operator controls.
-6. Hosted/deployed smoke validation steps are documented (including what is manual now because CI is absent and what should move into CI later).
-7. The strategy is referenced by milestone docs and is usable by follow-up implementation tasks.
+1. Task status is explicitly marked `outdated`.
+2. M5 references are updated so this task no longer blocks milestone closeout.
+3. The completion note records that cloud deployment/environment work moved to a future milestone.
 
 ## Testing and verification approach
 
@@ -72,7 +69,7 @@ Define and document the `Supabase` deployment path from free tier to paid scale 
 - Planned files/areas allowed to change:
   - `docs/specs/03-technical-architecture.md`
   - `docs/specs/milestones/M5-backend-foundation-authz-and-sync-api.md`
-  - `docs/tasks/T-20260220-09-m5-backend-deployment-strategy-and-environments.md`
+  - `docs/tasks/complete/T-20260220-09-m5-backend-deployment-strategy-and-environments.md`
   - deployment/runbook docs under `docs/` (exact path to be chosen in-session)
 - Constraints/assumptions:
   - Must implement the `Supabase` primary path selected in `T-20260220-07`; fallback stack remains contingency-only documentation unless a blocker is declared.
@@ -95,5 +92,9 @@ Define and document the `Supabase` deployment path from free tier to paid scale 
 ## Completion note
 
 - What changed:
+  - Marked this task `outdated` after M5 was re-scoped to close on the delivered local backend, auth/authz baseline, and sync API baseline.
+  - Deferred cloud deployment/environment strategy to a future milestone rather than treating it as remaining M5 work.
 - What tests ran:
+  - `N/A (planning/status realignment only)`
 - What remains:
+  - A separate future milestone should define hosted environment topology, secrets/rollback posture, spend controls, and hosted smoke validation once cloud work is prioritized.

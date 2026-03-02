@@ -55,6 +55,18 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - During execution sessions, run a targeted test or gate after each meaningful change, then run `./scripts/quality-fast.sh` before task closeout.
 - Run `./scripts/quality-slow.sh <area>` when the task card's risk triggers require slower local runtime/contract checks.
 
+## Sync integration coverage policy (M11 onward)
+
+- Applies to mobile/frontend-backend sync work.
+- Required coverage should include the relevant subset of:
+  - local/frontend ahead of backend,
+  - backend ahead of local/frontend,
+  - auth missing/expired or sync disabled due to no authenticated session,
+  - offline or backend-unavailable retry/recovery behavior,
+  - conflict resolution or conflict-avoidance path,
+  - delete/tombstone parity when sync scope includes removable entities.
+- Use mocks/fakes for the broader scenario matrix, then add at least one real cross-stack proof path with `Maestro` + local `Supabase` once the sync engine exists.
+
 ## Maestro contract ownership (M10)
 
 - `docs/specs/11-maestro-runtime-and-testing-conventions.md` is the authoritative Maestro runtime/testing contract.
@@ -109,7 +121,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
     - manual by default until CI exists.
   - Cross-stack `E2E` (`Maestro` + local Supabase):
     - strategy is documented during M5.
-    - implementation can land in a dedicated follow-up task/milestone.
+    - first implementation should land once mobile sync integration exists, alongside mock-backend sync scenario coverage.
 - Deterministic backend fixture baseline:
   - use a reset + seed command path before auth/RLS/API contract suites.
   - maintain named fixture identities for ownership tests (at minimum `anonymous`, `user_a`, `user_b`; optional admin/service-role-only helper path).
