@@ -98,6 +98,11 @@ Integrate the mobile app with the existing local/backend sync foundation for the
   - the app root now provides a default logged-out sync auth-session source so later tasks can inject real auth state without coupling sync code to login UI;
   - mobile sync backend wiring reads public Supabase config from `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and only attaches `Authorization` when a valid auth session is present;
   - local sync metadata now persists in SQLite `sync_state`, with an explicit `never_initialized` default status before sync orchestration begins updating it.
+- Implemented foreground sync engine (`T-20260302-04`):
+  - the app root now mounts a foreground-only sync engine boundary that evaluates sync on bootstrap/open, app foreground/resume, connectivity regain, and periodic polling while the app remains active;
+  - the engine pauses quietly with persisted reasons when auth is missing/expired, the backend is unconfigured, or the device is offline, and uses exponential backoff for backend-unavailable failures without blocking local usage;
+  - each sync attempt reconciles the current M11 domain (`gyms` plus full session graphs) by comparing local and remote aggregate `updatedAt` values, treating the newer aggregate as authoritative;
+  - session graph pushes use `replace_session_graph`, and `SESSION_GRAPH_STALE` falls back to a remote re-read before either pulling the fresher remote aggregate or retrying one more compare-and-swap push with the newer remote version.
 
 ## Deliverables
 
@@ -145,7 +150,7 @@ Integrate the mobile app with the existing local/backend sync foundation for the
 1. `docs/tasks/complete/T-20260302-01-m11-sync-scope-conflict-policy-and-m5-realignment.md` - locked sync/auth behavior and conflict policy, audited backend parity gaps, and confirmed the M5 realignment. (`completed`)
 2. `docs/tasks/complete/T-20260302-02-m11-backend-sync-contract-parity-for-session-graphs.md` - added aggregate backend contract parity for real frontend session-graph edits via `replace_session_graph`. (`completed`)
 3. `docs/tasks/complete/T-20260302-03-m11-mobile-auth-session-adapter-and-sync-state-foundation.md` - added the mobile auth-session adapter, public backend client wiring, and persisted local sync-state foundation. (`completed`)
-4. `docs/tasks/T-20260302-04-m11-sync-engine-triggers-retry-and-reconciliation.md` - implement sync orchestration, retries, and reconciliation behavior. (`planned`)
+4. `docs/tasks/complete/T-20260302-04-m11-sync-engine-triggers-retry-and-reconciliation.md` - implemented foreground sync orchestration, retries, and deterministic reconciliation behavior. (`completed`)
 5. `docs/tasks/T-20260302-05-m11-sync-status-route-and-diagnostics-ui.md` - add the sync status route and lightweight diagnostics UX. (`planned`)
 6. `docs/tasks/T-20260302-06-m11-sync-mock-backend-scenarios-and-regression-coverage.md` - add mock-backend sync scenario coverage and regressions. (`planned`)
 7. `docs/tasks/T-20260302-07-m11-maestro-local-backend-sync-e2e-smoke.md` - add the first local-Supabase cross-stack sync `E2E` smoke. (`planned`)
@@ -194,6 +199,11 @@ Integrate the mobile app with the existing local/backend sync foundation for the
 - Decision: The mobile sync foundation defaults to a logged-out auth source and persisted `sync_state` row with an explicit `never_initialized` status until a real authenticated session is injected.
 - Reason: M11 needs a stable sync-facing auth/state contract before orchestration lands, but login UI remains out of scope for this milestone.
 - Impact: Later sync tasks can consume one auth/config/state boundary instead of duplicating session gating logic, and simulator/runtime verification must include the SQLite migration path for `sync_state`.
+
+- Date: `2026-03-03`
+- Decision: The first M11 sync engine uses full-snapshot foreground reconciliation plus deterministic aggregate `updatedAt` winner rules instead of a persisted outbox.
+- Reason: The scoped M11 domain is still small enough for full reconciliation, and this keeps the first engine simpler while the backend aggregate RPC already protects nested session parity.
+- Impact: Sync attempts compare local and remote domain snapshots on each eligible foreground run, session-graph divergence is resolved at the aggregate level, and any future outbox/background evolution must be a deliberate follow-up rather than assumed current behavior.
 
 ## Completion note (fill when milestone closes)
 

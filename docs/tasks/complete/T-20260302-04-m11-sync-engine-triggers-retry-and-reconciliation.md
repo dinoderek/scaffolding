@@ -1,7 +1,7 @@
 ---
 task_id: T-20260302-04
 milestone_id: "M11"
-status: planned
+status: completed
 ui_impact: "no"
 areas: "frontend,docs,cross-stack"
 runtimes: "node,expo,docs"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/03-technical-architecture.md,docs/specs/06-testing-str
 
 - Task ID: `T-20260302-04`
 - Title: M11 sync engine triggers, retry, and reconciliation
-- Status: `planned`
+- Status: `completed`
 - Session date: `2026-03-02`
 - Session interaction mode: `interactive (default)`
 
@@ -33,19 +33,26 @@ docs_touched: "docs/specs/03-technical-architecture.md,docs/specs/06-testing-str
 
 ## Context Freshness (required at session start; update before edits)
 
-- Verified current branch + HEAD commit: `TBD at execution start`
-- Start-of-session sync completed per `docs/specs/04-ai-development-playbook.md` git sync workflow?: `TBD`
+- Verified current branch + HEAD commit: `main @ 80290819766127891339256813a0403102f7517e`
+- Start-of-session sync completed per `docs/specs/04-ai-development-playbook.md` git sync workflow?: `yes` (`git fetch origin main`; `HEAD...origin/main = 0 0`)
 - Parent refs opened in this session:
+  - `docs/specs/README.md`
+  - `docs/specs/00-product.md`
   - `docs/specs/milestones/M11-frontend-backend-sync-integration.md`
   - `docs/specs/03-technical-architecture.md`
+  - `docs/specs/04-ai-development-playbook.md`
   - `docs/specs/06-testing-strategy.md`
+  - `docs/specs/09-project-structure.md`
   - `docs/specs/10-api-authn-authz-guidelines.md`
   - `supabase/session-sync-api-contract.md`
   - `/Users/dinohughes/.codex/skills/native-data-fetching/SKILL.md`
+  - `docs/specs/11-maestro-runtime-and-testing-conventions.md`
 - Code/docs inventory freshness checks run:
+  - current sync/auth/session-data modules and route-root wiring
   - app lifecycle hooks, connectivity hooks, and current data-repository entrypoints
+  - Maestro runtime script behavior after slow-gate provisioning failure
 - Known stale references or assumptions:
-  - assumes auth/session adapter and backend contract parity tasks are complete or sufficiently available
+  - none
 - Optional helper command:
   - `./scripts/task-bootstrap.sh docs/tasks/T-20260302-04-m11-sync-engine-triggers-retry-and-reconciliation.md`
 
@@ -136,9 +143,10 @@ Implement the mobile sync engine so authenticated users sync opportunistically d
 
 ## Completion note
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: Added a foreground sync engine under `apps/mobile/src/sync/**` with a root-mounted `SyncEngineBoundary`, NetInfo-backed connectivity monitoring, app-state/bootstrap/resume/poll triggers, persisted paused/error sync-state transitions, full-snapshot local/remote reconciliation for `gyms` and session graphs, and aggregate stale-write handling that re-reads the remote graph before resolving the winner. Added targeted sync-engine and sync-service tests, updated the app shell to start the engine, installed `@react-native-community/netinfo`, and fixed `apps/mobile/scripts/maestro-ios-dev-client-build.sh` so `--print-app-path` remains machine-readable during required dev-client rebuilds.
+- What tests ran: `npm test -- --runInBand app/__tests__/sync-service.test.ts app/__tests__/sync-engine.test.ts`; `npm run typecheck`; `./scripts/quality-fast.sh frontend`; `./scripts/quality-slow.sh frontend`.
+- What remains: later M11 tasks still need to add the sync status/settings UI surface, broaden mock-backend scenario coverage, and land the dedicated local-Supabase cross-stack sync proof path.
+- Manual verification summary (required when CI is absent/partial): frontend fast and slow gates passed locally. Maestro smoke artifacts: `apps/mobile/artifacts/maestro/ad-hoc/20260303-133418-46159/`. Maestro data-smoke artifacts: `apps/mobile/artifacts/maestro/ad-hoc/20260303-133514-48357/`.
 
 ## Status update checklist
 

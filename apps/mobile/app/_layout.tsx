@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { bootstrapLocalDataLayer } from '@/src/data';
-import { loggedOutSyncAuthSessionSource, SyncAuthSessionProvider } from '@/src/sync';
+import { loggedOutSyncAuthSessionSource, SyncAuthSessionProvider, SyncEngineBoundary } from '@/src/sync';
 
 export default function RootLayout() {
   useEffect(() => {
@@ -13,6 +13,7 @@ export default function RootLayout() {
 
   return (
     <SyncAuthSessionProvider source={loggedOutSyncAuthSessionSource}>
+      <SyncEngineBoundary />
       <Stack>
         <Stack.Screen name="index" options={{ title: 'Sessions' }} />
         <Stack.Screen name="session-list" options={{ title: 'Sessions' }} />

@@ -142,12 +142,12 @@ build_dev_client() {
     echo "[maestro-ios-dev-client-build] App path: $APP_PATH"
     echo "[maestro-ios-dev-client-build] Fingerprint: $SOURCE_FINGERPRINT"
     echo "[maestro-ios-dev-client-build] Preparing native project via expo prebuild"
-  } | tee -a "$BUILD_LOG_FILE"
+  } | tee -a "$BUILD_LOG_FILE" >&2
 
   (
     cd "$WORKSPACE_DIR"
     CI=1 npx expo prebuild --platform ios --clean --npm
-  ) 2>&1 | tee -a "$BUILD_LOG_FILE"
+  ) 2>&1 | tee -a "$BUILD_LOG_FILE" >&2
 
   workspace_path="$(find "$WORKSPACE_DIR/ios" -maxdepth 1 -name '*.xcworkspace' | head -n 1)"
   [[ -n "$workspace_path" ]] || maestro_fail "Unable to find generated iOS workspace under $WORKSPACE_DIR/ios."
@@ -157,7 +157,7 @@ build_dev_client() {
     echo "[maestro-ios-dev-client-build] Building simulator app with xcodebuild"
     echo "[maestro-ios-dev-client-build] Workspace: $workspace_path"
     echo "[maestro-ios-dev-client-build] Scheme: $scheme_name"
-  } | tee -a "$BUILD_LOG_FILE"
+  } | tee -a "$BUILD_LOG_FILE" >&2
 
   xcodebuild \
     -workspace "$workspace_path" \
@@ -167,7 +167,7 @@ build_dev_client() {
     -destination 'generic/platform=iOS Simulator' \
     -derivedDataPath "$DERIVED_DATA_DIR" \
     CODE_SIGNING_ALLOWED=NO \
-    build 2>&1 | tee -a "$BUILD_LOG_FILE"
+    build 2>&1 | tee -a "$BUILD_LOG_FILE" >&2
 
   built_app_path="$DERIVED_DATA_DIR/Build/Products/Debug-iphonesimulator/$scheme_name.app"
   if [[ ! -d "$built_app_path" ]]; then
@@ -190,7 +190,7 @@ build_dev_client() {
     printf 'MAESTRO_IOS_SHARED_BUILD_ROOT=%q\n' "$BUILD_ROOT"
   } >"$METADATA_FILE"
 
-  echo "[maestro-ios-dev-client-build] Build complete: $APP_PATH" | tee -a "$BUILD_LOG_FILE"
+  echo "[maestro-ios-dev-client-build] Build complete: $APP_PATH" | tee -a "$BUILD_LOG_FILE" >&2
 }
 
 while [[ $# -gt 0 ]]; do

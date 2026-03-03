@@ -34,6 +34,7 @@ Define the canonical repository structure, path ownership, and placement convent
     tests/                       # Backend-local smoke/integration test entrypoints
   docs/
     specs/                       # Project/milestone/task process and technical specs
+      tech/                      # Technical deep dives for implemented subsystems
       ui/                        # Canonical UI discovery/audit/guardrail docs (M8+)
     tasks/                       # Active task cards
       complete/                  # Completed task-card archive
@@ -55,6 +56,8 @@ Define the canonical repository structure, path ownership, and placement convent
   - owns generated Maestro runtime artifacts, screenshots, and lifecycle logs (`runtime.env`, `provision.log`, `launch.log`, `teardown.log`, `expo-start.log`, `maestro-junit.xml`).
 - `docs/specs/`
   - owns project policy, architecture/testing strategy, milestone specs, and templates.
+- `docs/specs/tech/`
+  - owns technical deep dives for implemented subsystems when the high-level architecture doc should stay synthetic.
 - `docs/specs/ui/`
   - owns authoritative UI discovery/audit/guardrail documentation produced in M8+ tasks.
 - `docs/tasks/`
@@ -73,6 +76,9 @@ Define the canonical repository structure, path ownership, and placement convent
 - `docs/specs/ui/` (introduced in M8)
   - canonical location for authoritative UI discovery/audit/guardrail docs (for example repo discovery baseline, pattern audit, screen map, navigation contract, components catalog, UX rules).
   - keep UI docs under `docs/specs/ui/**` rather than `docs/brainstorms/**` once they become source-of-truth references.
+- `docs/specs/tech/`
+  - canonical location for deeper technical subsystem documentation when `docs/specs/03-technical-architecture.md` should remain high-level.
+  - use it for implementation-oriented deep dives and file maps that would make the top-level architecture doc too dense.
 - `docs/tasks/complete/`
   - canonical archive location for task cards whose status is `completed`.
   - move a task card here in the same session that marks it `completed`.
