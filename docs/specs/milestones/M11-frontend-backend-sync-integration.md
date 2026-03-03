@@ -94,6 +94,10 @@ Integrate the mobile app with the existing local/backend sync foundation for the
   - backend aggregate writes use `app_public.replace_session_graph`, exposed through `POST /rest/v1/rpc/replace_session_graph`;
   - the RPC compares `p_expected_updated_at` to the current remote `sessions.updated_at` value and rejects stale writes instead of mixing divergent child rows;
   - nested child omission in `p_exercises` is treated as deletion during replacement, so session-exercise and set parity is preserved without adding child tombstones.
+- Implemented mobile sync foundation (`T-20260302-03`):
+  - the app root now provides a default logged-out sync auth-session source so later tasks can inject real auth state without coupling sync code to login UI;
+  - mobile sync backend wiring reads public Supabase config from `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and only attaches `Authorization` when a valid auth session is present;
+  - local sync metadata now persists in SQLite `sync_state`, with an explicit `never_initialized` default status before sync orchestration begins updating it.
 
 ## Deliverables
 
@@ -140,7 +144,7 @@ Integrate the mobile app with the existing local/backend sync foundation for the
 
 1. `docs/tasks/complete/T-20260302-01-m11-sync-scope-conflict-policy-and-m5-realignment.md` - locked sync/auth behavior and conflict policy, audited backend parity gaps, and confirmed the M5 realignment. (`completed`)
 2. `docs/tasks/complete/T-20260302-02-m11-backend-sync-contract-parity-for-session-graphs.md` - added aggregate backend contract parity for real frontend session-graph edits via `replace_session_graph`. (`completed`)
-3. `docs/tasks/T-20260302-03-m11-mobile-auth-session-adapter-and-sync-state-foundation.md` - add mobile auth-aware backend client plumbing and local sync-state persistence foundation. (`planned`)
+3. `docs/tasks/complete/T-20260302-03-m11-mobile-auth-session-adapter-and-sync-state-foundation.md` - added the mobile auth-session adapter, public backend client wiring, and persisted local sync-state foundation. (`completed`)
 4. `docs/tasks/T-20260302-04-m11-sync-engine-triggers-retry-and-reconciliation.md` - implement sync orchestration, retries, and reconciliation behavior. (`planned`)
 5. `docs/tasks/T-20260302-05-m11-sync-status-route-and-diagnostics-ui.md` - add the sync status route and lightweight diagnostics UX. (`planned`)
 6. `docs/tasks/T-20260302-06-m11-sync-mock-backend-scenarios-and-regression-coverage.md` - add mock-backend sync scenario coverage and regressions. (`planned`)
@@ -185,6 +189,11 @@ Integrate the mobile app with the existing local/backend sync foundation for the
 - Decision: M11 backend session-graph parity uses a `PostgREST RPC` (`replace_session_graph`) with compare-and-swap semantics on `sessions.updated_at`.
 - Reason: Row-level child CRUD alone could not encode whole-graph replacement or omitted-child deletion without silently merging divergent child rows.
 - Impact: Mobile sync write paths should use the aggregate RPC for session-graph pushes, while row-level `GET` routes remain valid for pulls and simpler entity reads.
+
+- Date: `2026-03-03`
+- Decision: The mobile sync foundation defaults to a logged-out auth source and persisted `sync_state` row with an explicit `never_initialized` status until a real authenticated session is injected.
+- Reason: M11 needs a stable sync-facing auth/state contract before orchestration lands, but login UI remains out of scope for this milestone.
+- Impact: Later sync tasks can consume one auth/config/state boundary instead of duplicating session gating logic, and simulator/runtime verification must include the SQLite migration path for `sync_state`.
 
 ## Completion note (fill when milestone closes)
 

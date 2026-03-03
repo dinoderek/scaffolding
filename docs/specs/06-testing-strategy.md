@@ -69,6 +69,10 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - cover stale-write/conflict handling at the aggregate level, not only isolated row updates;
   - cover child-row removal parity when the mobile edit model rewrites nested collections (for example session exercises/sets removed from an edited session).
   - when backend contract uses an aggregate RPC or equivalent, cover authenticated create/replace success, stale compare-and-swap rejection, unauthenticated denial, and cross-user denial for that aggregate surface.
+- For mobile sync foundation tasks:
+  - cover auth eligibility and bearer-header attachment separately from full orchestration;
+  - cover persisted sync-state defaults and updates when local sync metadata is introduced;
+  - run `./scripts/quality-slow.sh frontend` when sync-state persistence changes mobile migrations or other runtime-sensitive SQLite wiring.
 - Use mocks/fakes for the broader scenario matrix, then add at least one real cross-stack proof path with `Maestro` + local `Supabase` once the sync engine exists.
 
 ## Maestro contract ownership (M10)

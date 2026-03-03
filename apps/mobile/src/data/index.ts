@@ -51,4 +51,11 @@ export {
   type SessionPersistenceRecord,
 } from './session-drafts';
 export { insertSmokeRecord, listSmokeRecords, type SmokeRecord } from './smoke-records';
+export {
+  createDefaultSyncState,
+  createDrizzleSyncStateStore,
+  createSyncStateRepository,
+  type SyncStateSnapshot,
+  type SyncStateStore,
+} from './sync-state';
 export { runLocalDataRuntimeSmoke, type LocalDataRuntimeSmokeResult } from './runtime-smoke';

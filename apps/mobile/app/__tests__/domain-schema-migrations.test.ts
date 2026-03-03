@@ -8,6 +8,7 @@ describe('domain schema and runtime migrations', () => {
       exerciseDefinitions: expect.any(Object),
       exerciseMuscleMappings: expect.any(Object),
       gyms: expect.any(Object),
+      syncState: expect.any(Object),
       sessions: expect.any(Object),
       sessionExercises: expect.any(Object),
       exerciseSets: expect.any(Object),
@@ -24,6 +25,7 @@ describe('domain schema and runtime migrations', () => {
     expect(migrationSql).toContain('CREATE TABLE `exercise_muscle_mappings`');
 
     expect(migrationSql).toContain('CREATE TABLE `gyms`');
+    expect(migrationSql).toContain('CREATE TABLE `sync_state`');
     expect(migrationSql).toContain('CREATE TABLE `sessions`');
     expect(migrationSql).toContain('CREATE TABLE `session_exercises`');
     expect(migrationSql).toContain('CREATE TABLE `exercise_sets`');
@@ -54,6 +56,16 @@ describe('domain schema and runtime migrations', () => {
       'CREATE UNIQUE INDEX `exercise_muscle_mappings_exercise_id_muscle_group_id_unique` ON `exercise_muscle_mappings` (`exercise_definition_id`,`muscle_group_id`)'
     );
     expect(migrationSql).toContain('CREATE INDEX `sessions_deleted_at_idx` ON `sessions` (`deleted_at`)');
+    expect(migrationSql).toContain('`last_successful_sync_at` integer');
+    expect(migrationSql).toContain('`last_failed_sync_at` integer');
+    expect(migrationSql).toContain('`last_attempted_sync_at` integer');
+    expect(migrationSql).toContain('CREATE INDEX `sync_state_status_idx` ON `sync_state` (`status`)');
+    expect(migrationSql).toContain(
+      'CONSTRAINT "sync_state_status_guard" CHECK("sync_state"."status" in (\'never_initialized\', \'idle\', \'syncing\', \'paused\', \'error\'))'
+    );
+    expect(migrationSql).toContain(
+      'CONSTRAINT "sync_state_paused_reason_guard" CHECK("sync_state"."paused_reason" is null or "sync_state"."paused_reason" in (\'auth_missing\', \'auth_expired\', \'backend_unconfigured\', \'offline\', \'backend_unavailable\'))'
+    );
     expect(migrationSql).toContain(
       'CONSTRAINT "exercise_muscle_mappings_weight_positive" CHECK("exercise_muscle_mappings"."weight" > 0)'
     );

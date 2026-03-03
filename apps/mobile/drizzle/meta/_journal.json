@@ -43,6 +43,13 @@
       "when": 1772190386093,
       "tag": "0005_slimy_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1772538794922,
+      "tag": "0006_ordinary_madame_masque",
+      "breakpoints": true
     }
   ]
 }

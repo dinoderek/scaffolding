@@ -13,3 +13,4 @@ export { gyms, type Gym, type NewGym } from './gyms';
 export { muscleGroups, type MuscleGroup, type NewMuscleGroup } from './muscle-groups';
 export { sessionExercises, type NewSessionExercise, type SessionExercise } from './session-exercises';
 export { sessions, type NewSession, type Session } from './sessions';
+export { syncState, type NewSyncState, type SyncState } from './sync-state';
