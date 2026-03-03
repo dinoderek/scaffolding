@@ -1,7 +1,7 @@
 ---
 task_id: T-20260227-03
 milestone_id: "M9"
-status: planned
+status: outdated
 ui_impact: "yes"
 areas: "frontend,docs"
 runtimes: "node,expo,maestro"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/ui/screen-map.md,docs/specs/ui/navigation-contract.md,
 
 - Task ID: `T-20260227-03`
 - Title: M9 exercise catalog variation management UI
-- Status: `planned`
+- Status: `outdated`
 - Session date: `2026-02-27`
 - Session interaction mode: `interactive (default)`
 
@@ -179,6 +179,13 @@ Add catalog-first UI to create and manage per-exercise key/value variations, inc
 - What changed:
 - What tests ran:
 - What remains:
+
+## Outdated note
+
+- Why outdated:
+  - On `2026-03-03`, M9 pivoted away from exercise-owned key/value variations and catalog-first variation authoring to a recorder-first exercise-tag model.
+- Archive reason:
+  - This card is superseded by `T-20260303-01` through `T-20260303-04` and should not remain in the active task queue.
 
 ## Status update checklist (mandatory at closeout)
 

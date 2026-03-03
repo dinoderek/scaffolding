@@ -10,28 +10,30 @@ A Gym Tracking application with a delightful interface, advanced analytics, AI p
 
 * Simple, quick, interface that combines depth and delightful golden paths.
 * Powerful analytics that allows an incredible level of geek out.
-* Exercises support Locations and Variations and are connected to Muscle Groups trained.
+* Exercises support Locations and per-log Tags and are connected to Muscle Groups trained.
 * Brotherhoods (Group) concept enables PR certification, Group level competitions, Group sanctioned Exercises. 
 * AI integration powers AI coaches and AI analysis of performance trends.
 
 ## Product decisions (current)
 
-- Date: `2026-02-27`
-- Decision: Exercise variations are optional and key/value based.
+- Date: `2026-03-03`
+- Decision: Exercise log tags are optional, freeform, and attached to a logged exercise instance.
 - Notes:
-  - no variation is required to log an exercise,
-  - system seeds key families (`grip`, `hold`, `machine`, `implement`, `incline`) and starter values,
-  - users can add new keys and values.
+  - no tag is required to log an exercise,
+  - tags are created from the recorder flow rather than pre-authored in the catalog,
+  - M9 does not ship seeded/system tags.
 
-- Date: `2026-02-27`
-- Decision: Variation authoring is catalog-first for M9.
+- Date: `2026-03-03`
+- Decision: Recorder tagging is suggestion-driven for M9.
 - Notes:
-  - primary create/edit surface is exercise management,
-  - recorder flow prioritizes fast logging and optional variation selection.
+  - recorder shows prior tags used for the same exercise to speed reuse,
+  - users can also type and create a new tag inline while logging,
+  - M9 does not introduce a separate global tag-management screen.
 
-- Date: `2026-02-27`
-- Decision: Exercise/variation/mapping metadata semantics are retroactive.
+- Date: `2026-03-03`
+- Decision: Exercise catalog metadata remains retroactive, while exercise log tags are historical session data.
 - Notes:
   - history views resolve against the latest exercise catalog metadata rather than per-session snapshots,
-  - retroactive scope includes exercise labels, variation labels and key/value pairs, and exercise-to-muscle mappings,
-  - future analytics interpretation is based on the latest metadata (no versioned/snapshot metadata model in M9).
+  - retroactive scope includes exercise labels and exercise-to-muscle mappings,
+  - tags persist on the logged exercise and are not resolved through a retroactive catalog metadata layer,
+  - future analytics can group by stored tags without introducing variation versioning in M9.

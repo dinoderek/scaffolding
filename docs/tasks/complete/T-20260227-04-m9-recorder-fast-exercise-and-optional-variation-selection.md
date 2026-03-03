@@ -1,7 +1,7 @@
 ---
 task_id: T-20260227-04
 milestone_id: "M9"
-status: planned
+status: outdated
 ui_impact: "yes"
 areas: "frontend,docs"
 runtimes: "node,expo,maestro"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/ui/screen-map.md,docs/specs/ui/navigation-contract.md,
 
 - Task ID: `T-20260227-04`
 - Title: M9 recorder fast exercise add and optional variation selection
-- Status: `planned`
+- Status: `outdated`
 - Session date: `2026-02-27`
 - Session interaction mode: `interactive (default)`
 
@@ -179,6 +179,13 @@ Implement a recorder flow where adding an exercise remains fast by default and s
 - What changed:
 - What tests ran:
 - What remains:
+
+## Outdated note
+
+- Why outdated:
+  - On `2026-03-03`, M9 replaced optional variation selection with optional per-log exercise tagging.
+- Archive reason:
+  - This card is superseded by the new tag-based recorder tasks and should not remain in the active task queue.
 
 ## Status update checklist (mandatory at closeout)
 
