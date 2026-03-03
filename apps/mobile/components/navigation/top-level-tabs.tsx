@@ -2,15 +2,16 @@ import { StyleSheet } from 'react-native';
 
 import { UiButton, UiSurface, uiColors, uiRadius, uiSpace } from '@/components/ui';
 
-export type TopLevelTabKey = 'sessions' | 'exercises';
+export type TopLevelTabKey = 'sessions' | 'exercises' | 'sync-status';
 
 type TopLevelTabsProps = {
   activeTab: TopLevelTabKey;
   onPressSessions: () => void;
   onPressExercises: () => void;
+  onPressSyncStatus: () => void;
 };
 
-export function TopLevelTabs({ activeTab, onPressSessions, onPressExercises }: TopLevelTabsProps) {
+export function TopLevelTabs({ activeTab, onPressSessions, onPressExercises, onPressSyncStatus }: TopLevelTabsProps) {
   return (
     <UiSurface accessibilityRole="tablist" style={styles.shell} testID="top-level-bottom-tabs">
       <UiButton
@@ -29,6 +30,17 @@ export function TopLevelTabs({ activeTab, onPressSessions, onPressExercises }: T
         onPress={onPressExercises}
         variant="tab"
       />
+      <UiButton
+        accessibilityLabel="Open Sync Status"
+        accessibilityRole="tab"
+        active={activeTab === 'sync-status'}
+        label="⚙"
+        onPress={onPressSyncStatus}
+        style={styles.syncButton}
+        testID="top-level-tab-sync-status"
+        textStyle={styles.syncButtonText}
+        variant="tab"
+      />
     </UiSurface>
   );
 }
@@ -42,5 +54,16 @@ const styles = StyleSheet.create({
     borderRadius: uiRadius.xl,
     borderColor: uiColors.borderMuted,
     backgroundColor: uiColors.surfaceDefault,
+  },
+  syncButton: {
+    flex: 0,
+    width: 44,
+    minWidth: 44,
+    height: 44,
+    paddingHorizontal: 0,
+  },
+  syncButtonText: {
+    fontSize: 18,
+    lineHeight: 20,
   },
 });

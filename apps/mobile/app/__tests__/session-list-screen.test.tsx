@@ -165,14 +165,12 @@ describe('SessionListScreenShell', () => {
     expect(screen.getByTestId('session-summary-db-completed-1-gym').props.children).toBe('Garage Gym');
   });
 
-  it('shows a sync status entry point and opens the sync route', async () => {
+  it('opens sync status from the bottom tab bar without rendering the old card', async () => {
     render(<SessionListRoute />);
 
-    await waitFor(() => {
-      expect(screen.getByTestId('session-list-sync-status-card')).toBeTruthy();
-    });
+    expect(screen.queryByTestId('session-list-sync-status-card')).toBeNull();
 
-    fireEvent.press(screen.getByTestId('session-list-sync-status-card'));
+    fireEvent.press(screen.getByRole('tab', { name: 'Open Sync Status' }));
 
     expect(mockPush).toHaveBeenCalledWith('/sync-status');
   });

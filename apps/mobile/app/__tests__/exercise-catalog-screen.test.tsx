@@ -10,6 +10,9 @@ import {
   undeleteExerciseCatalogExercise,
 } from '@/src/data/exercise-catalog';
 
+const mockPush = jest.fn();
+const mockBack = jest.fn();
+
 jest.mock('expo-router', () => ({
   useFocusEffect: (callback: () => void | (() => void)) => {
     const React = require('react');
@@ -17,8 +20,8 @@ jest.mock('expo-router', () => ({
   },
   useLocalSearchParams: () => ({}),
   useRouter: () => ({
-    push: jest.fn(),
-    back: jest.fn(),
+    push: mockPush,
+    back: mockBack,
   }),
 }));
 
@@ -38,6 +41,8 @@ const mockUndeleteExercise = jest.mocked(undeleteExerciseCatalogExercise);
 
 describe('ExerciseCatalogScreen', () => {
   beforeEach(() => {
+    mockPush.mockReset();
+    mockBack.mockReset();
     mockListMuscleGroups.mockReset();
     mockListExercises.mockReset();
     mockSaveExercise.mockReset();
@@ -94,6 +99,19 @@ describe('ExerciseCatalogScreen', () => {
     expect(screen.getByText('Chest · Triceps (s)')).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Open Sessions' })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Open Exercises' })).toBeTruthy();
+    expect(screen.getByRole('tab', { name: 'Open Sync Status' })).toBeTruthy();
+  });
+
+  it('opens sync status from the bottom tab bar', async () => {
+    mockListExercises.mockResolvedValue([]);
+
+    render(<ExerciseCatalogScreen />);
+
+    await screen.findByLabelText('Create new exercise');
+
+    fireEvent.press(screen.getByRole('tab', { name: 'Open Sync Status' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/sync-status');
   });
 
   it('edits an existing exercise by changing name and secondary muscles', async () => {

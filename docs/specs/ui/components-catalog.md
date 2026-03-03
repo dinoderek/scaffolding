@@ -61,7 +61,7 @@ Brief entrypoint inventory of the current reusable UI component set.
 1. `TopLevelTabs`
 - File: `apps/mobile/components/navigation/top-level-tabs.tsx`
 - Purpose:
-  - app-specific top-level Sessions/Exercises tab strip used on `session-list` and `exercise-catalog`
+  - app-specific bottom tab strip with Sessions, Exercises, and a compact sync-status shortcut used on `session-list` and `exercise-catalog`
 
 2. `ExerciseEditorModal`
 - File: `apps/mobile/components/exercise-catalog/exercise-editor-modal.tsx`
@@ -76,7 +76,7 @@ Brief entrypoint inventory of the current reusable UI component set.
 4. `SyncStatusCard`
 - File: `apps/mobile/components/sync/sync-status-card.tsx`
 - Purpose:
-  - shared summary card for persisted sync-state diagnostics, reused by `session-list` and `/sync-status`
+  - shared summary card for persisted sync-state diagnostics, currently used on `/sync-status`
 
 ### UI-supporting shared module (non-visual)
 

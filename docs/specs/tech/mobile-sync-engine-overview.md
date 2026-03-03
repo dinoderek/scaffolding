@@ -433,7 +433,7 @@ That keeps sync non-blocking and consistent with the local-first product contrac
 1. Sync scope is still limited to the current M11 session domain.
 2. There is no persisted outbox yet.
 3. There is no OS-level background sync.
-4. The current user-facing diagnostics surface is intentionally read-only (`/sync-status` plus the `session-list` summary card); there is no manual sync control center yet.
+4. The current user-facing diagnostics surface is intentionally read-only (`/sync-status` plus a compact shared bottom-tab shortcut); there is no manual sync control center yet.
 5. Full-snapshot reconciliation is simple and deterministic now, but may need revisiting if domain size grows substantially.
 
 ## Recommended reading order

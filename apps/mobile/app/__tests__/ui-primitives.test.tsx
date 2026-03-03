@@ -8,23 +8,29 @@ describe('UI primitives', () => {
   it('renders semantic tab buttons with selected accessibility state and press handling', () => {
     const onPressSessions = jest.fn();
     const onPressExercises = jest.fn();
+    const onPressSyncStatus = jest.fn();
 
     render(
       <TopLevelTabs
         activeTab="sessions"
         onPressExercises={onPressExercises}
         onPressSessions={onPressSessions}
+        onPressSyncStatus={onPressSyncStatus}
       />
     );
 
     const sessionsTab = screen.getByLabelText('Open Sessions');
     const exercisesTab = screen.getByLabelText('Open Exercises');
+    const syncStatusTab = screen.getByLabelText('Open Sync Status');
 
     expect(sessionsTab.props.accessibilityState.selected).toBe(true);
     expect(exercisesTab.props.accessibilityState.selected).toBe(false);
+    expect(syncStatusTab.props.accessibilityState.selected).toBe(false);
 
     fireEvent.press(exercisesTab);
+    fireEvent.press(syncStatusTab);
     expect(onPressExercises).toHaveBeenCalledTimes(1);
+    expect(onPressSyncStatus).toHaveBeenCalledTimes(1);
     expect(onPressSessions).not.toHaveBeenCalled();
   });
 
@@ -64,7 +70,12 @@ describe('UI primitives', () => {
 
   it('matches the current top-level tabs snapshot after primitive migration', () => {
     const { toJSON } = render(
-      <TopLevelTabs activeTab="exercises" onPressExercises={jest.fn()} onPressSessions={jest.fn()} />
+      <TopLevelTabs
+        activeTab="exercises"
+        onPressExercises={jest.fn()}
+        onPressSessions={jest.fn()}
+        onPressSyncStatus={jest.fn()}
+      />
     );
 
     expect(toJSON()).toMatchSnapshot();

@@ -118,7 +118,7 @@ Guardrail command:
 ### 11. Sync diagnostics semantics
 
 1. Sync health is exposed through read-only surfaces, not blocking modals or mandatory prompts.
-2. The `session-list` sync card is a lightweight entry/indicator surface; it should stay compact and navigational.
+2. The shared bottom-tab sync shortcut is a lightweight navigational entry point; it should stay compact and secondary to the core Sessions/Exercises tabs.
 3. Routine paused states such as offline or auth-missing should use calm informational language rather than danger-heavy failure styling.
 4. Backend-unavailable retry states may use a warning tone, but they still must reinforce that local logging continues.
 

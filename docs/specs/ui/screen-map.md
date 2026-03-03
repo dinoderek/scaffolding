@@ -34,6 +34,7 @@ Brief entrypoint map of the current mobile screens.
   - `session-recorder`
   - `completed-session/[sessionId]`
   - `exercise-catalog`
+  - `sync-status`
 
 3. `/session-recorder`
 - File: `apps/mobile/app/session-recorder.tsx`
@@ -58,6 +59,7 @@ Brief entrypoint map of the current mobile screens.
 - Key exits:
   - `session-recorder` after save when opened from recorder-origin manage flow
   - `session-list` via top-level tabs
+  - `sync-status` via top-level tabs
 
 5. `/completed-session/[sessionId]`
 - File: `apps/mobile/app/completed-session/[sessionId].tsx`

@@ -77,20 +77,22 @@ Brief entrypoint contract for current mobile routes, query/path params, and allo
    - edit completed session from session actions
 5. `/session-list` <-> `/exercise-catalog`
    - top-level tabs
-6. `/completed-session/<sessionId>` -> `/session-recorder?mode=completed-edit&sessionId=<sessionId>`
+6. `/session-list` -> `/sync-status`
+   - compact sync-status tab in the shared bottom bar
+7. `/exercise-catalog` -> `/sync-status`
+   - compact sync-status tab in the shared bottom bar
+8. `/completed-session/<sessionId>` -> `/session-recorder?mode=completed-edit&sessionId=<sessionId>`
    - edit action
-7. `/completed-session/<sessionId>?intent=edit` -> `/session-recorder?mode=completed-edit&sessionId=<sessionId>`
+9. `/completed-session/<sessionId>?intent=edit` -> `/session-recorder?mode=completed-edit&sessionId=<sessionId>`
    - route-side redirect (`replace`)
-8. `/completed-session/<sessionId>` -> `/`
+10. `/completed-session/<sessionId>` -> `/`
    - successful reopen (`dismissTo('/')`)
-9. `/session-recorder...` -> `/`
+11. `/session-recorder...` -> `/`
    - successful submit/save (`dismissTo('/')`)
-10. `/session-recorder` -> `/exercise-catalog?source=session-recorder&intent=manage`
+12. `/session-recorder` -> `/exercise-catalog?source=session-recorder&intent=manage`
    - exercise picker `Manage` action
-11. `/exercise-catalog?source=session-recorder...` -> `/session-recorder`
+13. `/exercise-catalog?source=session-recorder...` -> `/session-recorder`
    - explicit back action or post-save return (`router.back()`)
-12. `/session-list` -> `/sync-status`
-   - non-blocking sync-status entry card opens the detailed diagnostics route
 
 Note:
 

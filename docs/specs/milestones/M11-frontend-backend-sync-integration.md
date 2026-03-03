@@ -105,7 +105,7 @@ Integrate the mobile app with the existing local/backend sync foundation for the
   - session graph pushes use `replace_session_graph`, and `SESSION_GRAPH_STALE` falls back to a remote re-read before either pulling the fresher remote aggregate or retrying one more compare-and-swap push with the newer remote version.
 - Implemented sync diagnostics UI (`T-20260302-05`):
   - the app now exposes a dedicated `/sync-status` route that reads persisted `sync_state` metadata and shows current status, pause reason, and recent attempt/success/failure timestamps;
-  - `session-list` now includes a lightweight sync-status entry card so degraded sync is discoverable without becoming a blocking banner or modal;
+  - the shared bottom navigation now includes a compact sync-status shortcut so degraded sync is discoverable without becoming a blocking banner or modal;
   - routine paused states such as offline or auth-missing use calm informational copy, while backend-unavailable retry states use a warning tone without changing local-recording behavior.
 
 ## Deliverables
