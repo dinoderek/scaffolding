@@ -18,3 +18,8 @@ It defines what to load first and where detailed rules live.
 
 Note: product/domain details are maintained in specs. Do not duplicate them here.
 
+## Brainstorms Folder Rule
+
+- `docs/brainstorms/` contains brainstorming documents only.
+- These files are non-authoritative working notes, not source-of-truth product or technical specs.
+- Ignore `docs/brainstorms/**` unless the user explicitly references a brainstorm file or asks for brainstorming/ideation work in that folder.

@@ -50,7 +50,7 @@ Define a practical, data-driven exercise metadata model that associates exercise
 3. Weighting semantics are explicitly defined as `non-normalized` and interpreted consistently.
 4. An initial set of system exercises exists and each included exercise is linked to one or more muscle groups with weights.
 5. Exercise editing supports linking one or more muscle groups with weights for user-editable exercises.
-6. Historical behavior policy for completed-session analytics was narrowed/locked during M6 and is now superseded by M9's retroactive metadata direction (see decision log entry dated `2026-02-27`).
+6. Historical behavior policy for completed-session analytics was narrowed/locked during M6 and is now superseded by the later retroactive metadata direction (see decision log entry dated `2026-02-27`).
 7. The spec is precise enough to support follow-on task cards for schema design, seed data, and UI/editor work.
 
 ## Locked decisions (current)
@@ -61,7 +61,7 @@ Define a practical, data-driven exercise metadata model that associates exercise
   - Users may link muscles to exercises where editing is supported, but they may not create/edit muscle-group definitions in M6.
 - For M6 v1 taxonomy, chest is represented as a single group (`chest`) rather than sub-regions.
   - Reason: avoid false precision in default exercise mappings when sub-region emphasis varies meaningfully by individual and setup.
-- Historical behavior direction from M6 (`snapshot/reproducible canonical`) is superseded by M9 planning decision dated `2026-02-27`.
+- Historical behavior direction from M6 (`snapshot/reproducible canonical`) is superseded by the later planning decision dated `2026-02-27`.
   - Current canonical direction is retroactive metadata semantics (latest mappings/metadata apply), with future analytics cache invalidation/recompute handling.
 
 ## Proposed exercise-to-muscle association model (v1)
@@ -180,10 +180,10 @@ Planned task cards for M6 are listed below.
 - Date: 2026-02-25
 - Decision: Lock canonical historical analytics behavior for exercise-mapping edits to a reproducible model (no drift from later edits), with `snapshot at session completion` as the default implementation target and `versioned mappings` as an escalation path.
 - Reason: Preserves user trust and analytics reproducibility while avoiding premature versioning complexity in the local-first + future sync architecture.
-- Impact: Superseded by M9 decision dated `2026-02-27`; retained here as historical record of M6 direction.
+- Impact: Superseded by the later decision dated `2026-02-27`; retained here as historical record of M6 direction.
 
 - Date: 2026-02-27
-- Decision: Supersede M6 snapshot/reproducible historical-mapping direction with retroactive metadata semantics from M9 planning.
+- Decision: Supersede M6 snapshot/reproducible historical-mapping direction with retroactive metadata semantics.
 - Reason: Product direction changed to “edit once, apply everywhere,” including history/analytics interpretation semantics for exercise metadata.
 - Impact: Follow-on analytics milestones should plan invalidation/recompute behavior for edited mappings instead of snapshot/versioned historical mapping semantics.
 
@@ -196,7 +196,7 @@ Planned task cards for M6 are listed below.
   - Simplified v1 defaults to reduce false precision: single `chest` taxonomy group, `primary|secondary` roles only in seeds, and default weight ladder (`1.0` / `0.5`) only.
   - Completed `T-20260224-03` with a local exercise-catalog editing route + repository that supports linking seeded/system muscle groups to exercises with non-normalized weights, including add/edit/remove flows and editor validation for missing links, duplicate links, and invalid weights.
   - Completed `T-20260224-04` with recorder-to-catalog integration for exercise `Manage` flow, shared inline add-new exercise editing inside `session-recorder`, soft-delete/undelete support in exercise catalog, and recorder picker behavior aligned to active catalog exercises.
-  - Completed `T-20260224-05` (docs-only) by comparing historical mapping behavior options and initially locking a snapshot-oriented direction; this historical direction was superseded in M9 planning (`2026-02-27`) by retroactive metadata semantics.
+  - Completed `T-20260224-05` (docs-only) by comparing historical mapping behavior options and initially locking a snapshot-oriented direction; this historical direction was later superseded (`2026-02-27`) by retroactive metadata semantics.
 - Verification summary:
   - `apps/mobile` lint/typecheck/test passed, including targeted schema/migration coverage and the previously failing session-list test after timer assertion fix.
   - Added targeted seed validation tests and bootstrap seed integration tests; full `apps/mobile` Jest suite remains green after seed integration.
