@@ -178,6 +178,41 @@ USER_B_TOKEN="$(printf '%s' "${REQUEST_BODY}" | jq -r '.access_token')"
 USER_A_UUID="$(load_fixture_uuid "${USER_A_FIXTURE_KEY}")"
 USER_B_UUID="$(load_fixture_uuid "${USER_B_FIXTURE_KEY}")"
 
+echo "[auth-test] verifying user_profiles ownership and lazy creation path"
+postgrest_select "user_profiles" "id=eq.${USER_A_UUID}&select=id,username" "${USER_A_TOKEN}"
+assert_status "200" "user_a select empty user_profile before provisioning"
+printf '%s' "${REQUEST_BODY}" | jq -e 'length == 0' >/dev/null
+
+postgrest_insert "user_profiles" "${USER_A_TOKEN}" "$(jq -nc \
+  --arg id "${USER_A_UUID}" \
+  '{id: $id}')"
+assert_status "201" "user_a insert own user_profile"
+printf '%s' "${REQUEST_BODY}" | jq -e --arg id "${USER_A_UUID}" '.[0].id == $id and .[0].username == null' >/dev/null
+
+postgrest_patch "user_profiles" "id=eq.${USER_A_UUID}" "${USER_A_TOKEN}" '{"username":"alpha-lifter"}'
+assert_status "200" "user_a update own user_profile username"
+printf '%s' "${REQUEST_BODY}" | jq -e '.[0].username == "alpha-lifter"' >/dev/null
+
+postgrest_select "user_profiles" "id=eq.${USER_A_UUID}&select=id,username" "${USER_B_TOKEN}"
+assert_status "200" "user_b select user_a profile"
+printf '%s' "${REQUEST_BODY}" | jq -e 'length == 0' >/dev/null
+
+postgrest_patch "user_profiles" "id=eq.${USER_A_UUID}" "${USER_B_TOKEN}" '{"username":"cross-user"}'
+assert_status "200" "user_b patch user_a profile"
+printf '%s' "${REQUEST_BODY}" | jq -e 'length == 0' >/dev/null
+
+postgrest_insert "user_profiles" "${USER_B_TOKEN}" "$(jq -nc \
+  --arg id "${USER_A_UUID}" \
+  --arg username "spoof-profile" \
+  '{id: $id, username: $username}')"
+assert_non_2xx "user_b spoof user_a profile insert"
+
+postgrest_insert "user_profiles" "${USER_B_TOKEN}" "$(jq -nc \
+  --arg id "${USER_B_UUID}" \
+  --arg username "beta-lifter" \
+  '{id: $id, username: $username}')"
+assert_status "201" "user_b insert own user_profile"
+
 echo "[auth-test] creating user-scoped records for user_a"
 NOW_MS="$(($(date +%s) * 1000))"
 postgrest_insert "gyms" "${USER_A_TOKEN}" "$(jq -nc \

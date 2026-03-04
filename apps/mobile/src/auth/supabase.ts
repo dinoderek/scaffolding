@@ -80,6 +80,22 @@ export const getSupabaseMobileClient = () => {
   return supabaseClient;
 };
 
+export const getRequiredSupabaseMobileClient = () => {
+  const config = getMobileAuthRuntimeConfig();
+
+  if (!config.isConfigured) {
+    throw new Error(config.disabledReason ?? 'Supabase mobile auth is not configured.');
+  }
+
+  const client = getSupabaseMobileClient();
+
+  if (!client) {
+    throw new Error('Supabase mobile auth client could not be created.');
+  }
+
+  return client;
+};
+
 export const __resetSupabaseMobileClientForTests = () => {
   runtimeConfig = null;
   supabaseClient = null;

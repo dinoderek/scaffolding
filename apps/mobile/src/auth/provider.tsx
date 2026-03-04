@@ -9,6 +9,12 @@ import {
   subscribeToAuthState,
   type AuthSnapshot,
   type SignInWithPasswordCredentials,
+  type UpdateUserEmailInput,
+  type UpdateUserEmailResult,
+  type UpdateUserPasswordInput,
+  type UpdateUserPasswordResult,
+  updateUserEmail,
+  updateUserPassword,
 } from './service';
 
 export type AuthContextValue = AuthSnapshot & {
@@ -16,6 +22,8 @@ export type AuthContextValue = AuthSnapshot & {
   clearAuthError: () => void;
   signInWithPassword: (credentials: SignInWithPasswordCredentials) => Promise<unknown>;
   signOut: () => Promise<void>;
+  updateUserEmail: (input: UpdateUserEmailInput) => Promise<UpdateUserEmailResult>;
+  updateUserPassword: (input: UpdateUserPasswordInput) => Promise<UpdateUserPasswordResult>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -31,6 +39,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         clearAuthError,
         signInWithPassword,
         signOut,
+        updateUserEmail,
+        updateUserPassword,
       }}
     >
       {children}

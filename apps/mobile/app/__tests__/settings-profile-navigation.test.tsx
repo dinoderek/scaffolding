@@ -2,6 +2,8 @@
 
 const mockPush = jest.fn();
 const mockUseAuth = jest.fn();
+const mockLoadUserProfile = jest.fn();
+const mockSaveUsername = jest.fn();
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({
@@ -11,6 +13,11 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/src/auth', () => ({
   useAuth: () => mockUseAuth(),
+}));
+
+jest.mock('@/src/auth/profile', () => ({
+  loadUserProfile: (...args: unknown[]) => mockLoadUserProfile(...args),
+  saveUsername: (...args: unknown[]) => mockSaveUsername(...args),
 }));
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
@@ -27,6 +34,8 @@ type MockUseAuthValue = {
   signInWithPassword: jest.Mock;
   signOut: jest.Mock;
   status: 'idle' | 'restoring' | 'ready';
+  updateUserEmail: jest.Mock;
+  updateUserPassword: jest.Mock;
   user: { email?: string | null; id: string } | null;
 };
 
@@ -39,7 +48,28 @@ const createAuthValue = (overrides: Partial<MockUseAuthValue> = {}): MockUseAuth
   signInWithPassword: jest.fn().mockResolvedValue({}),
   signOut: jest.fn().mockResolvedValue(undefined),
   status: 'ready',
+  updateUserEmail: jest.fn().mockResolvedValue({
+    emailChangePending: false,
+    user: {
+      id: 'user-1',
+      email: 'member@example.test',
+    },
+  }),
+  updateUserPassword: jest.fn().mockResolvedValue({
+    user: {
+      id: 'user-1',
+      email: 'member@example.test',
+    },
+  }),
   user: null,
+  ...overrides,
+});
+
+const createProfileRecord = (overrides: Partial<{ createdAt: string; id: string; updatedAt: string; username: string | null }> = {}) => ({
+  createdAt: '2026-03-04T12:00:00.000Z',
+  id: 'user-1',
+  updatedAt: '2026-03-04T12:05:00.000Z',
+  username: 'member-lifter',
   ...overrides,
 });
 
@@ -47,6 +77,8 @@ describe('settings and profile routes', () => {
   beforeEach(() => {
     mockPush.mockReset();
     mockUseAuth.mockReset();
+    mockLoadUserProfile.mockReset();
+    mockSaveUsername.mockReset();
   });
 
   it('opens the profile route from settings', () => {
@@ -113,18 +145,152 @@ describe('settings and profile routes', () => {
         email: 'member@example.test',
       },
     });
+    mockLoadUserProfile.mockResolvedValue({
+      profile: createProfileRecord(),
+      wasProvisioned: false,
+    });
     mockUseAuth.mockReturnValue(authValue);
 
     render(<ProfileRoute />);
 
+    await waitFor(() => {
+      expect(mockLoadUserProfile).toHaveBeenCalledWith('user-1');
+    });
     expect(screen.getByTestId('profile-signed-in-card')).toBeTruthy();
     expect(screen.getByText('member@example.test')).toBeTruthy();
-    expect(screen.getByTestId('profile-management-placeholder')).toBeTruthy();
+    expect(screen.getByDisplayValue('member-lifter')).toBeTruthy();
+    expect(screen.getByTestId('profile-username-save-button')).toBeTruthy();
+    expect(screen.getByTestId('profile-email-update-button')).toBeTruthy();
+    expect(screen.getByTestId('profile-password-update-button')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('profile-sign-out-button'));
 
     await waitFor(() => {
       expect(authValue.signOut).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('saves username changes with inline success feedback', async () => {
+    const authValue = createAuthValue({
+      user: {
+        id: 'user-1',
+        email: 'member@example.test',
+      },
+    });
+    mockLoadUserProfile.mockResolvedValue({
+      profile: createProfileRecord({
+        username: 'old-name',
+      }),
+      wasProvisioned: false,
+    });
+    mockSaveUsername.mockResolvedValue(
+      createProfileRecord({
+        updatedAt: '2026-03-04T12:10:00.000Z',
+        username: 'new-name',
+      })
+    );
+    mockUseAuth.mockReturnValue(authValue);
+
+    render(<ProfileRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('old-name')).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByTestId('profile-username-input'), ' new-name ');
+    fireEvent.press(screen.getByTestId('profile-username-save-button'));
+
+    await waitFor(() => {
+      expect(mockSaveUsername).toHaveBeenCalledWith('user-1', ' new-name ');
+    });
+    expect(screen.getByText('Username saved.')).toBeTruthy();
+  });
+
+  it('shows inline profile load failures without dropping the signed-in account shell', async () => {
+    const authValue = createAuthValue({
+      user: {
+        id: 'user-1',
+        email: 'member@example.test',
+      },
+    });
+    mockLoadUserProfile.mockRejectedValue(new Error('Unable to load profile right now.'));
+    mockUseAuth.mockReturnValue(authValue);
+
+    render(<ProfileRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to load profile right now.')).toBeTruthy();
+    });
+    expect(screen.getByTestId('profile-signed-in-card')).toBeTruthy();
+    expect(screen.getByText('member@example.test')).toBeTruthy();
+  });
+
+  it('submits authenticated email updates and distinguishes pending confirmation messaging', async () => {
+    const authValue = createAuthValue({
+      updateUserEmail: jest.fn().mockResolvedValue({
+        emailChangePending: true,
+        user: {
+          id: 'user-1',
+          email: 'member@example.test',
+          new_email: 'next@example.test',
+        },
+      }),
+      user: {
+        id: 'user-1',
+        email: 'member@example.test',
+      },
+    });
+    mockLoadUserProfile.mockResolvedValue({
+      profile: createProfileRecord(),
+      wasProvisioned: false,
+    });
+    mockUseAuth.mockReturnValue(authValue);
+
+    render(<ProfileRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-email-update-input')).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByTestId('profile-email-update-input'), ' next@example.test ');
+    fireEvent.press(screen.getByTestId('profile-email-update-button'));
+
+    await waitFor(() => {
+      expect(authValue.updateUserEmail).toHaveBeenCalledWith({
+        email: 'next@example.test',
+      });
+    });
+    expect(screen.getByText('Email change submitted. Confirm the change from your email inbox before it fully takes effect.')).toBeTruthy();
+  });
+
+  it('submits password updates, clears the field, and shows success feedback', async () => {
+    const authValue = createAuthValue({
+      user: {
+        id: 'user-1',
+        email: 'member@example.test',
+      },
+    });
+    mockLoadUserProfile.mockResolvedValue({
+      profile: createProfileRecord(),
+      wasProvisioned: false,
+    });
+    mockUseAuth.mockReturnValue(authValue);
+
+    render(<ProfileRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-password-update-input')).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByTestId('profile-password-update-input'), 'StrongPassword!234');
+    fireEvent.press(screen.getByTestId('profile-password-update-button'));
+
+    await waitFor(() => {
+      expect(authValue.updateUserPassword).toHaveBeenCalledWith({
+        password: 'StrongPassword!234',
+      });
+    });
+    expect(screen.getByText('Password updated.')).toBeTruthy();
+    expect(screen.getByTestId('profile-password-update-input').props.value).toBe('');
   });
 });

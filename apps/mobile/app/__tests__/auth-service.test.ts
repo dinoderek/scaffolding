@@ -1,5 +1,7 @@
 /* eslint-disable import/first */
 
+import type { Session } from '@supabase/supabase-js';
+
 const mockCreateClient = jest.fn();
 const mockSecureStoreGetItemAsync = jest.fn();
 const mockSecureStoreDeleteItemAsync = jest.fn();
@@ -21,6 +23,8 @@ import {
   getAuthSnapshot,
   getSupabaseMobileClient,
   signOut,
+  updateUserEmail,
+  updateUserPassword,
 } from '@/src/auth';
 
 type MockSessionOptions = {
@@ -48,7 +52,7 @@ const createMockSession = ({
       aud: 'authenticated',
       created_at: '2026-03-04T10:00:00.000Z',
     },
-  }) as never;
+  }) as unknown as Session;
 
 describe('auth service bootstrap', () => {
   const originalSupabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -57,6 +61,7 @@ describe('auth service bootstrap', () => {
   const mockGetSession = jest.fn();
   const mockOnAuthStateChange = jest.fn();
   const mockSignOut = jest.fn();
+  const mockUpdateUser = jest.fn();
 
   beforeEach(() => {
     process.env.EXPO_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
@@ -69,6 +74,7 @@ describe('auth service bootstrap', () => {
     mockGetSession.mockReset();
     mockOnAuthStateChange.mockReset();
     mockSignOut.mockReset();
+    mockUpdateUser.mockReset();
     mockUnsubscribe.mockReset();
 
     mockOnAuthStateChange.mockReturnValue({
@@ -85,6 +91,7 @@ describe('auth service bootstrap', () => {
         onAuthStateChange: mockOnAuthStateChange,
         signInWithPassword: jest.fn(),
         signOut: mockSignOut,
+        updateUser: mockUpdateUser,
       },
     });
 
@@ -204,5 +211,65 @@ describe('auth service bootstrap', () => {
     expect(snapshot.session).toBeNull();
     expect(snapshot.user).toBeNull();
     expect(snapshot.lastError).toBeNull();
+  });
+
+  it('updates the signed-in email and reports pending confirmation when auth keeps the current email active', async () => {
+    const storedSession = createMockSession();
+
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: storedSession,
+      },
+      error: null,
+    });
+    mockUpdateUser.mockResolvedValue({
+      data: {
+        user: {
+          ...storedSession.user,
+          email: 'user@example.test',
+          new_email: 'next@example.test',
+        },
+      },
+      error: null,
+    });
+
+    await bootstrapAuthState();
+    const result = await updateUserEmail({
+      email: ' next@example.test ',
+    });
+
+    expect(mockUpdateUser).toHaveBeenCalledWith({
+      email: 'next@example.test',
+    });
+    expect(result.emailChangePending).toBe(true);
+    expect(result.user?.new_email).toBe('next@example.test');
+  });
+
+  it('updates the signed-in password without mutating the current session snapshot', async () => {
+    const storedSession = createMockSession();
+
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: storedSession,
+      },
+      error: null,
+    });
+    mockUpdateUser.mockResolvedValue({
+      data: {
+        user: storedSession.user,
+      },
+      error: null,
+    });
+
+    await bootstrapAuthState();
+    const result = await updateUserPassword({
+      password: 'StrongPassword!234',
+    });
+
+    expect(mockUpdateUser).toHaveBeenCalledWith({
+      password: 'StrongPassword!234',
+    });
+    expect(result.user?.id).toBe('user-1');
+    expect(getAuthSnapshot().user?.id).toBe('user-1');
   });
 });

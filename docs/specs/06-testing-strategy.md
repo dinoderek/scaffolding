@@ -67,6 +67,18 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - Rule:
   - auth bootstrap must remain non-blocking for local-only tracker routes while logged out or when auth config is missing.
 
+## Mobile profile-management coverage policy (M11 onward)
+
+- Applies to authenticated profile UI/data work before generic sync exists.
+- Required coverage should include:
+  - signed-in profile load when a profile row already exists,
+  - lazy profile provisioning when `user_profiles` is missing,
+  - username save success plus inline failure feedback,
+  - email update success vs pending-confirmation messaging,
+  - password update success/failure with field clearing after submit,
+  - backend-unavailable/profile-fetch failure staying inline on the profile route without signing the user out.
+- Prefer deterministic Jest coverage for the mobile auth/profile service wrappers and the profile route state transitions, then add local-Supabase + `Maestro` proof for the full happy path in the follow-on runtime task.
+
 ## Sync integration coverage policy (M11 onward)
 
 - Applies to mobile/frontend-backend sync work.
@@ -128,6 +140,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - `Supabase-local integration/contract tests` (required for backend auth/authz/API work):
     - run against local Supabase runtime and verify real auth context + `RLS` behavior.
     - cover success, validation failure, unauthorized, and cross-user denial paths.
+    - for auth/profile tables keyed directly to `auth.users(id)` instead of `owner_user_id`, still cover owner success plus cross-user denial explicitly.
   - Hosted/deployed smoke validation:
     - validates environment-specific behavior (secrets/bindings, ingress, hosted auth/provider config, migration execution on hosted instance).
     - manual by default until CI exists.

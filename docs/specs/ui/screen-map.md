@@ -72,12 +72,16 @@ Brief entrypoint map of the current mobile screens.
 6. `/profile`
 - File: `apps/mobile/app/profile.tsx`
 - Purpose:
-  - auth-aware account route for sign-in, signed-in summary, and sign-out
+  - auth-aware account route for sign-in plus signed-in username/email/password management
 - Key states (high level):
   - restoring/auth-bootstrap banner
   - auth-disabled warning when client config is missing
   - signed-out email/password form with inline auth error feedback
-  - signed-in account summary + placeholder profile-management shell + secondary sign-out
+  - signed-in account summary with current email and optional pending-email indicator
+  - lazy profile load/provision state for `username`
+  - inline username save success/failure
+  - inline email update success/pending/failure
+  - inline password update success/failure with secondary sign-out
 - Key exits:
   - in-place rerender between signed-out and signed-in states
   - back to `settings` (or previous route) via stack navigation

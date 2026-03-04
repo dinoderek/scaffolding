@@ -1,6 +1,10 @@
 import type { AuthChangeEvent, Session, SupabaseClient, User } from '@supabase/supabase-js';
 
-import { getMobileAuthRuntimeConfig, getSupabaseMobileClient, __resetSupabaseMobileClientForTests } from './supabase';
+import {
+  getMobileAuthRuntimeConfig,
+  getRequiredSupabaseMobileClient,
+  __resetSupabaseMobileClientForTests,
+} from './supabase';
 
 export type AuthBootstrapStatus = 'idle' | 'restoring' | 'ready';
 
@@ -16,6 +20,23 @@ export type AuthSnapshot = {
 export type SignInWithPasswordCredentials = {
   email: string;
   password: string;
+};
+
+export type UpdateUserEmailInput = {
+  email: string;
+};
+
+export type UpdateUserPasswordInput = {
+  password: string;
+};
+
+export type UpdateUserEmailResult = {
+  emailChangePending: boolean;
+  user: User | null;
+};
+
+export type UpdateUserPasswordResult = {
+  user: User | null;
 };
 
 type AuthStateListener = () => void;
@@ -77,20 +98,12 @@ const ensureAuthSubscription = (client: SupabaseClient) => {
   authSubscription = subscription;
 };
 
-const getConfiguredClient = () => {
-  const runtimeConfig = getMobileAuthRuntimeConfig();
+const isPendingEmailChange = (user: User | null, requestedEmail: string) => {
+  const normalizedRequestedEmail = requestedEmail.trim().toLowerCase();
+  const currentEmail = user?.email?.trim().toLowerCase() ?? '';
+  const pendingEmail = user?.new_email?.trim().toLowerCase() ?? '';
 
-  if (!runtimeConfig.isConfigured) {
-    throw new Error(runtimeConfig.disabledReason ?? 'Supabase mobile auth is not configured.');
-  }
-
-  const client = getSupabaseMobileClient();
-
-  if (!client) {
-    throw new Error('Supabase mobile auth client could not be created.');
-  }
-
-  return client;
+  return pendingEmail === normalizedRequestedEmail && currentEmail !== normalizedRequestedEmail;
 };
 
 export const getAuthSnapshot = () => authSnapshot;
@@ -124,7 +137,7 @@ export const bootstrapAuthState = async () => {
   }
 
   if (!authBootstrapPromise) {
-    const client = getConfiguredClient();
+    const client = getRequiredSupabaseMobileClient();
 
     ensureAuthSubscription(client);
     setAuthSnapshot({
@@ -170,7 +183,7 @@ export const clearAuthError = () => {
 };
 
 export const signInWithPassword = async ({ email, password }: SignInWithPasswordCredentials) => {
-  const client = getConfiguredClient();
+  const client = getRequiredSupabaseMobileClient();
 
   setAuthSnapshot({
     lastError: null,
@@ -197,7 +210,7 @@ export const signInWithPassword = async ({ email, password }: SignInWithPassword
 };
 
 export const signOut = async () => {
-  const client = getConfiguredClient();
+  const client = getRequiredSupabaseMobileClient();
 
   setAuthSnapshot({
     lastError: null,
@@ -214,6 +227,38 @@ export const signOut = async () => {
 
   authSnapshot = createReadySnapshotFromSession(null);
   emitAuthSnapshot();
+};
+
+export const updateUserEmail = async ({ email }: UpdateUserEmailInput): Promise<UpdateUserEmailResult> => {
+  const client = getRequiredSupabaseMobileClient();
+  const trimmedEmail = email.trim();
+  const { data, error } = await client.auth.updateUser({
+    email: trimmedEmail,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    emailChangePending: isPendingEmailChange(data.user, trimmedEmail),
+    user: data.user,
+  };
+};
+
+export const updateUserPassword = async ({ password }: UpdateUserPasswordInput): Promise<UpdateUserPasswordResult> => {
+  const client = getRequiredSupabaseMobileClient();
+  const { data, error } = await client.auth.updateUser({
+    password,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    user: data.user,
+  };
 };
 
 export const __resetAuthForTests = () => {

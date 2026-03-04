@@ -80,6 +80,7 @@ Document app-specific UI semantics and guardrails for the current mobile app.
 5. The M11 profile sign-in form keeps auth failure messaging inline inside the same card as the email/password inputs.
 6. When auth config is unavailable, the profile route shows a warning state and disables sign-in rather than failing only after submit.
 7. The M11 profile sign-in form performs basic client-side email-shape validation before attempting the auth request.
+8. The signed-in profile route keeps `username`, email, and password edits in separate stacked sections with section-local submit buttons and inline feedback.
 
 ### 6. Loading, empty, error, and feedback state handling
 
@@ -93,6 +94,9 @@ Document app-specific UI semantics and guardrails for the current mobile app.
    - an inline restoring banner during auth bootstrap,
    - inline warning messaging when auth config is missing,
    - inline error cards for sign-in/sign-out failures,
+   - inline success/error cards for username, email, and password mutations,
+   - explicit email-change pending-confirmation messaging instead of assuming immediate completion,
+   - password field clearing after each authenticated password submit,
    - in-place signed-out/signed-in rerendering instead of a redirect loop.
 
 ### 7. Completed-session detail screen semantics

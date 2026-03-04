@@ -22,7 +22,7 @@ This is the shortest operational summary. Use the "Further reading" section when
 3. M5 auth method is `email + password` only.
 4. Public self-signup is disabled.
 5. User creation is controlled/admin-provisioned only (script or dashboard admin flow).
-6. User-owned app rows use direct ownership linkage to `auth.users(id)` via `owner_user_id`.
+6. User-owned app rows normally use direct ownership linkage to `auth.users(id)` via `owner_user_id`; the M11 `user_profiles` table is the explicit exception and uses `id = auth.users.id`.
 7. MVP sync-domain tables are user-private (including `gyms` for now).
 8. Child tables also carry redundant `owner_user_id` and must enforce ownership consistency with parent rows (constraints/FKs).
 9. `RLS` must be enabled on all user-owned tables with deny-by-default posture.
@@ -45,6 +45,8 @@ This is the shortest operational summary. Use the "Further reading" section when
 - Persist and restore the normal `Supabase Auth` session; do not invent an app-specific long-lived token format.
 - Assume all user data access is scoped to the authenticated user by backend policy.
 - Never assume the client can override ownership (`owner_user_id`) for another user.
+- For M11 profile work, read/write `app_public.user_profiles` as the authenticated user and lazily create the row on first profile load/save if it does not exist yet.
+- Email and password updates stay on the `Supabase Auth` user object (`auth.updateUser`), not in `app_public.user_profiles`.
 - Handle auth failures and `RLS` denials as expected runtime outcomes (not exceptional backend bugs by default).
 - Do not embed or request `service_role` credentials for any app feature.
 
@@ -54,6 +56,7 @@ This is the shortest operational summary. Use the "Further reading" section when
 - Use deterministic fixture identities (`user_a`, `user_b`) for ownership tests.
 - Prefer real local Supabase Auth sign-in flows for auth tests (success/failure), not only mocked tokens.
 - For mobile auth bootstrap/session work, cover the no-session, stored-session, and sign-out/session-clear paths before moving to profile UI tasks.
+- For M11 profile changes, add local-Supabase contract coverage for `user_profiles` owner read/update/insert behavior plus mobile tests for username/email/password mutation states.
 - Required test coverage for auth-sensitive API changes:
   - success path
   - unauthenticated denial

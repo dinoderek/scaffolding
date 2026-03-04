@@ -1,7 +1,7 @@
 ---
 task_id: T-20260304-03
 milestone_id: "M11"
-status: planned
+status: completed
 ui_impact: "yes"
 areas: "frontend,backend,cross-stack,docs"
 runtimes: "docs,expo,node,supabase,sql"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/03-technical-architecture.md,docs/specs/06-testing-str
 
 - Task ID: `T-20260304-03`
 - Title: M11 profile backend model and update flows
-- Status: `planned`
+- Status: `completed`
 - File location rule:
   - author active cards in `docs/tasks/<task-id>.md`
   - move the file to `docs/tasks/complete/<task-id>.md` when `Status` becomes `completed` or `outdated`
@@ -60,7 +60,7 @@ docs_touched: "docs/specs/03-technical-architecture.md,docs/specs/06-testing-str
 - Known stale references or assumptions (must be explicit; write `none` if none):
   - assumes `T-20260304-02` has already created the profile route and auth-aware screen shell consumed here
 - Optional helper command (recommended):
-  - `./scripts/task-bootstrap.sh docs/tasks/T-20260304-03-m11-profile-backend-model-and-update-flows.md`
+  - `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260304-03-m11-profile-backend-model-and-update-flows.md`
 
 ## Objective
 
@@ -234,28 +234,36 @@ Implement the authenticated profile model and account-management flows for M11: 
 - Standard local fast gate: `./scripts/quality-fast.sh`
 - Standard local slow gate: `./scripts/quality-slow.sh backend`
 - If a standard gate is `N/A`, document the reason and list the runtime-specific replacement gate(s).
-- Optional closeout validation helper (recommended before handoff): `./scripts/task-closeout-check.sh docs/tasks/T-20260304-03-m11-profile-backend-model-and-update-flows.md`
+- Optional closeout validation helper (recommended before handoff): `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260304-03-m11-profile-backend-model-and-update-flows.md`
 - Additional gate(s), if any:
   - targeted backend contract command(s)
   - targeted mobile profile Jest command(s)
 
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
-- `user_profiles` schema/RLS summary.
-- Lazy profile provisioning summary.
-- Username/email/password update test summary.
-- `./scripts/quality-fast.sh` and `./scripts/quality-slow.sh backend` result summary.
+- `user_profiles` schema/RLS summary:
+  - added `supabase/migrations/20260304153000_m11_user_profiles.sql`
+  - table is keyed `1:1` to `auth.users(id)` with owner-only `select`/`insert`/`update` `RLS`
+  - `updated_at` is maintained by a DB trigger
+- Lazy profile provisioning summary:
+  - mobile `apps/mobile/src/auth/profile.ts` now loads the current row and provisions it idempotently on first authenticated load/save when missing
+  - username saves also ensure the row exists before update
+- Username/email/password update test summary:
+  - mobile Jest coverage added for profile load/provision, username save, email pending-confirmation messaging, password update success, and inline failure handling
+  - local Supabase auth/RLS contract coverage now includes `user_profiles` owner success plus cross-user denial paths
+- `./scripts/quality-fast.sh` and `./scripts/quality-slow.sh backend` result summary:
+  - `./scripts/quality-fast.sh` passed on rerun; the first attempt hit a transient local Supabase startup/readiness flake before the backend fast wrapper, then passed cleanly on rerun
+  - `./scripts/quality-slow.sh backend` passed
 - UI/UX task visual artifacts note: logged-in profile states and inline feedback captures.
-- Manual verification summary (required when CI is absent/partial):
-  - record one local-Supabase-backed profile update pass and its outcome
+- Manual verification summary (required when CI is absent/partial): no separate manual device/Supabase UI pass was run in this CLI session; local-Supabase contract coverage plus targeted/full mobile Jest runs covered the implemented profile update paths
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable:
   - hosted validation deferred until a later deployment-focused task/release check
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: added the `app_public.user_profiles` backend model with owner-only `RLS` and `updated_at` trigger; implemented lazy mobile profile provisioning plus signed-in username/email/password update flows on `/profile`; added targeted auth/profile Jest coverage and extended the local Supabase auth/RLS contract suite; updated project-level architecture/testing/auth docs and UI semantics/screen docs.
+- What tests ran: `npm test -- --runTestsByPath app/__tests__/auth-service.test.ts`; `npm test -- --runTestsByPath app/__tests__/auth-profile-service.test.ts`; `npm test -- --runTestsByPath app/__tests__/settings-profile-navigation.test.tsx`; `npm run lint`; `npm run typecheck`; `./supabase/scripts/test-auth-authz.sh`; `./scripts/quality-fast.sh`; `./scripts/quality-slow.sh backend`.
+- What remains: Maestro/runtime proof for the full auth/profile happy path, screenshots/artifacts, and any final M11 auth/profile doc cleanup remain with `T-20260304-04`.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -266,4 +274,4 @@ Implement the authenticated profile model and account-management flows for M11: 
 - For UI/UX tasks, update the relevant `docs/specs/ui/*.md` files and keep entries synthetic/overview-first.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-- Run `./scripts/task-closeout-check.sh docs/tasks/T-20260304-03-m11-profile-backend-model-and-update-flows.md` (or document why `N/A`) before handoff.
+- Run `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260304-03-m11-profile-backend-model-and-update-flows.md` (or document why `N/A`) before handoff.
