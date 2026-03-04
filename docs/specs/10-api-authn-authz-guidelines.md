@@ -13,7 +13,7 @@ This is the shortest operational summary. Use the "Further reading" section when
 
 - Applies to the current M5 backend baseline (`Supabase`).
 - Captures the agreed design baseline for auth/authz and API usage.
-- FE auth UI integration is still separate work; this doc is for backend/API development posture.
+- Includes the M11 mobile auth bootstrap/session baseline as it affects API consumers.
 
 ## Minimal rules (must know)
 
@@ -41,6 +41,8 @@ This is the shortest operational summary. Use the "Further reading" section when
 ## Practical guidance for API consumers (mobile/app)
 
 - Use client-safe Supabase credentials only (`anon` key), plus the authenticated user session token.
+- Mobile auth bootstrap reads `EXPO_PUBLIC_SUPABASE_URL` + `EXPO_PUBLIC_SUPABASE_ANON_KEY`; missing config must degrade to logged-out/no-auth behavior instead of crashing the app.
+- Persist and restore the normal `Supabase Auth` session; do not invent an app-specific long-lived token format.
 - Assume all user data access is scoped to the authenticated user by backend policy.
 - Never assume the client can override ownership (`owner_user_id`) for another user.
 - Handle auth failures and `RLS` denials as expected runtime outcomes (not exceptional backend bugs by default).
@@ -51,6 +53,7 @@ This is the shortest operational summary. Use the "Further reading" section when
 - Use local Supabase runtime for auth/RLS/API verification when backend authz behavior changes.
 - Use deterministic fixture identities (`user_a`, `user_b`) for ownership tests.
 - Prefer real local Supabase Auth sign-in flows for auth tests (success/failure), not only mocked tokens.
+- For mobile auth bootstrap/session work, cover the no-session, stored-session, and sign-out/session-clear paths before moving to profile UI tasks.
 - Required test coverage for auth-sensitive API changes:
   - success path
   - unauthenticated denial

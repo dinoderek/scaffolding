@@ -22,6 +22,7 @@ Define the canonical repository structure, path ownership, and placement convent
       components/                # UI components
         ui/                      # Canonical UI tokens + primitives foundation (M8+)
       src/                       # Non-route app code (domain/data/helpers)
+        auth/                    # Shared mobile auth client/session/provider modules (M11+)
       drizzle/                   # Mobile local DB schema/migrations artifacts
       .maestro/                  # Maestro flows + sample config
       scripts/                   # Mobile/maestro helper scripts
@@ -46,6 +47,8 @@ Define the canonical repository structure, path ownership, and placement convent
   - owns the mobile app code, mobile-only tests, mobile SQLite schema artifacts, Maestro flows/config, and mobile test helper scripts.
 - `apps/mobile/components/ui/`
   - owns the canonical mobile UI tokens + primitive components introduced in M8 for reuse across route screens and specialized shared components.
+- `apps/mobile/src/auth/`
+  - owns shared mobile auth integration modules such as the Supabase client bootstrap, auth storage adapter, session service, and React provider/hook surface.
 - `apps/mobile/.maestro/`
   - owns committed Maestro flow definitions and the checked-in sample config file (`maestro.env.sample`).
   - the per-worktree file `apps/mobile/.maestro/maestro.env.local` is canonical but remains untracked/local-only.
@@ -88,6 +91,9 @@ Define the canonical repository structure, path ownership, and placement convent
 - `apps/mobile/components/ui/` (introduced in M8)
   - canonical location for mobile UI tokens and primitive components used by shared/screen UI code.
   - keep specialized feature components (for example navigation/session-layout components) in domain folders under `apps/mobile/components/**`; compose primitives from `apps/mobile/components/ui/**`.
+- `apps/mobile/src/auth/` (introduced in M11)
+  - canonical location for shared mobile auth modules.
+  - keep Supabase auth bootstrap/session/provider code here rather than scattering route-local client wiring under `app/**`.
 - `e2e/` (reserved)
   - reserved for cross-stack orchestration/tests that span mobile + backend.
   - strategy may be documented before implementation exists.

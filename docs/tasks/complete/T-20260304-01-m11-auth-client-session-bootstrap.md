@@ -1,13 +1,13 @@
 ---
 task_id: T-20260304-01
 milestone_id: "M11"
-status: planned
+status: completed
 ui_impact: "no"
 areas: "frontend,docs"
 runtimes: "docs,expo,node"
 gates_fast: "./scripts/quality-fast.sh frontend"
 gates_slow: "N/A"
-docs_touched: "docs/specs/03-technical-architecture.md,docs/specs/06-testing-strategy.md,docs/specs/10-api-authn-authz-guidelines.md"
+docs_touched: "docs/specs/03-technical-architecture.md,docs/specs/06-testing-strategy.md,docs/specs/09-project-structure.md,docs/specs/10-api-authn-authz-guidelines.md"
 ---
 
 # Task Card
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/03-technical-architecture.md,docs/specs/06-testing-str
 
 - Task ID: `T-20260304-01`
 - Title: M11 auth client session bootstrap
-- Status: `planned`
+- Status: `completed`
 - File location rule:
   - author active cards in `docs/tasks/<task-id>.md`
   - move the file to `docs/tasks/complete/<task-id>.md` when `Status` becomes `completed` or `outdated`
@@ -103,6 +103,7 @@ Add the mobile auth foundation for M11: client-safe Supabase configuration, pers
 - Planned docs/spec files to update and why (list exact paths; write `none` + rationale if no docs/spec changes expected):
   - `docs/specs/03-technical-architecture.md` - promote the implemented mobile auth bootstrap/session-restore contract once stable
   - `docs/specs/06-testing-strategy.md` - record required auth bootstrap/session lifecycle coverage expectations if they become part of the shared test contract
+  - `docs/specs/09-project-structure.md` - document `apps/mobile/src/auth/` as the canonical shared mobile auth module area
   - `docs/specs/10-api-authn-authz-guidelines.md` - update mobile-consumer guidance now that FE auth-session wiring exists
 - For significant cross-cutting behavior changes (for example sync model, auth-gated sync behavior, conflict policy, offline/online semantics, runtime topology, or test-layer expectations), include the relevant project-level docs here:
   - `docs/specs/03-technical-architecture.md`
@@ -160,19 +161,24 @@ Add the mobile auth foundation for M11: client-safe Supabase configuration, pers
 
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
-- Auth bootstrap/service module summary.
-- Session restore/sign-out test summary.
-- `./scripts/quality-fast.sh frontend` result summary.
-- Manual verification summary (required when CI is absent/partial):
-  - record whether a manual signed-out launch sanity check was run and whether local-only routes still worked
+- Auth bootstrap/service module summary:
+  - added `apps/mobile/src/auth/` with a secure-store-backed Supabase client bootstrap, resettable auth service, and provider/hook surface
+  - root app layout now bootstraps auth state alongside local SQLite bootstrap and wraps the app tree in `AuthProvider`
+  - missing `EXPO_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_ANON_KEY` now degrades to logged-out/non-blocking state instead of crashing launch
+- Session restore/sign-out test summary:
+  - added `app/__tests__/auth-service.test.ts` covering missing-config bootstrap, no-session bootstrap, stored-session restore, bootstrap idempotence, and sign-out/session-clear
+  - added `app/__tests__/root-layout-auth-bootstrap.test.tsx` covering root bootstrap wiring
+- `./scripts/quality-fast.sh frontend` result summary:
+  - passed (`lint`, `typecheck`, full `jest` suite)
+- Manual verification summary (required when CI is absent/partial): no separate manual launch check was run in this session; relied on the targeted bootstrap tests plus the full frontend fast gate because this task introduced no user-facing auth UI yet
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable:
   - `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: added shared mobile auth foundation under `apps/mobile/src/auth/`, including Supabase client creation, secure session persistence, session restore/sign-out service logic, and a provider/hook surface for later UI tasks; wired auth bootstrap into `apps/mobile/app/_layout.tsx` so launch initializes auth state without blocking the local-first data layer; updated project-level architecture/testing/auth guidance plus project-structure docs to reflect the new canonical auth module area and non-blocking auth bootstrap contract.
+- What tests ran: `npm test -- --runInBand app/__tests__/auth-service.test.ts app/__tests__/root-layout-auth-bootstrap.test.tsx`; `npm run typecheck`; `./scripts/quality-fast.sh frontend`.
+- What remains: `T-20260304-02` settings/profile navigation and logged-out/logged-in route shells; `T-20260304-03` backend `user_profiles` model plus authenticated profile update flows; `T-20260304-04` Maestro auth/profile proof path and final doc closeout.
 
 ## Status update checklist (mandatory at closeout)
 

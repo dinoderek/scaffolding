@@ -55,6 +55,18 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - During execution sessions, run a targeted test or gate after each meaningful change, then run `./scripts/quality-fast.sh` before task closeout.
 - Run `./scripts/quality-slow.sh <area>` when the task card's risk triggers require slower local runtime/contract checks.
 
+## Mobile auth bootstrap coverage policy (M11 onward)
+
+- Applies to mobile auth/session-foundation work before generic sync exists.
+- Required coverage should include:
+  - launch/bootstrap with no stored authenticated session,
+  - launch/bootstrap with a stored authenticated session,
+  - explicit sign-out / session-clear behavior,
+  - missing auth config or auth-disabled bootstrap path when the task changes config/bootstrap handling.
+- Prefer deterministic Jest coverage for the auth bootstrap/service logic and root wiring, then add real local-Supabase + `Maestro` proof once the user-facing auth/profile flow exists.
+- Rule:
+  - auth bootstrap must remain non-blocking for local-only tracker routes while logged out or when auth config is missing.
+
 ## Sync integration coverage policy (M11 onward)
 
 - Applies to mobile/frontend-backend sync work.
@@ -172,6 +184,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 
 - `apps/mobile/.maestro/flows` remains the canonical location for Maestro flow definitions.
 - `apps/mobile/.maestro/maestro.env.sample` is the checked-in Maestro config sample; `apps/mobile/.maestro/maestro.env.local` is the canonical per-worktree untracked config.
+- `apps/mobile/src/auth/` is the canonical location for shared mobile auth client, storage, session-service, and provider modules.
 - Repo-root `e2e/` is reserved for cross-stack orchestration/tests (strategy documented in M5; implementation may be added later).
 - `supabase/` is the backend root for migrations, seeds, functions, and backend-local test assets.
 - `supabase/scripts/` is the canonical location for backend local runtime/test wrappers.
