@@ -72,6 +72,7 @@ Document app-specific UI semantics and guardrails for the current mobile app.
 2. This split interaction pattern is used in both `session-list` and `exercise-catalog`, and should be preserved during refactors unless behavior intentionally changes.
 3. Deleted/archived visibility is controlled via toggles and state hints, not separate routes.
 4. In `exercise-catalog`, deleted exercises remain in list history when deleted visibility is enabled, show explicit `Deleted` state, and expose `Undelete` from row actions.
+5. `exercise-catalog` top actions use compact icon buttons (`+` create, kebab options), and deleted visibility toggle lives under the top-level options menu.
 
 ### 5. Forms and validation conventions
 
@@ -79,7 +80,7 @@ Document app-specific UI semantics and guardrails for the current mobile app.
 2. Exercise catalog uses explicit field labels + inline validation/error messages and is the strongest current form pattern reference.
 3. `session-recorder` completed-edit mode includes start/end validation and an autosave-paused notice when timestamps are invalid.
 4. Validation/error feedback should remain near the relevant field/control whenever possible.
-5. The `session-recorder` exercise picker includes a text filter that:
+5. The `session-recorder` exercise picker and `exercise-catalog` list include a text filter that:
    - trims and collapses extra whitespace in user input,
    - matches case-insensitively,
    - matches when any typed word appears in either exercise names or linked muscle-group metadata.

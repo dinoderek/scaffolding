@@ -261,7 +261,9 @@ describe('ExerciseCatalogScreen', () => {
     await screen.findByText('Bench Press');
     expect(screen.queryByText('Old Fly')).toBeNull();
 
-    fireEvent.press(screen.getByLabelText('Toggle show deleted exercises'));
+    fireEvent.press(screen.getByLabelText('Exercise catalog options'));
+    await screen.findByText('Catalog Options');
+    fireEvent.press(screen.getByLabelText('Show deleted exercises'));
 
     await waitFor(() => {
       expect(mockListExercises).toHaveBeenLastCalledWith({ includeDeleted: true });
@@ -275,6 +277,49 @@ describe('ExerciseCatalogScreen', () => {
     await waitFor(() => {
       expect(mockUndeleteExercise).toHaveBeenCalledWith('exercise-deleted-1');
       expect(screen.getByText('Exercise restored.')).toBeTruthy();
+    });
+  });
+
+  it('filters exercises by any query word across names and muscle groups', async () => {
+    mockListExercises.mockResolvedValue([
+      {
+        id: 'exercise-bench',
+        name: 'Bench Press',
+        deletedAt: null,
+        mappings: [{ id: 'map-bench', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
+      },
+      {
+        id: 'exercise-squat',
+        name: 'Barbell Squat',
+        deletedAt: null,
+        mappings: [{ id: 'map-squat', muscleGroupId: 'quads', weight: 1, role: 'primary' }],
+      },
+      {
+        id: 'exercise-deadlift',
+        name: 'Deadlift',
+        deletedAt: null,
+        mappings: [{ id: 'map-deadlift', muscleGroupId: 'back', weight: 1, role: 'primary' }],
+      },
+    ]);
+
+    render(<ExerciseCatalogScreen />);
+
+    await screen.findByText('Bench Press');
+    expect(screen.getByText('Barbell Squat')).toBeTruthy();
+    expect(screen.getByText('Deadlift')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Exercise filter input'), '   squAT   press  ');
+    await waitFor(() => {
+      expect(screen.getByText('Bench Press')).toBeTruthy();
+      expect(screen.getByText('Barbell Squat')).toBeTruthy();
+      expect(screen.queryByText('Deadlift')).toBeNull();
+    });
+
+    fireEvent.changeText(screen.getByLabelText('Exercise filter input'), '  CHEST ');
+    await waitFor(() => {
+      expect(screen.getByText('Bench Press')).toBeTruthy();
+      expect(screen.queryByText('Barbell Squat')).toBeNull();
+      expect(screen.queryByText('Deadlift')).toBeNull();
     });
   });
 });

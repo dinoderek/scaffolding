@@ -54,8 +54,9 @@ Brief entrypoint map of the current mobile screens.
   - exercise catalog management (create/edit/soft-delete/undelete exercises and muscle mappings)
 - Key states (high level):
   - loading / error / content
+  - text filtering across exercise names + linked muscle-group metadata
   - in-route editor/action/delete modals
-  - deleted visibility toggle (`Show deleted` / `Hide deleted`)
+  - deleted visibility toggle (`Show deleted` / `Hide deleted`) via top-level options kebab menu
 - Key exits:
   - `session-recorder` after save when opened from recorder-origin manage flow
   - `session-list` via top-level tabs

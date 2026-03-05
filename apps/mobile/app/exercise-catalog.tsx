@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ExerciseEditorModal } from '@/components/exercise-catalog/exercise-editor-modal';
 import { TopLevelTabs } from '@/components/navigation/top-level-tabs';
@@ -13,6 +13,10 @@ import {
   type ExerciseCatalogExercise,
   type ExerciseCatalogMuscleGroup,
 } from '@/src/data/exercise-catalog';
+import {
+  filterExerciseCatalogExercises,
+  indexExerciseCatalogMuscleGroupsById,
+} from '@/src/exercise-catalog/search';
 
 const coerceRouteParam = (value: string | string[] | undefined): string | null => {
   if (Array.isArray(value)) {
@@ -70,10 +74,12 @@ export default function ExerciseCatalogScreen() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isEditorModalVisible, setIsEditorModalVisible] = useState(false);
+  const [isCatalogOptionsMenuVisible, setIsCatalogOptionsMenuVisible] = useState(false);
   const [showDeletedExercises, setShowDeletedExercises] = useState(false);
   const [didHandleInitialIntent, setDidHandleInitialIntent] = useState(false);
   const [exerciseActionMenuTarget, setExerciseActionMenuTarget] = useState<ExerciseCatalogExercise | null>(null);
   const [editorExerciseTarget, setEditorExerciseTarget] = useState<ExerciseCatalogExercise | null>(null);
+  const [exerciseSearchValue, setExerciseSearchValue] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -139,6 +145,8 @@ export default function ExerciseCatalogScreen() {
   );
 
   const muscleGroupById = new Map(muscleGroups.map((muscleGroup) => [muscleGroup.id, muscleGroup]));
+  const muscleGroupsByIdRecord = indexExerciseCatalogMuscleGroupsById(muscleGroups);
+  const filteredExercises = filterExerciseCatalogExercises(exercises, muscleGroupsByIdRecord, exerciseSearchValue);
   const openEditorForExercise = (exercise: ExerciseCatalogExercise) => {
     setEditorExerciseTarget(exercise);
     setSaveFeedback(null);
@@ -212,6 +220,13 @@ export default function ExerciseCatalogScreen() {
     }
   };
 
+  const toggleShowDeletedExercises = () => {
+    setIsCatalogOptionsMenuVisible(false);
+    setShowDeletedExercises((current) => !current);
+    setSaveError(null);
+    setSaveFeedback(null);
+  };
+
   const bottomTabs = (
     <TopLevelTabs
       activeTab="exercises"
@@ -251,26 +266,36 @@ export default function ExerciseCatalogScreen() {
     <View style={styles.screen}>
       <View style={styles.pinnedTopRegion}>
         <View style={styles.topActionRow}>
-          <Pressable
-            accessibilityLabel="Create new exercise"
-            style={[styles.primaryButton, styles.topActionButton]}
-            onPress={startNewExercise}
-            testID="create-new-exercise-button">
-            <Text style={styles.primaryButtonText}>New Exercise</Text>
-          </Pressable>
-          <Pressable
-            accessibilityLabel="Toggle show deleted exercises"
-            style={[styles.secondaryButton, styles.topActionButton]}
-            onPress={() => {
-              setShowDeletedExercises((current) => !current);
-              setSaveError(null);
-              setSaveFeedback(null);
-            }}>
-            <Text style={styles.secondaryButtonText}>
-              {showDeletedExercises ? 'Hide deleted' : 'Show deleted'}
-            </Text>
-          </Pressable>
+          <TextInput
+            accessibilityLabel="Exercise filter input"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={setExerciseSearchValue}
+            placeholder="Filter by exercise or muscle group"
+            style={[styles.filterInput, styles.filterInputInline]}
+            value={exerciseSearchValue}
+          />
+          <View style={styles.topActionButtonsCluster}>
+            <Pressable
+              accessibilityLabel="Create new exercise"
+              style={[styles.iconActionButton, styles.createExerciseButton]}
+              onPress={startNewExercise}
+              testID="create-new-exercise-button">
+              <Text style={styles.createExerciseButtonText}>+</Text>
+            </Pressable>
+            <Pressable
+              accessibilityLabel="Exercise catalog options"
+              style={styles.iconActionButton}
+              onPress={() => setIsCatalogOptionsMenuVisible(true)}>
+              <Text style={styles.iconActionButtonText}>⋮</Text>
+            </Pressable>
+          </View>
         </View>
+        {showDeletedExercises ? (
+          <Text selectable style={styles.activeFilterChip}>
+            Deleted: On
+          </Text>
+        ) : null}
         {saveFeedback ? (
           <View style={styles.feedbackCard}>
             <Text selectable style={styles.successText}>
@@ -292,17 +317,17 @@ export default function ExerciseCatalogScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={styles.content}>
         <View style={styles.list}>
-          {exercises.map((exercise) => (
+          {filteredExercises.map((exercise) => (
             <View key={exercise.id} style={styles.exerciseListRow}>
               <Pressable
                 accessibilityLabel={`Edit exercise definition ${exercise.name}`}
                 style={styles.exerciseListRowMainPressable}
-              onPress={() => {
-                if (exercise.deletedAt) {
-                  return;
-                }
-                openEditorForExercise(exercise);
-              }}>
+                onPress={() => {
+                  if (exercise.deletedAt) {
+                    return;
+                  }
+                  openEditorForExercise(exercise);
+                }}>
                 <View style={styles.exerciseListRowTextStack}>
                   <View style={styles.exerciseListRowTitleRow}>
                     <Text numberOfLines={1} style={styles.exerciseListRowTitle}>
@@ -328,11 +353,13 @@ export default function ExerciseCatalogScreen() {
             </View>
           ))}
 
-          {exercises.length === 0 ? (
+          {filteredExercises.length === 0 ? (
             <Text selectable style={styles.helperText}>
-              {showDeletedExercises
-                ? 'No exercises found for this filter.'
-                : 'No active exercises yet. Create one with the button above.'}
+              {exercises.length === 0
+                ? showDeletedExercises
+                  ? 'No exercises found for this filter.'
+                  : 'No active exercises yet. Create one with the button above.'
+                : 'No exercises match that filter.'}
             </Text>
           ) : null}
         </View>
@@ -345,6 +372,31 @@ export default function ExerciseCatalogScreen() {
         onRequestClose={closeEditorModal}
         onSaved={handleEditorSaved}
       />
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isCatalogOptionsMenuVisible}
+        onRequestClose={() => setIsCatalogOptionsMenuVisible(false)}>
+        <View style={styles.modalRoot}>
+          <Pressable
+            accessibilityLabel="Dismiss exercise catalog options overlay"
+            style={styles.modalOverlay}
+            onPress={() => setIsCatalogOptionsMenuVisible(false)}
+          />
+          <View style={styles.actionMenuCard}>
+            <Text selectable style={styles.modalTitle}>
+              Catalog Options
+            </Text>
+            <Pressable
+              accessibilityLabel={showDeletedExercises ? 'Hide deleted exercises' : 'Show deleted exercises'}
+              style={styles.actionMenuButton}
+              onPress={toggleShowDeletedExercises}>
+              <Text style={styles.actionMenuButtonText}>{showDeletedExercises ? 'Hide deleted' : 'Show deleted'}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         animationType="fade"
@@ -432,10 +484,65 @@ const styles = StyleSheet.create({
   },
   topActionRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
-  topActionButton: {
+  topActionButtonsCluster: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginLeft: 'auto',
+  },
+  iconActionButton: {
+    width: 42,
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: uiColors.borderMuted,
+    backgroundColor: uiColors.surfaceDefault,
+  },
+  iconActionButtonText: {
+    fontSize: 16,
+    lineHeight: 18,
+    fontWeight: '700',
+    color: uiColors.textSecondary,
+  },
+  createExerciseButton: {
+    backgroundColor: uiColors.actionPrimary,
+    borderColor: uiColors.actionPrimary,
+  },
+  createExerciseButtonText: {
+    fontSize: 26,
+    lineHeight: 26,
+    color: uiColors.surfaceDefault,
+    fontWeight: '700',
+  },
+  activeFilterChip: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: uiColors.textWarning,
+    borderWidth: 1,
+    borderColor: uiColors.borderWarning,
+    backgroundColor: uiColors.surfaceWarning,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  filterInput: {
+    borderWidth: 1,
+    borderColor: uiColors.borderMuted,
+    borderRadius: 8,
+    backgroundColor: uiColors.surfaceDefault,
+    color: uiColors.textPrimary,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+    minHeight: 42,
+  },
+  filterInputInline: {
     flex: 1,
+    minWidth: 0,
   },
   centeredState: {
     flex: 1,
@@ -490,35 +597,6 @@ const styles = StyleSheet.create({
   successText: {
     fontSize: 13,
     color: uiColors.textSuccess,
-    fontWeight: '600',
-  },
-  primaryButton: {
-    borderRadius: 8,
-    backgroundColor: uiColors.actionPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    minHeight: 42,
-  },
-  primaryButtonText: {
-    color: uiColors.surfaceDefault,
-    fontWeight: '700',
-  },
-  secondaryButton: {
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: uiColors.textSecondary,
-    backgroundColor: uiColors.surfaceDefault,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    minHeight: 42,
-    flex: 1,
-  },
-  secondaryButtonText: {
-    color: uiColors.textSecondary,
     fontWeight: '600',
   },
   exerciseListRow: {

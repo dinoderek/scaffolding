@@ -42,6 +42,10 @@ import {
   type ExerciseCatalogMuscleGroup,
   type ExerciseCatalogExercise,
 } from '@/src/data/exercise-catalog';
+import {
+  filterExerciseCatalogExercises,
+  indexExerciseCatalogMuscleGroupsById,
+} from '@/src/exercise-catalog/search';
 import { createDraftAutosaveController, type DraftAutosaveController } from '@/src/session-recorder/draft-autosave';
 import { createSessionRecorderLifecycleHelpers } from '@/src/session-recorder/lifecycle-helpers';
 
@@ -203,37 +207,6 @@ const getCompletedEditEndTimeValidationMessage = (
 function hasPersistableSessionContent(session: Session): boolean {
   return session.locationId !== null || session.exercises.length > 0;
 }
-
-const normalizeTextSearchWords = (value: string): string[] =>
-  value
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((word) => word.length > 0);
-
-const indexExerciseCatalogMuscleGroups = (
-  muscleGroups: ExerciseCatalogMuscleGroup[]
-): Record<string, ExerciseCatalogMuscleGroup> =>
-  muscleGroups.reduce<Record<string, ExerciseCatalogMuscleGroup>>((indexed, muscleGroup) => {
-    indexed[muscleGroup.id] = muscleGroup;
-    return indexed;
-  }, {});
-
-const buildExercisePickerSearchText = (
-  exercise: ExerciseCatalogExercise,
-  muscleGroupsById: Record<string, ExerciseCatalogMuscleGroup>
-): string => {
-  const muscleTerms = exercise.mappings.flatMap((mapping) => {
-    const matchedMuscleGroup = muscleGroupsById[mapping.muscleGroupId];
-    if (!matchedMuscleGroup) {
-      return [mapping.muscleGroupId];
-    }
-
-    return [mapping.muscleGroupId, matchedMuscleGroup.displayName, matchedMuscleGroup.familyName];
-  });
-
-  return [exercise.name, ...muscleTerms].join(' ').toLowerCase();
-};
 
 const toPersistDraftExercises = (session: Session) =>
   session.exercises.map((exercise) => ({
@@ -715,7 +688,7 @@ export default function SessionRecorderScreen() {
         listExerciseCatalogMuscleGroups(),
       ]);
       setExercisePickerOptions(loadedExercises);
-      setExercisePickerMuscleGroupsById(indexExerciseCatalogMuscleGroups(loadedMuscleGroups));
+      setExercisePickerMuscleGroupsById(indexExerciseCatalogMuscleGroupsById(loadedMuscleGroups));
     } catch {
       setExerciseCatalogLoadError('Unable to load exercises right now.');
     } finally {
@@ -740,7 +713,7 @@ export default function SessionRecorderScreen() {
             return;
           }
           setExercisePickerOptions(loadedExercises);
-          setExercisePickerMuscleGroupsById(indexExerciseCatalogMuscleGroups(loadedMuscleGroups));
+          setExercisePickerMuscleGroupsById(indexExerciseCatalogMuscleGroupsById(loadedMuscleGroups));
         } catch {
           if (cancelled) {
             return;
@@ -805,19 +778,9 @@ export default function SessionRecorderScreen() {
         : state.locations.filter((location) => !location.archived),
     [state.locations, state.showArchivedInManager]
   );
-  const exercisePickerSearchWords = useMemo(
-    () => normalizeTextSearchWords(exercisePickerSearchValue),
-    [exercisePickerSearchValue]
-  );
   const filteredExercisePickerOptions = useMemo(
-    () =>
-      exercisePickerSearchWords.length === 0
-        ? exercisePickerOptions
-        : exercisePickerOptions.filter((exercisePreset) => {
-            const searchText = buildExercisePickerSearchText(exercisePreset, exercisePickerMuscleGroupsById);
-            return exercisePickerSearchWords.some((searchWord) => searchText.includes(searchWord));
-          }),
-    [exercisePickerMuscleGroupsById, exercisePickerOptions, exercisePickerSearchWords]
+    () => filterExerciseCatalogExercises(exercisePickerOptions, exercisePickerMuscleGroupsById, exercisePickerSearchValue),
+    [exercisePickerMuscleGroupsById, exercisePickerOptions, exercisePickerSearchValue]
   );
   const exerciseIdsKey = useMemo(
     () => state.session.exercises.map((exercise) => exercise.id).join('|'),
