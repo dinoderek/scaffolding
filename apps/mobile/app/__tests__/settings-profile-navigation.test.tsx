@@ -94,6 +94,11 @@ describe('settings and profile routes', () => {
     mockUseAuth.mockReturnValue(authValue);
 
     render(<ProfileRoute />);
+    expect(
+      screen.queryByText(
+        'Use your provisioned email and password to unlock account management without affecting local-only tracker flows.'
+      )
+    ).toBeNull();
 
     fireEvent.changeText(screen.getByTestId('profile-email-input'), ' user@example.test ');
     fireEvent.changeText(screen.getByTestId('profile-password-input'), 'secret-pass');
@@ -156,7 +161,7 @@ describe('settings and profile routes', () => {
     expect(screen.getByTestId('profile-signed-out-card')).toBeTruthy();
   });
 
-  it('renders logged-in profile state with account email and sign-out action', async () => {
+  it('renders logged-in profile state in view mode with edit and sign-out actions', async () => {
     const authValue = createAuthValue({
       user: {
         id: 'user-1',
@@ -176,10 +181,17 @@ describe('settings and profile routes', () => {
     });
     expect(screen.getByTestId('profile-signed-in-card')).toBeTruthy();
     expect(screen.getByText('member@example.test')).toBeTruthy();
-    expect(screen.getByDisplayValue('member-lifter')).toBeTruthy();
-    expect(screen.getByTestId('profile-username-save-button')).toBeTruthy();
-    expect(screen.getByTestId('profile-email-update-button')).toBeTruthy();
-    expect(screen.getByTestId('profile-password-update-button')).toBeTruthy();
+    expect(screen.getByText('member-lifter')).toBeTruthy();
+    expect(screen.getByTestId('profile-edit-button')).toBeTruthy();
+    expect(screen.getByTestId('profile-sign-out-button')).toBeTruthy();
+    expect(screen.queryByTestId('profile-update-button')).toBeNull();
+    expect(screen.queryByTestId('profile-username-input')).toBeNull();
+    expect(screen.queryByText('Account')).toBeNull();
+    expect(
+      screen.queryByText(
+        'Manage your app username plus authenticated email/password updates without affecting local-only tracker flows.'
+      )
+    ).toBeNull();
 
     fireEvent.press(screen.getByTestId('profile-sign-out-button'));
 
@@ -188,7 +200,7 @@ describe('settings and profile routes', () => {
     });
   });
 
-  it('saves username changes with inline success feedback', async () => {
+  it('updates username from edit mode with the single update action', async () => {
     const authValue = createAuthValue({
       user: {
         id: 'user-1',
@@ -212,19 +224,25 @@ describe('settings and profile routes', () => {
     render(<ProfileRoute />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('old-name')).toBeTruthy();
+      expect(screen.getByText('old-name')).toBeTruthy();
     });
 
+    fireEvent.press(screen.getByTestId('profile-edit-button'));
+    expect(screen.getByTestId('profile-cancel-edit-button')).toBeTruthy();
+    expect(screen.getByTestId('profile-update-button')).toBeTruthy();
+    expect(screen.queryByTestId('profile-sign-out-button')).toBeNull();
+    expect(screen.queryByTestId('profile-edit-button')).toBeNull();
     fireEvent.changeText(screen.getByTestId('profile-username-input'), ' new-name ');
-    fireEvent.press(screen.getByTestId('profile-username-save-button'));
+    fireEvent.press(screen.getByTestId('profile-update-button'));
 
     await waitFor(() => {
       expect(mockSaveUsername).toHaveBeenCalledWith('user-1', ' new-name ');
     });
-    expect(screen.getByText('Username saved.')).toBeTruthy();
+    expect(screen.getByText('Profile updated.')).toBeTruthy();
+    expect(screen.queryByTestId('profile-update-button')).toBeNull();
   });
 
-  it('shows inline username save failures while keeping the signed-in shell active', async () => {
+  it('shows inline username update failures while keeping the signed-in shell active', async () => {
     const authValue = createAuthValue({
       user: {
         id: 'user-1',
@@ -243,16 +261,18 @@ describe('settings and profile routes', () => {
     render(<ProfileRoute />);
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue('old-name')).toBeTruthy();
+      expect(screen.getByText('old-name')).toBeTruthy();
     });
 
+    fireEvent.press(screen.getByTestId('profile-edit-button'));
     fireEvent.changeText(screen.getByTestId('profile-username-input'), 'new-name');
-    fireEvent.press(screen.getByTestId('profile-username-save-button'));
+    fireEvent.press(screen.getByTestId('profile-update-button'));
 
     await waitFor(() => {
       expect(screen.getByText('Unable to save username right now.')).toBeTruthy();
     });
     expect(screen.getByTestId('profile-signed-in-card')).toBeTruthy();
+    expect(screen.getByTestId('profile-update-button')).toBeTruthy();
   });
 
   it('shows inline profile load failures without dropping the signed-in account shell', async () => {
@@ -274,7 +294,7 @@ describe('settings and profile routes', () => {
     expect(screen.getByText('member@example.test')).toBeTruthy();
   });
 
-  it('submits authenticated email updates and distinguishes pending confirmation messaging', async () => {
+  it('submits authenticated email updates from edit mode and distinguishes pending confirmation messaging', async () => {
     const authValue = createAuthValue({
       updateUserEmail: jest.fn().mockResolvedValue({
         emailChangePending: true,
@@ -298,11 +318,12 @@ describe('settings and profile routes', () => {
     render(<ProfileRoute />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('profile-email-update-input')).toBeTruthy();
+      expect(screen.getByText('member-lifter')).toBeTruthy();
     });
 
+    fireEvent.press(screen.getByTestId('profile-edit-button'));
     fireEvent.changeText(screen.getByTestId('profile-email-update-input'), ' next@example.test ');
-    fireEvent.press(screen.getByTestId('profile-email-update-button'));
+    fireEvent.press(screen.getByTestId('profile-update-button'));
 
     await waitFor(() => {
       expect(authValue.updateUserEmail).toHaveBeenCalledWith({
@@ -312,7 +333,7 @@ describe('settings and profile routes', () => {
     expect(screen.getByText('Email change submitted. Confirm the change from your email inbox before it fully takes effect.')).toBeTruthy();
   });
 
-  it('blocks email updates when the new email is invalid', async () => {
+  it('blocks profile updates when the edited email is invalid', async () => {
     const authValue = createAuthValue({
       user: {
         id: 'user-1',
@@ -328,17 +349,18 @@ describe('settings and profile routes', () => {
     render(<ProfileRoute />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('profile-email-update-input')).toBeTruthy();
+      expect(screen.getByText('member-lifter')).toBeTruthy();
     });
 
+    fireEvent.press(screen.getByTestId('profile-edit-button'));
     fireEvent.changeText(screen.getByTestId('profile-email-update-input'), 'not-an-email');
-    fireEvent.press(screen.getByTestId('profile-email-update-button'));
+    fireEvent.press(screen.getByTestId('profile-update-button'));
 
     expect(authValue.updateUserEmail).not.toHaveBeenCalled();
     expect(screen.getByText('Enter a valid email address.')).toBeTruthy();
   });
 
-  it('submits password updates, clears the field, and shows success feedback', async () => {
+  it('submits password updates from edit mode, clears the field, and shows success feedback', async () => {
     const authValue = createAuthValue({
       user: {
         id: 'user-1',
@@ -354,22 +376,23 @@ describe('settings and profile routes', () => {
     render(<ProfileRoute />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('profile-password-update-input')).toBeTruthy();
+      expect(screen.getByText('member-lifter')).toBeTruthy();
     });
 
+    fireEvent.press(screen.getByTestId('profile-edit-button'));
     fireEvent.changeText(screen.getByTestId('profile-password-update-input'), 'StrongPassword!234');
-    fireEvent.press(screen.getByTestId('profile-password-update-button'));
+    fireEvent.press(screen.getByTestId('profile-update-button'));
 
     await waitFor(() => {
       expect(authValue.updateUserPassword).toHaveBeenCalledWith({
         password: 'StrongPassword!234',
       });
     });
-    expect(screen.getByText('Password updated.')).toBeTruthy();
-    expect(screen.getByTestId('profile-password-update-input').props.value).toBe('');
+    expect(screen.getByText('Profile updated.')).toBeTruthy();
+    expect(screen.queryByTestId('profile-password-update-input')).toBeNull();
   });
 
-  it('shows inline password update failures and still clears the input field after submit', async () => {
+  it('shows inline update failures and still clears the password field after submit', async () => {
     const authValue = createAuthValue({
       updateUserPassword: jest.fn().mockRejectedValue(new Error('Unable to update password right now.')),
       user: {
@@ -386,11 +409,12 @@ describe('settings and profile routes', () => {
     render(<ProfileRoute />);
 
     await waitFor(() => {
-      expect(screen.getByTestId('profile-password-update-input')).toBeTruthy();
+      expect(screen.getByText('member-lifter')).toBeTruthy();
     });
 
+    fireEvent.press(screen.getByTestId('profile-edit-button'));
     fireEvent.changeText(screen.getByTestId('profile-password-update-input'), 'StrongPassword!234');
-    fireEvent.press(screen.getByTestId('profile-password-update-button'));
+    fireEvent.press(screen.getByTestId('profile-update-button'));
 
     await waitFor(() => {
       expect(screen.getByText('Unable to update password right now.')).toBeTruthy();

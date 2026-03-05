@@ -7,13 +7,11 @@ import { loadUserProfile, saveUsername, type UserProfileRecord } from '@/src/aut
 
 const EMPTY_FORM_ERROR = 'Enter your email and password to continue.';
 const INVALID_EMAIL_ERROR = 'Enter a valid email address.';
-const EMPTY_PASSWORD_UPDATE_ERROR = 'Enter a new password before saving.';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMAIL_PENDING_MESSAGE =
   'Email change submitted. Confirm the change from your email inbox before it fully takes effect.';
-const EMAIL_SUCCESS_MESSAGE = 'Email updated.';
-const PASSWORD_SUCCESS_MESSAGE = 'Password updated.';
-const USERNAME_SUCCESS_MESSAGE = 'Username saved.';
+const PROFILE_UPDATED_MESSAGE = 'Profile updated.';
+const NO_PROFILE_CHANGES_ERROR = 'No changes to update.';
 
 type InlineFeedback = {
   message: string;
@@ -39,17 +37,14 @@ export default function ProfileScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
-  const [isSavingUsername, setIsSavingUsername] = useState(false);
-  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfileRecord | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [username, setUsername] = useState('');
-  const [usernameFeedback, setUsernameFeedback] = useState<InlineFeedback | null>(null);
-  const [emailUpdateFeedback, setEmailUpdateFeedback] = useState<InlineFeedback | null>(null);
-  const [passwordUpdateFeedback, setPasswordUpdateFeedback] = useState<InlineFeedback | null>(null);
+  const [profileUpdateFeedback, setProfileUpdateFeedback] = useState<InlineFeedback | null>(null);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
@@ -61,19 +56,17 @@ export default function ProfileScreen() {
   const currentUserEmail = user?.email?.trim() ?? '';
   const userEmail = user?.email?.trim() || 'Email unavailable';
   const pendingEmail = user?.new_email?.trim() || null;
-  const usernameHasChanges = username.trim() !== (profile?.username ?? '');
-  const emailChanged = newEmail.trim().toLowerCase() !== currentUserEmail.toLowerCase();
+  const profileUsernameValue = profile?.username?.trim() || 'Not set';
 
   useEffect(() => {
     if (!currentUserId) {
       setProfile(null);
       setProfileError(null);
       setUsername('');
-      setUsernameFeedback(null);
-      setEmailUpdateFeedback(null);
-      setPasswordUpdateFeedback(null);
+      setProfileUpdateFeedback(null);
       setNewEmail('');
       setNewPassword('');
+      setIsEditingProfile(false);
       return;
     }
 
@@ -81,11 +74,10 @@ export default function ProfileScreen() {
     setFormError(null);
     setSignOutError(null);
     setProfileError(null);
-    setUsernameFeedback(null);
-    setEmailUpdateFeedback(null);
-    setPasswordUpdateFeedback(null);
+    setProfileUpdateFeedback(null);
     setNewEmail(currentUserEmail);
     setNewPassword('');
+    setIsEditingProfile(false);
   }, [currentUserEmail, currentUserId]);
 
   useEffect(() => {
@@ -144,18 +136,18 @@ export default function ProfileScreen() {
 
   const handleUsernameChange = (value: string) => {
     setUsername(value);
-    setUsernameFeedback(null);
+    setProfileUpdateFeedback(null);
     setProfileError(null);
   };
 
   const handleEmailUpdateChange = (value: string) => {
     setNewEmail(value);
-    setEmailUpdateFeedback(null);
+    setProfileUpdateFeedback(null);
   };
 
   const handlePasswordUpdateChange = (value: string) => {
     setNewPassword(value);
-    setPasswordUpdateFeedback(null);
+    setProfileUpdateFeedback(null);
   };
 
   const handleSignIn = async () => {
@@ -208,111 +200,80 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleSaveUsername = async () => {
-    if (!user || isSavingUsername) {
-      return;
-    }
-
-    setProfileError(null);
-    setUsernameFeedback(null);
-    setIsSavingUsername(true);
-
-    try {
-      const updatedProfile = await saveUsername(user.id, username);
-      setProfile(updatedProfile);
-      setUsername(updatedProfile.username ?? '');
-      setUsernameFeedback({
-        message: USERNAME_SUCCESS_MESSAGE,
-        tone: 'success',
-      });
-    } catch (error) {
-      setUsernameFeedback({
-        message: error instanceof Error ? error.message : 'Unable to save username right now.',
-        tone: 'error',
-      });
-    } finally {
-      setIsSavingUsername(false);
-    }
+  const handleCancelProfileEdit = () => {
+    setUsername(profile?.username ?? '');
+    setNewEmail(currentUserEmail);
+    setNewPassword('');
+    setProfileUpdateFeedback(null);
+    setIsEditingProfile(false);
   };
 
-  const handleUpdateEmail = async () => {
-    if (!user || isUpdatingEmail) {
+  const handleUpdateProfile = async () => {
+    if (!user || isLoadingProfile || isUpdatingProfile) {
       return;
     }
 
+    const usernameChanged = username.trim() !== (profile?.username ?? '');
     const trimmedEmail = newEmail.trim();
+    const emailChanged = trimmedEmail.toLowerCase() !== currentUserEmail.toLowerCase();
+    const passwordChanged = newPassword.length > 0;
 
-    if (!trimmedEmail) {
-      setEmailUpdateFeedback({
-        message: EMPTY_FORM_ERROR,
+    if (!usernameChanged && !emailChanged && !passwordChanged) {
+      setProfileUpdateFeedback({
+        message: NO_PROFILE_CHANGES_ERROR,
         tone: 'error',
       });
       return;
     }
 
-    if (!EMAIL_PATTERN.test(trimmedEmail)) {
-      setEmailUpdateFeedback({
+    if (emailChanged && !EMAIL_PATTERN.test(trimmedEmail)) {
+      setProfileUpdateFeedback({
         message: INVALID_EMAIL_ERROR,
         tone: 'error',
       });
       return;
     }
 
-    setEmailUpdateFeedback(null);
-    setIsUpdatingEmail(true);
+    setProfileError(null);
+    setProfileUpdateFeedback(null);
+    setIsUpdatingProfile(true);
 
     try {
-      const result = await updateUserEmail({
-        email: trimmedEmail,
-      });
+      let emailPending = false;
 
-      setNewEmail(trimmedEmail);
-      setEmailUpdateFeedback({
-        message: result.emailChangePending ? EMAIL_PENDING_MESSAGE : EMAIL_SUCCESS_MESSAGE,
+      if (usernameChanged) {
+        const updatedProfile = await saveUsername(user.id, username);
+        setProfile(updatedProfile);
+        setUsername(updatedProfile.username ?? '');
+      }
+
+      if (emailChanged) {
+        const result = await updateUserEmail({
+          email: trimmedEmail,
+        });
+        setNewEmail(trimmedEmail);
+        emailPending = result.emailChangePending;
+      }
+
+      if (passwordChanged) {
+        await updateUserPassword({
+          password: newPassword,
+        });
+      }
+
+      setProfileUpdateFeedback({
+        message: emailPending ? EMAIL_PENDING_MESSAGE : PROFILE_UPDATED_MESSAGE,
         tone: 'success',
       });
+      setIsEditingProfile(false);
     } catch (error) {
-      setEmailUpdateFeedback({
-        message: error instanceof Error ? error.message : 'Unable to update email right now.',
-        tone: 'error',
-      });
-    } finally {
-      setIsUpdatingEmail(false);
-    }
-  };
-
-  const handleUpdatePassword = async () => {
-    if (isUpdatingPassword) {
-      return;
-    }
-
-    if (!newPassword) {
-      setPasswordUpdateFeedback({
-        message: EMPTY_PASSWORD_UPDATE_ERROR,
-        tone: 'error',
-      });
-      return;
-    }
-
-    setPasswordUpdateFeedback(null);
-    setIsUpdatingPassword(true);
-
-    try {
-      await updateUserPassword({
-        password: newPassword,
-      });
-      setPasswordUpdateFeedback({
-        message: PASSWORD_SUCCESS_MESSAGE,
-        tone: 'success',
-      });
-    } catch (error) {
-      setPasswordUpdateFeedback({
-        message: error instanceof Error ? error.message : 'Unable to update password right now.',
+      setProfileUpdateFeedback({
+        message: error instanceof Error ? error.message : 'Unable to update profile right now.',
         tone: 'error',
       });
     } finally {
       setNewPassword('');
-      setIsUpdatingPassword(false);
+      setIsUpdatingProfile(false);
     }
   };
 
@@ -366,9 +327,6 @@ export default function ProfileScreen() {
           <View style={styles.sectionHeader}>
             <UiText selectable variant="labelStrong">
               Sign in
-            </UiText>
-            <UiText selectable variant="bodyMuted">
-              Use your provisioned email and password to unlock account management without affecting local-only tracker flows.
             </UiText>
           </View>
 
@@ -431,175 +389,152 @@ export default function ProfileScreen() {
           />
         </UiSurface>
       ) : (
-        <View style={styles.signedInStack}>
-          <UiSurface style={styles.card} testID="profile-signed-in-card">
-            <View style={styles.sectionHeader}>
-              <UiText selectable variant="labelStrong">
-                Account summary
-              </UiText>
-              <UiText selectable variant="bodyMuted">
-                Manage your app username plus authenticated email/password updates without affecting local-only tracker flows.
-              </UiText>
-            </View>
-
-            <View style={styles.readOnlyRow}>
-              <UiText selectable variant="subtitle">
-                Signed-in email
-              </UiText>
-              <UiText selectable style={styles.readOnlyValue} variant="label">
-                {userEmail}
-              </UiText>
-            </View>
-
-            {pendingEmail ? (
-              <View style={styles.readOnlyRow}>
-                <UiText selectable variant="subtitle">
-                  Pending email change
-                </UiText>
-                <UiText selectable style={styles.readOnlyValue} variant="label">
-                  {pendingEmail}
-                </UiText>
+        <View style={styles.profilePanel} testID="profile-signed-in-card">
+          {isEditingProfile ? (
+            <>
+              <View style={styles.editFields}>
+                <View style={styles.fieldBlock}>
+                  <UiText selectable variant="subtitle">
+                    Username
+                  </UiText>
+                  <TextInput
+                    accessibilityLabel="Username"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onChangeText={handleUsernameChange}
+                    placeholder="Add a username"
+                    placeholderTextColor={uiColors.textDisabled}
+                    style={styles.input}
+                    testID="profile-username-input"
+                    value={username}
+                  />
+                </View>
+                <View style={styles.fieldBlock}>
+                  <UiText selectable variant="subtitle">
+                    New email
+                  </UiText>
+                  <TextInput
+                    accessibilityLabel="New email"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                    onChangeText={handleEmailUpdateChange}
+                    placeholder="you@example.com"
+                    placeholderTextColor={uiColors.textDisabled}
+                    style={styles.input}
+                    testID="profile-email-update-input"
+                    textContentType="emailAddress"
+                    value={newEmail}
+                  />
+                </View>
+                <View style={styles.fieldBlock}>
+                  <UiText selectable variant="subtitle">
+                    New password
+                  </UiText>
+                  <TextInput
+                    accessibilityLabel="New password"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onChangeText={handlePasswordUpdateChange}
+                    placeholder="Enter a new password"
+                    placeholderTextColor={uiColors.textDisabled}
+                    secureTextEntry
+                    style={styles.input}
+                    testID="profile-password-update-input"
+                    textContentType="newPassword"
+                    value={newPassword}
+                  />
+                </View>
               </View>
-            ) : null}
-          </UiSurface>
+              <View style={styles.editActionRow}>
+                <UiButton
+                  accessibilityLabel="Cancel profile editing"
+                  disabled={isUpdatingProfile}
+                  label="Cancel"
+                  onPress={handleCancelProfileEdit}
+                  style={styles.profileActionButton}
+                  testID="profile-cancel-edit-button"
+                  variant="secondary"
+                />
+                <UiButton
+                  accessibilityLabel="Update profile"
+                  disabled={isLoadingProfile || isUpdatingProfile}
+                  label={isUpdatingProfile ? 'Updating...' : 'Update'}
+                  onPress={() => {
+                    void handleUpdateProfile();
+                  }}
+                  style={styles.profileActionButton}
+                  testID="profile-update-button"
+                />
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.valueList}>
+                <View style={styles.valueRow}>
+                  <UiText selectable style={styles.valueLabel} variant="subtitle">
+                    Username
+                  </UiText>
+                  <UiText selectable style={styles.valueText} variant="label">
+                    {isLoadingProfile ? 'Loading...' : profileUsernameValue}
+                  </UiText>
+                </View>
+                <View style={[styles.valueRow, pendingEmail ? null : styles.valueRowLast]}>
+                  <UiText selectable style={styles.valueLabel} variant="subtitle">
+                    Email
+                  </UiText>
+                  <UiText selectable style={styles.valueText} variant="label">
+                    {userEmail}
+                  </UiText>
+                </View>
+                {pendingEmail ? (
+                  <View style={[styles.valueRow, styles.valueRowLast]}>
+                    <UiText selectable style={styles.valueLabel} variant="subtitle">
+                      Pending email
+                    </UiText>
+                    <UiText selectable style={styles.valueText} variant="label">
+                      {pendingEmail}
+                    </UiText>
+                  </View>
+                ) : null}
+              </View>
 
-          <UiSurface style={styles.card} variant="panelMuted">
-            <View style={styles.sectionHeader}>
-              <UiText selectable variant="labelStrong">
-                Username
+              <View style={styles.profileActionRow}>
+                <UiButton
+                  accessibilityLabel="Edit profile"
+                  disabled={isSigningOut || isUpdatingProfile || isLoadingProfile}
+                  label="Edit"
+                  onPress={() => {
+                    setIsEditingProfile(true);
+                  }}
+                  style={styles.profileActionButton}
+                  testID="profile-edit-button"
+                  variant="secondary"
+                />
+                <UiButton
+                  accessibilityLabel="Sign out of profile"
+                  disabled={isBusy || isUpdatingProfile}
+                  label={isSigningOut ? 'Signing Out...' : 'Sign Out'}
+                  onPress={() => {
+                    void handleSignOut();
+                  }}
+                  style={styles.profileActionButton}
+                  testID="profile-sign-out-button"
+                  variant="danger"
+                />
+              </View>
+            </>
+          )}
+
+          {profileError ? (
+            <UiSurface style={[styles.feedbackCard, styles.errorCard]} testID="profile-load-error">
+              <UiText selectable style={styles.errorText} variant="body">
+                {profileError}
               </UiText>
-              <UiText selectable variant="bodyMuted">
-                Your app profile row is provisioned lazily the first time this screen loads or saves.
-              </UiText>
-            </View>
+            </UiSurface>
+          ) : null}
 
-            <View style={styles.fieldBlock}>
-              <UiText selectable variant="subtitle">
-                Username
-              </UiText>
-              <TextInput
-                accessibilityLabel="Username"
-                autoCapitalize="none"
-                autoCorrect={false}
-                onChangeText={handleUsernameChange}
-                placeholder="Add a username"
-                placeholderTextColor={uiColors.textDisabled}
-                style={styles.input}
-                testID="profile-username-input"
-                value={username}
-              />
-            </View>
-
-            {isLoadingProfile ? (
-              <UiText selectable variant="bodyMuted">
-                Loading profile...
-              </UiText>
-            ) : null}
-
-            {profileError ? (
-              <UiSurface style={[styles.feedbackCard, styles.errorCard]} testID="profile-load-error">
-                <UiText selectable style={styles.errorText} variant="body">
-                  {profileError}
-                </UiText>
-              </UiSurface>
-            ) : null}
-
-            {renderFeedbackCard(usernameFeedback, 'profile-username-feedback')}
-
-            <UiButton
-              accessibilityLabel="Save username"
-              disabled={isSavingUsername || isLoadingProfile || !usernameHasChanges}
-              label={isSavingUsername ? 'Saving Username...' : 'Save Username'}
-              onPress={() => {
-                void handleSaveUsername();
-              }}
-              testID="profile-username-save-button"
-            />
-          </UiSurface>
-
-          <UiSurface style={styles.card} variant="panelMuted">
-            <View style={styles.sectionHeader}>
-              <UiText selectable variant="labelStrong">
-                Email
-              </UiText>
-              <UiText selectable variant="bodyMuted">
-                Email updates run through Supabase Auth and may require inbox confirmation before the address fully changes.
-              </UiText>
-            </View>
-
-            <View style={styles.fieldBlock}>
-              <UiText selectable variant="subtitle">
-                New email
-              </UiText>
-              <TextInput
-                accessibilityLabel="New email"
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                onChangeText={handleEmailUpdateChange}
-                placeholder="you@example.com"
-                placeholderTextColor={uiColors.textDisabled}
-                style={styles.input}
-                testID="profile-email-update-input"
-                textContentType="emailAddress"
-                value={newEmail}
-              />
-            </View>
-
-            {renderFeedbackCard(emailUpdateFeedback, 'profile-email-feedback')}
-
-            <UiButton
-              accessibilityLabel="Update email"
-              disabled={isUpdatingEmail || !emailChanged}
-              label={isUpdatingEmail ? 'Updating Email...' : 'Update Email'}
-              onPress={() => {
-                void handleUpdateEmail();
-              }}
-              testID="profile-email-update-button"
-            />
-          </UiSurface>
-
-          <UiSurface style={styles.card} variant="panelMuted">
-            <View style={styles.sectionHeader}>
-              <UiText selectable variant="labelStrong">
-                Password
-              </UiText>
-              <UiText selectable variant="bodyMuted">
-                Passwords are handled only for the immediate authenticated update flow and are cleared after submit.
-              </UiText>
-            </View>
-
-            <View style={styles.fieldBlock}>
-              <UiText selectable variant="subtitle">
-                New password
-              </UiText>
-              <TextInput
-                accessibilityLabel="New password"
-                autoCapitalize="none"
-                autoCorrect={false}
-                onChangeText={handlePasswordUpdateChange}
-                placeholder="Enter a new password"
-                placeholderTextColor={uiColors.textDisabled}
-                secureTextEntry
-                style={styles.input}
-                testID="profile-password-update-input"
-                textContentType="newPassword"
-                value={newPassword}
-              />
-            </View>
-
-            {renderFeedbackCard(passwordUpdateFeedback, 'profile-password-feedback')}
-
-            <UiButton
-              accessibilityLabel="Update password"
-              disabled={isUpdatingPassword}
-              label={isUpdatingPassword ? 'Updating Password...' : 'Update Password'}
-              onPress={() => {
-                void handleUpdatePassword();
-              }}
-              testID="profile-password-update-button"
-            />
-          </UiSurface>
+          {renderFeedbackCard(profileUpdateFeedback, 'profile-update-feedback')}
 
           {inlineError ? (
             <UiSurface style={[styles.feedbackCard, styles.errorCard]} testID="profile-inline-error">
@@ -608,17 +543,6 @@ export default function ProfileScreen() {
               </UiText>
             </UiSurface>
           ) : null}
-
-          <UiButton
-            accessibilityLabel="Sign out of profile"
-            disabled={isBusy}
-            label={isSigningOut ? 'Signing Out...' : 'Sign Out'}
-            onPress={() => {
-              void handleSignOut();
-            }}
-            testID="profile-sign-out-button"
-            variant="secondary"
-          />
         </View>
       )}
     </ScrollView>
@@ -638,9 +562,6 @@ const styles = StyleSheet.create({
     padding: uiSpace.xxl,
     gap: uiSpace.xxl,
   },
-  signedInStack: {
-    gap: uiSpace.xxl,
-  },
   infoCard: {
     padding: uiSpace.xxl,
     gap: uiSpace.sm,
@@ -657,6 +578,51 @@ const styles = StyleSheet.create({
     color: uiColors.textWarning,
   },
   sectionHeader: {
+    gap: uiSpace.sm,
+  },
+  profilePanel: {
+    gap: uiSpace.xl,
+  },
+  profileActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: uiSpace.sm,
+  },
+  profileActionButton: {
+    flex: 1,
+  },
+  valueList: {
+    borderWidth: uiBorder.width,
+    borderColor: uiColors.borderMuted,
+    borderRadius: uiRadius.md,
+    backgroundColor: uiColors.surfaceDefault,
+    overflow: 'hidden',
+  },
+  valueRow: {
+    alignItems: 'flex-start',
+    paddingHorizontal: uiSpace.xxl,
+    paddingVertical: uiSpace.lg,
+    borderBottomWidth: uiBorder.width,
+    borderBottomColor: uiColors.borderMuted,
+    gap: uiSpace.xs,
+  },
+  valueRowLast: {
+    borderBottomWidth: 0,
+  },
+  valueLabel: {
+    color: uiColors.textSecondary,
+  },
+  valueText: {
+    color: uiColors.textAccentStrong,
+    flexShrink: 1,
+    textAlign: 'left',
+  },
+  editFields: {
+    gap: uiSpace.xl,
+  },
+  editActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: uiSpace.sm,
   },
   fieldGroup: {
@@ -693,17 +659,5 @@ const styles = StyleSheet.create({
   },
   successText: {
     color: uiColors.textSuccess,
-  },
-  readOnlyRow: {
-    gap: uiSpace.sm,
-    borderWidth: uiBorder.width,
-    borderColor: uiColors.borderMuted,
-    borderRadius: uiRadius.md,
-    backgroundColor: uiColors.surfaceReadOnly,
-    paddingHorizontal: uiSpace.xxl,
-    paddingVertical: uiSpace.xl,
-  },
-  readOnlyValue: {
-    color: uiColors.textAccentStrong,
   },
 });

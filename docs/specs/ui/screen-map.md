@@ -79,11 +79,10 @@ Brief entrypoint map of the current mobile screens.
   - restoring/auth-bootstrap banner
   - auth-disabled warning when client config is missing
   - signed-out email/password form with inline auth error feedback
-  - signed-in account summary with current email and optional pending-email indicator
+  - signed-in view mode with row-based account values (username/email plus optional pending-email row) and bottom actions (`Edit`, danger `Sign Out`)
+  - signed-in edit mode with `username`/`new email`/`new password` fields and one `Update` action
   - lazy profile load/provision state for `username`
-  - inline username save success/failure
-  - inline email update success/pending/failure
-  - inline password update success/failure with secondary sign-out
+  - inline unified profile-update success/failure (including pending email-confirmation messaging)
   - sign-out failure feedback that stays on the same route
 - Key exits:
   - in-place rerender between signed-out and signed-in states
