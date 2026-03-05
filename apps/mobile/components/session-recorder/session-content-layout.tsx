@@ -14,30 +14,40 @@ export type SessionContentExerciseValue<TSet extends SessionContentSetValue = Se
   sets: TSet[];
 };
 
-type SessionContentLayoutProps<TSet extends SessionContentSetValue> = {
+type SessionContentLayoutProps<
+  TSet extends SessionContentSetValue,
+  TExercise extends SessionContentExerciseValue<TSet>,
+> = {
   showMetadataSection?: boolean;
   dateTimeValue: ReactNode;
   gymValue: ReactNode;
-  exercises: SessionContentExerciseValue<TSet>[];
+  exercises: TExercise[];
   emptyExercisesText?: string;
   renderSetRow: (input: {
-    exercise: SessionContentExerciseValue<TSet>;
+    exercise: TExercise;
     exerciseIndex: number;
     set: TSet;
     setIndex: number;
   }) => ReactNode;
   renderExerciseHeaderAction?: (input: {
-    exercise: SessionContentExerciseValue<TSet>;
+    exercise: TExercise;
+    exerciseIndex: number;
+  }) => ReactNode;
+  renderExerciseMeta?: (input: {
+    exercise: TExercise;
     exerciseIndex: number;
   }) => ReactNode;
   renderExerciseFooter?: (input: {
-    exercise: SessionContentExerciseValue<TSet>;
+    exercise: TExercise;
     exerciseIndex: number;
   }) => ReactNode;
   renderEmptyState?: (text: string) => ReactNode;
 };
 
-export function SessionContentLayout<TSet extends SessionContentSetValue>({
+export function SessionContentLayout<
+  TSet extends SessionContentSetValue,
+  TExercise extends SessionContentExerciseValue<TSet> = SessionContentExerciseValue<TSet>,
+>({
   showMetadataSection = true,
   dateTimeValue,
   gymValue,
@@ -45,9 +55,10 @@ export function SessionContentLayout<TSet extends SessionContentSetValue>({
   emptyExercisesText = 'No exercises logged yet.',
   renderSetRow,
   renderExerciseHeaderAction,
+  renderExerciseMeta,
   renderExerciseFooter,
   renderEmptyState,
-}: SessionContentLayoutProps<TSet>) {
+}: SessionContentLayoutProps<TSet, TExercise>) {
   return (
     <>
       {showMetadataSection ? (
@@ -82,6 +93,8 @@ export function SessionContentLayout<TSet extends SessionContentSetValue>({
               </View>
               {renderExerciseHeaderAction ? renderExerciseHeaderAction({ exercise, exerciseIndex }) : null}
             </View>
+
+            {renderExerciseMeta ? renderExerciseMeta({ exercise, exerciseIndex }) : null}
 
             <View style={styles.setList}>
               {exercise.sets.map((set, setIndex) => (

@@ -9,18 +9,30 @@ import {
   SEEDED_LOCATIONS,
   Session,
   SessionExercise,
+  SessionExerciseTag,
   SessionLocation,
   SessionRecorderState,
   SessionSet,
 } from '@/components/session-recorder/types';
 import {
+  attachExerciseTagToSessionExercise,
+  createExerciseTagDefinition,
+  deleteExerciseTagDefinition,
   completeSessionDraft,
+  ExerciseTagDomainError,
+  listExerciseTagDefinitions,
+  listSessionExerciseAssignedTags,
   loadLocalGymById,
   loadLatestSessionDraftSnapshot,
   loadSessionSnapshotById,
   persistCompletedSessionSnapshot,
   persistSessionDraftSnapshot,
+  removeExerciseTagFromSessionExercise,
+  renameExerciseTagDefinition,
+  undeleteExerciseTagDefinition,
   upsertLocalGym,
+  type ExerciseTagDefinitionRecord,
+  type SessionExerciseAssignedTag,
   type SessionDraftSnapshot,
   type SessionGraphSnapshot,
 } from '@/src/data';
@@ -90,6 +102,7 @@ function mapDraftSnapshotToSession(snapshot: SessionDraftSnapshot): Session {
       exerciseDefinitionId: exercise.exerciseDefinitionId,
       name: exercise.name,
       machineName: exercise.machineName ?? '',
+      tags: [],
       sets: exercise.sets.map((set) => ({
         id: set.id,
         reps: set.repsValue,
@@ -108,6 +121,7 @@ function mapSessionGraphSnapshotToSession(snapshot: SessionGraphSnapshot): Sessi
       exerciseDefinitionId: exercise.exerciseDefinitionId,
       name: exercise.name,
       machineName: exercise.machineName ?? '',
+      tags: [],
       sets: exercise.sets.map((set) => ({
         id: set.id,
         reps: set.repsValue,
@@ -249,6 +263,7 @@ function createExercise(exerciseDefinitionId: string, name: string): SessionExer
     exerciseDefinitionId,
     name,
     machineName: '',
+    tags: [],
     sets: [createEmptySet()],
   };
 }
@@ -257,6 +272,42 @@ type SubmitCleanupPrompt = {
   step: 'incomplete-sets' | 'empty-exercises';
   affectedCount: number;
   nextSession: Session;
+};
+
+type TagModalMode = 'picker' | 'manage';
+
+const normalizeTagName = (value: string) => value.trim().toLowerCase();
+
+const mapAssignedTagsToExerciseTags = (assignedTags: SessionExerciseAssignedTag[]): SessionExerciseTag[] =>
+  assignedTags.map((tag) => ({
+    assignmentId: tag.assignmentId,
+    tagDefinitionId: tag.tagDefinitionId,
+    name: tag.name,
+    deletedAt: tag.deletedAt,
+    assignedAt: tag.assignedAt,
+  }));
+
+const getTagErrorMessage = (error: unknown): string => {
+  if (error instanceof ExerciseTagDomainError) {
+    switch (error.code) {
+      case 'tag_name_required':
+        return 'Tag name is required.';
+      case 'tag_name_duplicate':
+        return 'Tag name already exists for this exercise.';
+      case 'tag_definition_not_found':
+        return 'Tag no longer exists. Reload and try again.';
+      case 'session_exercise_not_found':
+        return 'Save exercise changes first, then try adding a tag again.';
+      case 'invalid_cross_definition_assignment':
+        return 'Tag does not belong to this exercise.';
+      case 'duplicate_session_exercise_assignment':
+        return 'Tag is already assigned to this exercise.';
+      default:
+        return 'Unable to update tags right now.';
+    }
+  }
+
+  return error instanceof Error && error.message ? error.message : 'Unable to update tags right now.';
 };
 
 function removeIncompleteSets(session: Session): { session: Session; removedSets: number } {
@@ -325,6 +376,17 @@ export default function SessionRecorderScreen() {
   const [isExerciseCatalogLoading, setIsExerciseCatalogLoading] = useState(false);
   const [exerciseCatalogLoadError, setExerciseCatalogLoadError] = useState<string | null>(null);
   const [isExerciseCreateModalVisible, setIsExerciseCreateModalVisible] = useState(false);
+  const [isTagModalVisible, setIsTagModalVisible] = useState(false);
+  const [tagModalMode, setTagModalMode] = useState<TagModalMode>('picker');
+  const [activeTagExerciseId, setActiveTagExerciseId] = useState<string | null>(null);
+  const [tagSearchValue, setTagSearchValue] = useState('');
+  const [tagDefinitions, setTagDefinitions] = useState<ExerciseTagDefinitionRecord[]>([]);
+  const [isTagDefinitionsLoading, setIsTagDefinitionsLoading] = useState(false);
+  const [tagModalError, setTagModalError] = useState<string | null>(null);
+  const [showDeletedTagsInManager, setShowDeletedTagsInManager] = useState(false);
+  const [editingTagDefinitionId, setEditingTagDefinitionId] = useState<string | null>(null);
+  const [editingTagName, setEditingTagName] = useState('');
+  const [isTagMutationInFlight, setIsTagMutationInFlight] = useState(false);
   const stateRef = useRef(state);
   const completedEditEndDateTimeRef = useRef<string | null>(completedEditEndDateTime);
   const persistedSessionIdRef = useRef<string | null>(null);
@@ -616,23 +678,23 @@ export default function SessionRecorderScreen() {
     }, [])
   );
 
-  const markSessionStructuralMutation = () => {
+  const markSessionStructuralMutation = useCallback(() => {
     hasSessionMutationRef.current = true;
     if (!persistenceHydratedRef.current) {
       return;
     }
 
     void autosaveController.markStructuralMutation();
-  };
+  }, [autosaveController]);
 
-  const markSessionTextMutation = () => {
+  const markSessionTextMutation = useCallback(() => {
     hasSessionMutationRef.current = true;
     if (!persistenceHydratedRef.current) {
       return;
     }
 
     autosaveController.markTextMutation();
-  };
+  }, [autosaveController]);
 
   const selectedGym = useMemo<SessionLocation | undefined>(
     () => state.locations.find((location) => location.id === state.session.locationId),
@@ -650,6 +712,137 @@ export default function SessionRecorderScreen() {
         ? state.locations
         : state.locations.filter((location) => !location.archived),
     [state.locations, state.showArchivedInManager]
+  );
+  const exerciseIdsKey = useMemo(
+    () => state.session.exercises.map((exercise) => exercise.id).join('|'),
+    [state.session.exercises]
+  );
+
+  const refreshAssignedTagsForExercise = useCallback(async (sessionExerciseId: string) => {
+    try {
+      const assignedTags = await listSessionExerciseAssignedTags(sessionExerciseId);
+      const mappedTags = mapAssignedTagsToExerciseTags(assignedTags);
+      setState((current) => ({
+        ...current,
+        session: {
+          ...current.session,
+          exercises: current.session.exercises.map((exercise) =>
+            exercise.id === sessionExerciseId ? { ...exercise, tags: mappedTags } : exercise
+          ),
+        },
+      }));
+    } catch {
+      // Keep recorder usable even if tag refresh fails.
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const sessionExerciseIds = stateRef.current.session.exercises.map((exercise) => exercise.id);
+    if (sessionExerciseIds.length === 0) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void Promise.all(
+      sessionExerciseIds.map(async (sessionExerciseId) => {
+        try {
+          const assignedTags = await listSessionExerciseAssignedTags(sessionExerciseId);
+          return [sessionExerciseId, mapAssignedTagsToExerciseTags(assignedTags)] as const;
+        } catch {
+          return [sessionExerciseId, [] as SessionExerciseTag[]] as const;
+        }
+      })
+    ).then((results) => {
+      if (cancelled) {
+        return;
+      }
+
+      const tagsByExerciseId = new Map<string, SessionExerciseTag[]>(results);
+      setState((current) => ({
+        ...current,
+        session: {
+          ...current.session,
+          exercises: current.session.exercises.map((exercise) => ({
+            ...exercise,
+            tags: tagsByExerciseId.get(exercise.id) ?? [],
+          })),
+        },
+      }));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [exerciseIdsKey]);
+
+
+  const persistSessionGraphForTagOps = useCallback(async (): Promise<boolean> => {
+    const currentState = stateRef.current;
+    const parsedStartedAt = parseSessionDateTime(currentState.session.dateTime);
+    if (!parsedStartedAt) {
+      return false;
+    }
+
+    const selectedGymForPersist =
+      currentState.session.locationId === null
+        ? null
+        : currentState.locations.find((location) => location.id === currentState.session.locationId) ?? null;
+
+    if (routeMode === 'completed-edit') {
+      if (!persistedSessionIdRef.current) {
+        return false;
+      }
+
+      const currentEndText = completedEditEndDateTimeRef.current;
+      if (!currentEndText) {
+        return false;
+      }
+
+      const parsedCompletedAt = parseSessionDateTime(currentEndText);
+      if (!parsedCompletedAt) {
+        return false;
+      }
+
+      await persistCompletedSessionSnapshot({
+        sessionId: persistedSessionIdRef.current,
+        gymId: selectedGymForPersist?.id ?? null,
+        startedAt: parsedStartedAt,
+        completedAt: parsedCompletedAt,
+        exercises: toPersistDraftExercises(currentState.session),
+      });
+      return true;
+    }
+
+    const persisted = await persistSessionDraftSnapshot({
+      sessionId: persistedSessionIdRef.current ?? undefined,
+      gymId: selectedGymForPersist?.id ?? null,
+      startedAt: parsedStartedAt,
+      status: 'active',
+      exercises: toPersistDraftExercises(currentState.session),
+    });
+    persistedSessionIdRef.current = persisted.sessionId;
+    return true;
+  }, [routeMode]);
+
+  const reloadTagDefinitions = useCallback(
+    async (exerciseDefinitionId: string) => {
+      setIsTagDefinitionsLoading(true);
+      setTagModalError(null);
+
+      try {
+        const loadedDefinitions = await listExerciseTagDefinitions(exerciseDefinitionId, {
+          includeDeleted: true,
+        });
+        setTagDefinitions(loadedDefinitions);
+      } catch {
+        setTagModalError('Unable to load tags right now.');
+      } finally {
+        setIsTagDefinitionsLoading(false);
+      }
+    },
+    []
   );
 
   const clearSubmitFeedback = () => {
@@ -857,7 +1050,7 @@ export default function SessionRecorderScreen() {
         exercises: current.exerciseSelectionTargetId
           ? current.session.exercises.map((exercise) =>
               exercise.id === current.exerciseSelectionTargetId
-                ? { ...exercise, exerciseDefinitionId, name: exerciseName }
+                ? { ...exercise, exerciseDefinitionId, name: exerciseName, tags: [] }
                 : exercise
             )
           : [...current.session.exercises, createExercise(exerciseDefinitionId, exerciseName)],
@@ -926,6 +1119,7 @@ export default function SessionRecorderScreen() {
   };
 
   const removeActiveExerciseFromMenu = () => {
+    const removedExerciseId = state.activeExerciseActionId;
     setState((current) => {
       if (!current.activeExerciseActionId) {
         return {
@@ -945,6 +1139,9 @@ export default function SessionRecorderScreen() {
         activeExerciseActionId: null,
       };
     });
+    if (removedExerciseId && activeTagExerciseId === removedExerciseId) {
+      dismissTagModal();
+    }
     clearSubmitFeedback();
     markSessionStructuralMutation();
   };
@@ -1039,6 +1236,165 @@ export default function SessionRecorderScreen() {
     clearSubmitFeedback();
     markSessionStructuralMutation();
   };
+
+  const resetTagModalState = useCallback(() => {
+    setTagModalMode('picker');
+    setActiveTagExerciseId(null);
+    setTagSearchValue('');
+    setTagDefinitions([]);
+    setTagModalError(null);
+    setShowDeletedTagsInManager(false);
+    setEditingTagDefinitionId(null);
+    setEditingTagName('');
+    setIsTagDefinitionsLoading(false);
+    setIsTagMutationInFlight(false);
+  }, []);
+
+  const dismissTagModal = useCallback(() => {
+    setIsTagModalVisible(false);
+    resetTagModalState();
+  }, [resetTagModalState]);
+
+  const openTagModal = useCallback(
+    (exerciseId: string) => {
+      const targetExercise = stateRef.current.session.exercises.find((exercise) => exercise.id === exerciseId);
+      if (!targetExercise) {
+        return;
+      }
+
+      setActiveTagExerciseId(exerciseId);
+      setIsTagModalVisible(true);
+      setTagModalMode('picker');
+      setTagSearchValue('');
+      setTagModalError(null);
+      setShowDeletedTagsInManager(false);
+      setEditingTagDefinitionId(null);
+      setEditingTagName('');
+      void reloadTagDefinitions(targetExercise.exerciseDefinitionId);
+    },
+    [reloadTagDefinitions]
+  );
+
+  const withTagMutation = useCallback(
+    async (operation: () => Promise<void>) => {
+      setIsTagMutationInFlight(true);
+      setTagModalError(null);
+      try {
+        await operation();
+      } catch (error) {
+        setTagModalError(getTagErrorMessage(error));
+      } finally {
+        setIsTagMutationInFlight(false);
+      }
+    },
+    []
+  );
+
+  const attachTagToExercise = useCallback(
+    async (sessionExerciseId: string, tagDefinitionId: string) => {
+      await withTagMutation(async () => {
+        const persisted = await persistSessionGraphForTagOps();
+        if (!persisted) {
+          setTagModalError('Save session times first, then try adding tags.');
+          return;
+        }
+
+        await attachExerciseTagToSessionExercise({
+          sessionExerciseId,
+          tagDefinitionId,
+        });
+        await refreshAssignedTagsForExercise(sessionExerciseId);
+        markSessionStructuralMutation();
+        dismissTagModal();
+      });
+    },
+    [dismissTagModal, markSessionStructuralMutation, persistSessionGraphForTagOps, refreshAssignedTagsForExercise, withTagMutation]
+  );
+
+  const removeAssignedTagFromExercise = useCallback(
+    async (sessionExerciseId: string, tagDefinitionId: string) => {
+      await withTagMutation(async () => {
+        await removeExerciseTagFromSessionExercise({
+          sessionExerciseId,
+          tagDefinitionId,
+        });
+        await refreshAssignedTagsForExercise(sessionExerciseId);
+        markSessionStructuralMutation();
+      });
+    },
+    [markSessionStructuralMutation, refreshAssignedTagsForExercise, withTagMutation]
+  );
+
+  const createTagForActiveExercise = useCallback(
+    async (sessionExerciseId: string, exerciseDefinitionId: string, draftTagName: string) => {
+      await withTagMutation(async () => {
+        const persisted = await persistSessionGraphForTagOps();
+        if (!persisted) {
+          setTagModalError('Save session times first, then try adding tags.');
+          return;
+        }
+
+        const createdTag = await createExerciseTagDefinition({
+          exerciseDefinitionId,
+          name: draftTagName,
+        });
+        await attachExerciseTagToSessionExercise({
+          sessionExerciseId,
+          tagDefinitionId: createdTag.id,
+        });
+        setTagSearchValue('');
+        await reloadTagDefinitions(exerciseDefinitionId);
+        await refreshAssignedTagsForExercise(sessionExerciseId);
+        markSessionStructuralMutation();
+        dismissTagModal();
+      });
+    },
+    [
+      dismissTagModal,
+      markSessionStructuralMutation,
+      persistSessionGraphForTagOps,
+      refreshAssignedTagsForExercise,
+      reloadTagDefinitions,
+      withTagMutation,
+    ]
+  );
+
+  const saveTagRename = useCallback(
+    async (exerciseDefinitionId: string, tagDefinitionId: string, nextName: string) => {
+      await withTagMutation(async () => {
+        await renameExerciseTagDefinition({
+          tagDefinitionId,
+          name: nextName,
+        });
+        setEditingTagDefinitionId(null);
+        setEditingTagName('');
+        await reloadTagDefinitions(exerciseDefinitionId);
+        const currentActiveExerciseId = activeTagExerciseId;
+        if (currentActiveExerciseId) {
+          await refreshAssignedTagsForExercise(currentActiveExerciseId);
+        }
+      });
+    },
+    [activeTagExerciseId, refreshAssignedTagsForExercise, reloadTagDefinitions, withTagMutation]
+  );
+
+  const setManagedTagDeletedState = useCallback(
+    async (exerciseDefinitionId: string, tagDefinitionId: string, isDeleted: boolean) => {
+      await withTagMutation(async () => {
+        if (isDeleted) {
+          await deleteExerciseTagDefinition(tagDefinitionId);
+        } else {
+          await undeleteExerciseTagDefinition(tagDefinitionId);
+        }
+        await reloadTagDefinitions(exerciseDefinitionId);
+        const currentActiveExerciseId = activeTagExerciseId;
+        if (currentActiveExerciseId) {
+          await refreshAssignedTagsForExercise(currentActiveExerciseId);
+        }
+      });
+    },
+    [activeTagExerciseId, refreshAssignedTagsForExercise, reloadTagDefinitions, withTagMutation]
+  );
 
   const finalizeSubmit = (submittedSession: Session) => {
     setState((current) => ({
@@ -1160,6 +1516,43 @@ export default function SessionRecorderScreen() {
   const gymEditorPrimaryLabel = state.editingLocationId ? 'Save' : 'Add';
   const gymEditorTitle = state.editingLocationId ? 'Edit Gym' : 'Add Gym';
   const gymEditorInputValue = state.editingLocationId ? state.editingLocationName : state.pendingLocationName;
+  const activeTagExercise =
+    activeTagExerciseId === null
+      ? null
+      : state.session.exercises.find((exercise) => exercise.id === activeTagExerciseId) ?? null;
+  const activeTagExerciseDefinitionId = activeTagExercise?.exerciseDefinitionId ?? null;
+  const activeTagExerciseAssignedTagIds = useMemo(
+    () => new Set((activeTagExercise?.tags ?? []).map((tag) => tag.tagDefinitionId)),
+    [activeTagExercise]
+  );
+  const normalizedTagSearch = normalizeTagName(tagSearchValue);
+  const filteredActiveTagDefinitions = useMemo(
+    () =>
+      tagDefinitions.filter((tagDefinition) => {
+        if (tagDefinition.deletedAt) {
+          return false;
+        }
+        if (!normalizedTagSearch) {
+          return true;
+        }
+        return tagDefinition.normalizedName.includes(normalizedTagSearch);
+      }),
+    [normalizedTagSearch, tagDefinitions]
+  );
+  const visibleManagedTagDefinitions = useMemo(
+    () =>
+      showDeletedTagsInManager
+        ? tagDefinitions
+        : tagDefinitions.filter((tagDefinition) => !tagDefinition.deletedAt),
+    [showDeletedTagsInManager, tagDefinitions]
+  );
+  const hasTagDefinitionExactMatch = useMemo(
+    () => (normalizedTagSearch ? tagDefinitions.some((tagDefinition) => tagDefinition.normalizedName === normalizedTagSearch) : false),
+    [normalizedTagSearch, tagDefinitions]
+  );
+  const canCreateTagFromSearch = normalizedTagSearch.length > 0 && !hasTagDefinitionExactMatch;
+  const addTagFromSearchDisabled =
+    isTagMutationInFlight || !activeTagExerciseDefinitionId || !activeTagExercise || !canCreateTagFromSearch;
   const cleanupModalTitle =
     submitCleanupPrompt?.step === 'incomplete-sets'
       ? 'Remove incomplete sets and submit?'
@@ -1277,7 +1670,7 @@ export default function SessionRecorderScreen() {
         </View>
       ) : null}
 
-      <SessionContentLayout
+      <SessionContentLayout<SessionSet, SessionExercise>
         showMetadataSection={routeMode !== 'completed-edit'}
         dateTimeValue={
           <View accessibilityLabel="Session date and time" style={styles.readOnlyInput}>
@@ -1319,12 +1712,46 @@ export default function SessionRecorderScreen() {
           </View>
         )}
         renderExerciseHeaderAction={({ exercise, exerciseIndex }) => (
-          <Pressable
-            accessibilityLabel={`Exercise options ${exerciseIndex + 1}`}
-            style={styles.exerciseMenuButton}
-            onPress={() => openExerciseActionMenu(exercise.id)}>
-            <Text style={styles.exerciseMenuButtonText}>•••</Text>
-          </Pressable>
+          <View style={styles.exerciseHeaderActionRow}>
+            <Pressable
+              accessibilityLabel={`Add tag to exercise ${exerciseIndex + 1}`}
+              style={styles.exerciseIconButton}
+              onPress={() => openTagModal(exercise.id)}>
+              <Text style={styles.exerciseIconButtonText}>#</Text>
+            </Pressable>
+            <Pressable
+              accessibilityLabel={`Exercise options ${exerciseIndex + 1}`}
+              style={styles.exerciseMenuButton}
+              onPress={() => openExerciseActionMenu(exercise.id)}>
+              <Text style={styles.exerciseMenuButtonText}>•••</Text>
+            </Pressable>
+          </View>
+        )}
+        renderExerciseMeta={({ exercise, exerciseIndex }) => (
+          <View style={styles.exerciseTagSection}>
+            <View style={styles.exerciseTagChipWrap}>
+              {exercise.tags.map((tag) => (
+                <View
+                  key={tag.assignmentId}
+                  style={[styles.exerciseTagChip, tag.deletedAt ? styles.exerciseTagChipDeleted : null]}>
+                  <Text numberOfLines={1} style={styles.exerciseTagChipText}>
+                    {tag.deletedAt ? `${tag.name} (deleted)` : tag.name}
+                  </Text>
+                  <Pressable
+                    accessibilityLabel={`Remove tag ${tag.name} from exercise ${exerciseIndex + 1}`}
+                    style={styles.exerciseTagChipRemoveButton}
+                    onPress={() => {
+                      void removeAssignedTagFromExercise(exercise.id, tag.tagDefinitionId);
+                    }}>
+                    <Text style={styles.exerciseTagChipRemoveButtonText}>X</Text>
+                  </Pressable>
+                </View>
+              ))}
+              {exercise.tags.length === 0 ? (
+                <Text style={styles.exerciseTagEmptyText}>No tags yet.</Text>
+              ) : null}
+            </View>
+          </View>
         )}
         renderExerciseFooter={({ exercise, exerciseIndex }) => (
           <Pressable
@@ -1568,6 +1995,221 @@ export default function SessionRecorderScreen() {
       />
 
       <Modal
+        animationType="slide"
+        transparent
+        visible={isTagModalVisible}
+        onRequestClose={dismissTagModal}>
+        <View style={styles.modalContainer}>
+          <Pressable
+            accessibilityLabel="Dismiss add tag modal overlay"
+            style={styles.modalBackdrop}
+            onPress={dismissTagModal}
+          />
+
+          <View style={[styles.modalCard, styles.tagModalCard]}>
+            {tagModalMode === 'picker' ? (
+              <>
+                <Text style={styles.modalTitle}>Add tag</Text>
+                <View style={styles.tagPickerActionRow}>
+                  <TextInput
+                    accessibilityLabel="Tag search input"
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    placeholder="Filter tags"
+                    style={[styles.input, styles.tagSearchInput]}
+                    value={tagSearchValue}
+                    onChangeText={setTagSearchValue}
+                  />
+                  <Pressable
+                    accessibilityLabel="Add tag"
+                    style={[
+                      styles.primaryActionButton,
+                      styles.tagActionButton,
+                      addTagFromSearchDisabled ? styles.tagActionButtonDisabled : null,
+                    ]}
+                    disabled={addTagFromSearchDisabled}
+                    onPress={() => {
+                      if (!activeTagExercise || !activeTagExerciseDefinitionId) {
+                        return;
+                      }
+                      void createTagForActiveExercise(
+                        activeTagExercise.id,
+                        activeTagExerciseDefinitionId,
+                        tagSearchValue
+                      );
+                    }}>
+                    <Text style={styles.primaryActionButtonText}>Add</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityLabel="Open manage tags"
+                    style={[styles.secondaryActionButton, styles.tagActionButton]}
+                    disabled={isTagMutationInFlight}
+                    onPress={() => {
+                      setTagModalMode('manage');
+                      setEditingTagDefinitionId(null);
+                      setEditingTagName('');
+                      setTagModalError(null);
+                    }}>
+                    <Text style={styles.secondaryActionButtonText}>Manage</Text>
+                  </Pressable>
+                </View>
+
+                {tagModalError ? <Text style={styles.validationErrorText}>{tagModalError}</Text> : null}
+
+                <ScrollView style={styles.tagModalList} contentContainerStyle={styles.modalList}>
+                  {isTagDefinitionsLoading ? <Text style={styles.emptyText}>Loading tags...</Text> : null}
+                  {!isTagDefinitionsLoading && filteredActiveTagDefinitions.length === 0 ? (
+                    <Text style={styles.emptyText}>No matching tags.</Text>
+                  ) : null}
+                  {!isTagDefinitionsLoading
+                    ? filteredActiveTagDefinitions.map((tagDefinition) => {
+                        const isAssignedToActiveExercise = activeTagExerciseAssignedTagIds.has(tagDefinition.id);
+                        return (
+                          <Pressable
+                            key={tagDefinition.id}
+                            accessibilityLabel={`Select tag ${tagDefinition.name}`}
+                            style={[styles.pickerOption, isAssignedToActiveExercise ? styles.pickerOptionDisabled : null]}
+                            disabled={isTagMutationInFlight || isAssignedToActiveExercise}
+                            onPress={() => {
+                              if (!activeTagExercise || isAssignedToActiveExercise) {
+                                return;
+                              }
+                              void attachTagToExercise(activeTagExercise.id, tagDefinition.id);
+                            }}>
+                            <Text
+                              style={[
+                                styles.pickerOptionText,
+                                isAssignedToActiveExercise ? styles.pickerOptionTextDisabled : null,
+                              ]}>
+                              {tagDefinition.name}
+                            </Text>
+                          </Pressable>
+                        );
+                      })
+                    : null}
+                </ScrollView>
+              </>
+            ) : null}
+
+            {tagModalMode === 'manage' ? (
+              <>
+                <Text style={styles.modalTitle}>Manage tags</Text>
+                {tagModalError ? <Text style={styles.validationErrorText}>{tagModalError}</Text> : null}
+
+                <View style={styles.equalButtonRow}>
+                  <Pressable
+                    accessibilityLabel="Back to add tags"
+                    style={styles.secondaryActionButton}
+                    disabled={isTagMutationInFlight}
+                    onPress={() => {
+                      setTagModalMode('picker');
+                      setEditingTagDefinitionId(null);
+                      setEditingTagName('');
+                      setTagModalError(null);
+                    }}>
+                    <Text style={styles.secondaryActionButtonText}>Back to add</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.secondaryActionButton}
+                    disabled={isTagMutationInFlight}
+                    onPress={() => setShowDeletedTagsInManager((current) => !current)}>
+                    <Text style={styles.secondaryActionButtonText}>
+                      {showDeletedTagsInManager ? 'Hide deleted' : 'Show deleted'}
+                    </Text>
+                  </Pressable>
+                </View>
+
+                <ScrollView style={styles.tagModalList} contentContainerStyle={styles.modalList}>
+                  {isTagDefinitionsLoading ? <Text style={styles.emptyText}>Loading tags...</Text> : null}
+                  {!isTagDefinitionsLoading && visibleManagedTagDefinitions.length === 0 ? (
+                    <Text style={styles.emptyText}>No tags for this exercise.</Text>
+                  ) : null}
+
+                  {!isTagDefinitionsLoading && activeTagExerciseDefinitionId
+                    ? visibleManagedTagDefinitions.map((tagDefinition) => (
+                        <View
+                          key={tagDefinition.id}
+                          style={[styles.manageRow, tagDefinition.deletedAt ? styles.manageRowDeleted : null]}>
+                          {editingTagDefinitionId === tagDefinition.id ? (
+                            <View style={styles.manageTagEditorInlineRow}>
+                              <TextInput
+                                accessibilityLabel={`Rename tag ${tagDefinition.name}`}
+                                autoCapitalize="words"
+                                autoCorrect={false}
+                                style={[styles.input, styles.manageTagEditorInput]}
+                                value={editingTagName}
+                                onChangeText={setEditingTagName}
+                              />
+                              <Pressable
+                                accessibilityLabel="Cancel tag rename"
+                                style={[styles.manageTagEditorIconButton, styles.manageTagCancelButton]}
+                                disabled={isTagMutationInFlight}
+                                onPress={() => {
+                                  setEditingTagDefinitionId(null);
+                                  setEditingTagName('');
+                                  setTagModalError(null);
+                                }}>
+                                <Text style={[styles.manageTagEditorIconButtonText, styles.manageTagCancelIconText]}>X</Text>
+                              </Pressable>
+                              <Pressable
+                                accessibilityLabel="Save tag rename"
+                                style={[styles.manageTagEditorIconButton, styles.manageTagSaveButton]}
+                                disabled={isTagMutationInFlight}
+                                onPress={() => {
+                                  void saveTagRename(
+                                    activeTagExerciseDefinitionId,
+                                    tagDefinition.id,
+                                    editingTagName
+                                  );
+                                }}>
+                                <Text style={styles.manageTagEditorIconButtonText}>✓</Text>
+                              </Pressable>
+                            </View>
+                          ) : (
+                            <>
+                              <Text numberOfLines={1} style={styles.manageRowTitle}>
+                                {tagDefinition.name}
+                              </Text>
+                              <Pressable
+                                accessibilityLabel={`Rename tag ${tagDefinition.name}`}
+                                style={[styles.manageTagIconButton, styles.manageTagRenameButton]}
+                                disabled={isTagMutationInFlight}
+                                onPress={() => {
+                                  setEditingTagDefinitionId(tagDefinition.id);
+                                  setEditingTagName(tagDefinition.name);
+                                  setTagModalError(null);
+                                }}>
+                                <Text style={[styles.manageTagIconButtonText, styles.manageTagRenameIconText]}>✎</Text>
+                              </Pressable>
+                              <Pressable
+                                accessibilityLabel={`${tagDefinition.deletedAt ? 'Undelete' : 'Delete'} tag ${tagDefinition.name}`}
+                                style={[
+                                  styles.manageTagIconButton,
+                                  tagDefinition.deletedAt ? styles.manageTagUndeleteButton : styles.manageTagDeleteButton,
+                                ]}
+                                disabled={isTagMutationInFlight}
+                                onPress={() => {
+                                  void setManagedTagDeletedState(
+                                    activeTagExerciseDefinitionId,
+                                    tagDefinition.id,
+                                    !Boolean(tagDefinition.deletedAt)
+                                  );
+                                }}>
+                                <Text style={styles.manageTagIconButtonText}>{tagDefinition.deletedAt ? '↺' : '🗑'}</Text>
+                              </Pressable>
+                            </>
+                          )}
+                        </View>
+                      ))
+                    : null}
+                </ScrollView>
+              </>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         animationType="fade"
         transparent
         visible={state.exerciseActionMenuVisible}
@@ -1763,6 +2405,78 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 16,
   },
+  exerciseHeaderActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  exerciseIconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: uiColors.borderDefault,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: uiColors.surfaceDefault,
+  },
+  exerciseIconButtonText: {
+    color: uiColors.actionPrimary,
+    fontWeight: '800',
+    fontSize: 14,
+    lineHeight: 16,
+  },
+  exerciseTagSection: {
+    gap: 8,
+  },
+  exerciseTagChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    alignItems: 'center',
+  },
+  exerciseTagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: uiColors.actionPrimarySubtleBorder,
+    backgroundColor: uiColors.actionPrimarySubtleBg,
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    maxWidth: '100%',
+  },
+  exerciseTagChipDeleted: {
+    borderColor: uiColors.actionNeutralSubtleBorder,
+    backgroundColor: uiColors.actionNeutralSubtleBg,
+  },
+  exerciseTagChipText: {
+    fontSize: 12,
+    color: uiColors.textAccentStrong,
+    fontWeight: '600',
+    maxWidth: 180,
+  },
+  exerciseTagChipRemoveButton: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: uiColors.surfaceDefault,
+    borderWidth: 1,
+    borderColor: uiColors.actionPrimarySubtleBorder,
+  },
+  exerciseTagChipRemoveButtonText: {
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '700',
+    color: uiColors.textMuted,
+  },
+  exerciseTagEmptyText: {
+    fontSize: 12,
+    color: uiColors.textSecondary,
+  },
   setList: {
     gap: 8,
   },
@@ -1863,6 +2577,9 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
+  tagModalCard: {
+    height: '80%',
+  },
   confirmationModalCard: {
     borderRadius: 12,
     backgroundColor: uiColors.surfaceDefault,
@@ -1925,6 +2642,27 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
   },
+  tagPickerActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  tagSearchInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  tagActionButton: {
+    flex: 0,
+    minWidth: 74,
+    paddingHorizontal: 12,
+  },
+  tagActionButtonDisabled: {
+    backgroundColor: uiColors.actionPrimaryDisabled,
+    borderColor: uiColors.actionPrimaryDisabled,
+  },
+  tagModalList: {
+    flex: 1,
+  },
   modalList: {
     gap: 8,
     paddingBottom: 4,
@@ -1939,6 +2677,13 @@ const styles = StyleSheet.create({
   },
   pickerOptionText: {
     fontSize: 14,
+  },
+  pickerOptionDisabled: {
+    backgroundColor: uiColors.surfaceMuted,
+    borderColor: uiColors.borderStrong,
+  },
+  pickerOptionTextDisabled: {
+    color: uiColors.textSecondary,
   },
   equalButtonRow: {
     flexDirection: 'row',
@@ -1986,6 +2731,69 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 9,
+  },
+  manageRowDeleted: {
+    backgroundColor: uiColors.surfaceMuted,
+  },
+  manageTagEditorInlineRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  manageTagEditorInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  manageTagEditorIconButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manageTagCancelButton: {
+    borderWidth: 1,
+    borderColor: uiColors.borderStrong,
+    backgroundColor: uiColors.surfaceDefault,
+  },
+  manageTagSaveButton: {
+    backgroundColor: uiColors.actionPrimary,
+  },
+  manageTagEditorIconButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: uiColors.surfaceDefault,
+  },
+  manageTagCancelIconText: {
+    color: uiColors.textMuted,
+  },
+  manageTagIconButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manageTagRenameButton: {
+    borderWidth: 1,
+    borderColor: uiColors.actionPrimary,
+    backgroundColor: uiColors.surfaceDefault,
+  },
+  manageTagDeleteButton: {
+    backgroundColor: uiColors.actionDanger,
+  },
+  manageTagUndeleteButton: {
+    backgroundColor: uiColors.actionSuccess,
+  },
+  manageTagIconButtonText: {
+    fontSize: 16,
+    lineHeight: 19,
+    color: uiColors.surfaceDefault,
+    fontWeight: '700',
+  },
+  manageTagRenameIconText: {
+    color: uiColors.actionPrimary,
   },
   manageRowTitle: {
     flex: 1,

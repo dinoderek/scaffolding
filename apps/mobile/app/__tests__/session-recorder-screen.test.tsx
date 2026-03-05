@@ -3,6 +3,19 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import SessionRecorderScreen from '../session-recorder';
 
 jest.mock('@/src/data', () => ({
+  attachExerciseTagToSessionExercise: jest.fn().mockResolvedValue(undefined),
+  createExerciseTagDefinition: jest.fn().mockResolvedValue({
+    id: 'tag-1',
+    exerciseDefinitionId: 'sys_barbell_back_squat',
+    name: 'Paused',
+    normalizedName: 'paused',
+    deletedAt: null,
+    createdAt: new Date('2026-03-01T10:00:00.000Z'),
+    updatedAt: new Date('2026-03-01T10:00:00.000Z'),
+  }),
+  deleteExerciseTagDefinition: jest.fn().mockResolvedValue(undefined),
+  listExerciseTagDefinitions: jest.fn().mockResolvedValue([]),
+  listSessionExerciseAssignedTags: jest.fn().mockResolvedValue([]),
   loadLocalGymById: jest.fn().mockResolvedValue(null),
   loadLatestSessionDraftSnapshot: jest.fn().mockResolvedValue(null),
   loadSessionSnapshotById: jest.fn().mockResolvedValue(null),
@@ -12,6 +25,9 @@ jest.mock('@/src/data', () => ({
     durationSec: 0,
   }),
   persistSessionDraftSnapshot: jest.fn().mockResolvedValue({ sessionId: 'test-session' }),
+  removeExerciseTagFromSessionExercise: jest.fn().mockResolvedValue(undefined),
+  renameExerciseTagDefinition: jest.fn().mockResolvedValue(undefined),
+  undeleteExerciseTagDefinition: jest.fn().mockResolvedValue(undefined),
   upsertLocalGym: jest.fn().mockResolvedValue(undefined),
   completeSessionDraft: jest.fn().mockResolvedValue({
     sessionId: 'test-session',

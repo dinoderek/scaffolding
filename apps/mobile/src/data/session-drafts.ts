@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { bootstrapLocalDataLayer, type LocalDatabase } from './bootstrap';
-import { exerciseSets, sessionExercises, sessions } from './schema';
+import { exerciseSets, sessionExercises, sessionExerciseTags, sessions } from './schema';
 
 export type SessionDraftStatus = 'active';
 
@@ -153,6 +153,13 @@ type StoredDraftExerciseRecord = {
   machineName: string | null;
   originScopeId: string;
   originSourceId: string;
+};
+
+type StoredSessionExerciseTagRecord = {
+  id: string;
+  sessionExerciseId: string;
+  exerciseTagDefinitionId: string;
+  createdAt: Date;
 };
 
 type StoredDraftGraph = {
@@ -388,13 +395,41 @@ const replaceSessionExerciseGraph = (
   }
 ) => {
   const existingExerciseRows = tx
-    .select({ id: sessionExercises.id })
+    .select({
+      id: sessionExercises.id,
+      exerciseDefinitionId: sessionExercises.exerciseDefinitionId,
+    })
     .from(sessionExercises)
     .where(eq(sessionExercises.sessionId, input.sessionId))
     .all();
   const existingExerciseIds = existingExerciseRows.map((row) => row.id);
+  const existingExercisesById = new Map(existingExerciseRows.map((row) => [row.id, row]));
+  const existingTagRows =
+    existingExerciseIds.length > 0
+      ? (tx
+          .select({
+            id: sessionExerciseTags.id,
+            sessionExerciseId: sessionExerciseTags.sessionExerciseId,
+            exerciseTagDefinitionId: sessionExerciseTags.exerciseTagDefinitionId,
+            createdAt: sessionExerciseTags.createdAt,
+          })
+          .from(sessionExerciseTags)
+          .where(inArray(sessionExerciseTags.sessionExerciseId, existingExerciseIds))
+          .all() as StoredSessionExerciseTagRecord[])
+      : [];
+  const existingTagsByExerciseId = existingTagRows.reduce<Map<string, StoredSessionExerciseTagRecord[]>>(
+    (acc, row) => {
+      const current = acc.get(row.sessionExerciseId) ?? [];
+      current.push(row);
+      acc.set(row.sessionExerciseId, current);
+      return acc;
+    },
+    new Map<string, StoredSessionExerciseTagRecord[]>()
+  );
 
   if (existingExerciseIds.length > 0) {
+    // Do not rely on FK cascade state; clear tag assignments explicitly.
+    tx.delete(sessionExerciseTags).where(inArray(sessionExerciseTags.sessionExerciseId, existingExerciseIds)).run();
     tx.delete(exerciseSets).where(inArray(exerciseSets.sessionExerciseId, existingExerciseIds)).run();
   }
   tx.delete(sessionExercises).where(eq(sessionExercises.sessionId, input.sessionId)).run();
@@ -422,6 +457,21 @@ const replaceSessionExerciseGraph = (
       })
       .run();
 
+    const existingExercise = existingExercisesById.get(sessionExerciseId);
+    if (existingExercise && existingExercise.exerciseDefinitionId === exerciseDefinitionId) {
+      const existingTags = existingTagsByExerciseId.get(sessionExerciseId) ?? [];
+      existingTags.forEach((assignment) => {
+        tx.insert(sessionExerciseTags)
+          .values({
+            id: assignment.id,
+            sessionExerciseId,
+            exerciseTagDefinitionId: assignment.exerciseTagDefinitionId,
+            createdAt: assignment.createdAt,
+          })
+          .run();
+      });
+    }
+
     exercise.sets.forEach((set, setIndex) => {
       tx.insert(exerciseSets)
         .values({
@@ -437,6 +487,8 @@ const replaceSessionExerciseGraph = (
     });
   });
 };
+
+export const __replaceSessionExerciseGraphForTests = replaceSessionExerciseGraph;
 
 export const createDrizzleSessionDraftStore = (): SessionDraftStore => ({
   async saveDraftGraph(input) {

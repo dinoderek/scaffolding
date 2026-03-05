@@ -441,7 +441,7 @@ export function CompletedSessionDetailScreenShell({
           </View>
         </View>
 
-        <SessionContentLayout
+        <SessionContentLayout<CompletedSessionDetailSet, CompletedSessionDetailExercise>
           showMetadataSection={false}
           dateTimeValue={
             <View style={styles.readOnlyField}>

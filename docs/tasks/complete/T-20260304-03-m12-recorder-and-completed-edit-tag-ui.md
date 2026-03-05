@@ -1,7 +1,7 @@
 ---
 task_id: T-20260304-03
 milestone_id: "M12"
-status: planned
+status: completed
 ui_impact: "yes"
 areas: "frontend|docs"
 runtimes: "docs|node|expo|maestro"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/milestones/M12-exercise-tags.md,docs/specs/ui/screen-m
 
 - Task ID: `T-20260304-03`
 - Title: M12 recorder and completed-edit tag UI
-- Status: `planned`
+- Status: `completed`
 - File location rule:
   - author active cards in `docs/tasks/T-20260304-03-m12-recorder-and-completed-edit-tag-ui.md`
   - move the file to `docs/tasks/complete/T-20260304-03-m12-recorder-and-completed-edit-tag-ui.md` when `Status` becomes `completed` or `outdated`
@@ -229,20 +229,26 @@ Add fast, low-friction exercise-tag interactions to the session recorder and com
 
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
-- Targeted test results for add-tag, create-tag, rename/delete/undelete, and chip-remove flows
-- `quality-slow frontend` run summary and artifact root if executed
+- Targeted test results for add-tag, create-tag, rename/delete/undelete, and chip-remove flows:
+  - `npm run test -- --runInBand app/__tests__/session-recorder-screen.test.tsx app/__tests__/session-recorder-interactions.test.tsx app/__tests__/completed-session-detail-screen.test.tsx app/__tests__/session-recorder-submit.test.tsx app/__tests__/session-recorder-persistence.test.tsx` (`pass`)
+- `quality-slow frontend` run summary and artifact root if executed:
+  - `./scripts/quality-slow.sh frontend` (`pass`)
+  - artifacts:
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260305-113344-77917`
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260305-113437-79355`
+- `quality-fast frontend` summary:
+  - `./scripts/quality-fast.sh frontend` (`pass`; lint warnings remain in legacy test files but do not fail the gate)
 - UI/UX task visual artifacts note:
-  - include the planned captures listed in `Docs touched`, or record why an expected artifact was not produced
-- Manual verification summary (required when CI is absent/partial):
-  - confirm tag interactions remain usable in both active recorder mode and completed-edit mode
+  - no new screenshots were captured in this coding session; Maestro smoke artifacts above provide runtime evidence for launch/recorder visibility only
+- Manual verification summary (required when CI is absent/partial): recorder tests exercise tag attach/remove/create/manage flows in active mode and completed-edit mode.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable:
   - `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: implemented recorder/completed-edit exercise tag UI (chips + remove assignment + per-exercise add-tag affordance), added in-route add/manage tag modal flows (search/select/create + rename/delete/undelete/show deleted), expanded `SessionContentLayout` with `renderExerciseMeta`, preserved tag assignments across session graph saves when exercise identity/definition remains stable, added recorder tag interaction tests, updated milestone/UI docs, and kept `docs/specs/ui/navigation-contract.md` unchanged because no route/path/param/transition contract changed.
+- What tests ran: `npm run test -- --runInBand app/__tests__/session-recorder-screen.test.tsx app/__tests__/session-recorder-interactions.test.tsx app/__tests__/completed-session-detail-screen.test.tsx app/__tests__/session-recorder-submit.test.tsx app/__tests__/session-recorder-persistence.test.tsx` (`pass`); `npm run typecheck` (`pass`); `./scripts/quality-fast.sh frontend` (`pass`, with non-blocking lint warnings); `./scripts/quality-slow.sh frontend` (`pass`).
+- What remains: optional cleanup of existing baseline lint warnings in unrelated legacy test files so `quality-fast` returns zero, plus optional dedicated recorder tag screenshots aligned to the task’s visual artifact list.
 
 ## Status update checklist (mandatory at closeout)
 

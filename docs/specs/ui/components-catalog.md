@@ -70,6 +70,7 @@ Brief entrypoint inventory of the current reusable UI component set.
 - File: `apps/mobile/components/session-recorder/session-content-layout.tsx`
 - Purpose:
   - shared layout scaffold for session exercise/set content used by `session-recorder` and completed-session detail screens
+  - supports optional per-exercise metadata injection (`renderExerciseMeta`) so recorder mode can render tag chips/actions without duplicating card structure
 
 ### UI-supporting shared module (non-visual)
 

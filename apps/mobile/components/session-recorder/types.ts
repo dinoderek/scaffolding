@@ -4,11 +4,20 @@ export type SessionSet = {
   weight: string;
 };
 
+export type SessionExerciseTag = {
+  assignmentId: string;
+  tagDefinitionId: string;
+  name: string;
+  deletedAt: Date | null;
+  assignedAt: Date;
+};
+
 export type SessionExercise = {
   id: string;
   exerciseDefinitionId: string;
   name: string;
   machineName: string;
+  tags: SessionExerciseTag[];
   sets: SessionSet[];
 };
 

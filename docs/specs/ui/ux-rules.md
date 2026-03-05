@@ -125,7 +125,18 @@ Guardrail command:
 - Run from `apps/mobile/`: `npm run lint:ui-guardrails`
 - Audit mode: `npm run lint:ui-guardrails -- --include-allowlisted`
 
-### 10. Documentation maintenance rule (UI semantics)
+### 10. Exercise-tag interaction semantics
+
+1. `session-recorder` exercise cards show assigned tags as compact chips below the exercise header and above set rows.
+2. Chip removal only removes the current logged-exercise assignment; it does not delete the reusable tag definition.
+3. `Add tag` is a direct per-exercise affordance on the card (not hidden in the exercise kebab menu).
+4. Tag add/manage is in-route modal state:
+   - add mode: search/filter active tags, select, or create inline,
+   - manage mode: rename, soft-delete, show/hide deleted, undelete.
+5. Completed-session edit mode (`/session-recorder?mode=completed-edit`) uses the same add/remove tag interactions as active mode.
+6. Manage-tag row actions are compact icon controls (rename/delete/undelete), while accessibility labels preserve explicit action semantics.
+
+### 11. Documentation maintenance rule (UI semantics)
 
 1. If a task changes current UI semantics (action roles, state treatment, modal conventions, list interactions, validation behavior), update this file in the same task/session.
 2. If the change is route-path/param/transition related, update `navigation-contract.md` in the same task.
