@@ -138,6 +138,24 @@ describe('settings and profile routes', () => {
     expect(authValue.clearAuthError).toHaveBeenCalledTimes(1);
   });
 
+  it('shows submit-time sign-in failures inline without leaving the logged-out state', async () => {
+    const authValue = createAuthValue({
+      signInWithPassword: jest.fn().mockRejectedValue(new Error('Invalid login credentials')),
+    });
+    mockUseAuth.mockReturnValue(authValue);
+
+    render(<ProfileRoute />);
+
+    fireEvent.changeText(screen.getByTestId('profile-email-input'), 'user@example.test');
+    fireEvent.changeText(screen.getByTestId('profile-password-input'), 'WrongPassword!999');
+    fireEvent.press(screen.getByTestId('profile-sign-in-button'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Invalid login credentials')).toBeTruthy();
+    });
+    expect(screen.getByTestId('profile-signed-out-card')).toBeTruthy();
+  });
+
   it('renders logged-in profile state with account email and sign-out action', async () => {
     const authValue = createAuthValue({
       user: {
@@ -206,6 +224,37 @@ describe('settings and profile routes', () => {
     expect(screen.getByText('Username saved.')).toBeTruthy();
   });
 
+  it('shows inline username save failures while keeping the signed-in shell active', async () => {
+    const authValue = createAuthValue({
+      user: {
+        id: 'user-1',
+        email: 'member@example.test',
+      },
+    });
+    mockLoadUserProfile.mockResolvedValue({
+      profile: createProfileRecord({
+        username: 'old-name',
+      }),
+      wasProvisioned: false,
+    });
+    mockSaveUsername.mockRejectedValue(new Error('Unable to save username right now.'));
+    mockUseAuth.mockReturnValue(authValue);
+
+    render(<ProfileRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('old-name')).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByTestId('profile-username-input'), 'new-name');
+    fireEvent.press(screen.getByTestId('profile-username-save-button'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to save username right now.')).toBeTruthy();
+    });
+    expect(screen.getByTestId('profile-signed-in-card')).toBeTruthy();
+  });
+
   it('shows inline profile load failures without dropping the signed-in account shell', async () => {
     const authValue = createAuthValue({
       user: {
@@ -263,6 +312,32 @@ describe('settings and profile routes', () => {
     expect(screen.getByText('Email change submitted. Confirm the change from your email inbox before it fully takes effect.')).toBeTruthy();
   });
 
+  it('blocks email updates when the new email is invalid', async () => {
+    const authValue = createAuthValue({
+      user: {
+        id: 'user-1',
+        email: 'member@example.test',
+      },
+    });
+    mockLoadUserProfile.mockResolvedValue({
+      profile: createProfileRecord(),
+      wasProvisioned: false,
+    });
+    mockUseAuth.mockReturnValue(authValue);
+
+    render(<ProfileRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-email-update-input')).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByTestId('profile-email-update-input'), 'not-an-email');
+    fireEvent.press(screen.getByTestId('profile-email-update-button'));
+
+    expect(authValue.updateUserEmail).not.toHaveBeenCalled();
+    expect(screen.getByText('Enter a valid email address.')).toBeTruthy();
+  });
+
   it('submits password updates, clears the field, and shows success feedback', async () => {
     const authValue = createAuthValue({
       user: {
@@ -291,6 +366,35 @@ describe('settings and profile routes', () => {
       });
     });
     expect(screen.getByText('Password updated.')).toBeTruthy();
+    expect(screen.getByTestId('profile-password-update-input').props.value).toBe('');
+  });
+
+  it('shows inline password update failures and still clears the input field after submit', async () => {
+    const authValue = createAuthValue({
+      updateUserPassword: jest.fn().mockRejectedValue(new Error('Unable to update password right now.')),
+      user: {
+        id: 'user-1',
+        email: 'member@example.test',
+      },
+    });
+    mockLoadUserProfile.mockResolvedValue({
+      profile: createProfileRecord(),
+      wasProvisioned: false,
+    });
+    mockUseAuth.mockReturnValue(authValue);
+
+    render(<ProfileRoute />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('profile-password-update-input')).toBeTruthy();
+    });
+
+    fireEvent.changeText(screen.getByTestId('profile-password-update-input'), 'StrongPassword!234');
+    fireEvent.press(screen.getByTestId('profile-password-update-button'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Unable to update password right now.')).toBeTruthy();
+    });
     expect(screen.getByTestId('profile-password-update-input').props.value).toBe('');
   });
 });

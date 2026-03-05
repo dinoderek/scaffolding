@@ -61,6 +61,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - Required coverage should include:
   - launch/bootstrap with no stored authenticated session,
   - launch/bootstrap with a stored authenticated session,
+  - session-restore failure falling back to a safe logged-out state with inline error reporting,
   - explicit sign-out / session-clear behavior,
   - missing auth config or auth-disabled bootstrap path when the task changes config/bootstrap handling.
 - Prefer deterministic Jest coverage for the auth bootstrap/service logic and root wiring, then add real local-Supabase + `Maestro` proof once the user-facing auth/profile flow exists.
@@ -71,13 +72,15 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 
 - Applies to authenticated profile UI/data work before generic sync exists.
 - Required coverage should include:
+  - sign-in success plus invalid-credentials or validation failure feedback,
   - signed-in profile load when a profile row already exists,
   - lazy profile provisioning when `user_profiles` is missing,
+  - idempotent lazy profile provisioning when concurrent first-write races occur,
   - username save success plus inline failure feedback,
-  - email update success vs pending-confirmation messaging,
+  - email update validation plus success vs pending-confirmation messaging,
   - password update success/failure with field clearing after submit,
   - backend-unavailable/profile-fetch failure staying inline on the profile route without signing the user out.
-- Prefer deterministic Jest coverage for the mobile auth/profile service wrappers and the profile route state transitions, then add local-Supabase + `Maestro` proof for the full happy path in the follow-on runtime task.
+- Prefer deterministic Jest coverage for the mobile auth/profile service wrappers and the profile route state transitions, then add local-Supabase + `Maestro` proof for the full happy path with deterministic fixture credentials.
 
 ## Sync integration coverage policy (M11 onward)
 
@@ -112,7 +115,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - Coverage intent (current repo):
   - `./scripts/quality-fast.sh frontend` -> `apps/mobile` `lint` + `typecheck` + `test`
   - `./scripts/quality-fast.sh backend` -> `./supabase/scripts/test-fast.sh`
-  - `./scripts/quality-slow.sh frontend` -> `Maestro` local simulator smoke/data-smoke commands
+  - `./scripts/quality-slow.sh frontend` -> `Maestro` local simulator smoke + data-smoke + auth/profile happy-path commands
   - `./scripts/quality-slow.sh backend` -> local backend auth/RLS and sync API contract suites
 - Rule:
   - wrappers reduce checklist repetition, but task cards still own trigger conditions and any hosted/manual checks.
@@ -211,6 +214,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - Canonical command surface:
   - `npm run test:e2e:ios:smoke`
   - `npm run test:e2e:ios:data-smoke`
+  - `npm run test:e2e:ios:auth-profile`
   - `./scripts/quality-slow.sh frontend`
 - Canonical reset terms:
   - `full reset`
@@ -233,12 +237,18 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - Jest/React Native Testing Library remains the default for component logic, state transitions, and CI-safe assertions.
 - Maestro is used for simulator/device-integrated UI smoke checks that confirm core screens are reachable and visibly intact.
 - In the standard local gate matrix, current `Maestro` checks are classified as `frontend + slow` and run via `./scripts/quality-slow.sh frontend`.
-- `./scripts/quality-slow.sh frontend` currently runs both:
+- `./scripts/quality-slow.sh frontend` currently runs:
   - `npm run test:e2e:ios:smoke`
   - `npm run test:e2e:ios:data-smoke`
-- Current required Maestro coverage is a single iOS smoke flow:
+- `npm run test:e2e:ios:auth-profile`
+- Current required Maestro coverage includes:
   - app launch visible state
   - session recorder visible state
+  - logged-out profile state
+  - fixture-backed sign-in
+  - signed-in profile state
+  - username update
+  - sign-out back to the logged-out profile state
 - Reset/setup policy for this flow:
   - use `full reset` because smoke is the cold-start coverage lane;
   - use `teleport` to the recorder once launch visibility is confirmed.
@@ -248,6 +258,30 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - Screenshot capture is automated by the Maestro flow and stored under the canonical artifact root from the M10 contract.
 - Rule:
   - require `./scripts/quality-slow.sh frontend` when a task changes the committed smoke/data-smoke flows, Maestro runtime scripts, development-client/runtime handshake, harness setup behavior, or user-facing UI that needs fresh real-simulator smoke evidence.
+
+## iOS simulator auth/profile happy-path policy (Maestro, M11)
+
+- Purpose:
+  - validate the real local-Supabase login/profile happy path on the iOS simulator with deterministic fixture credentials.
+- Command:
+  - `npm run test:e2e:ios:auth-profile`
+  - (also covered by `./scripts/quality-slow.sh frontend`)
+- Reset/setup policy for this flow:
+  - use `full reset` so the run starts logged out with no restored mobile session;
+  - use the deterministic local fixture credentials (`user_a` by default) from `supabase/scripts/auth-fixture-constants.sh`;
+  - use a per-run username value so repeated local runs still exercise the username-save path even when the backend profile row already exists.
+- Required screenshots for auth/profile flow:
+  - `05-auth-profile-logged-out-start`
+  - `06-auth-profile-signed-in`
+  - `07-auth-profile-signed-out-end`
+- Required when any of these are true:
+  - milestone/release closeout needs fresh M11 auth/profile proof,
+  - profile-route UI/state semantics change,
+  - auth bootstrap/session restore behavior changes,
+  - local Supabase-backed auth/profile wiring changes.
+- Evidence expectations:
+  - include command result and artifact root from `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`.
+  - include the screenshot filenames captured under that artifact root.
 
 ## iOS simulator data smoke policy (Maestro, current stage)
 

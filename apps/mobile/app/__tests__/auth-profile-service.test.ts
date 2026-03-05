@@ -106,6 +106,35 @@ describe('auth profile service', () => {
     expect(result.profile.username).toBeNull();
   });
 
+  it('recovers from a duplicate-row race by re-reading the provisioned profile', async () => {
+    table.maybeSingle
+      .mockResolvedValueOnce({
+        data: null,
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: createProfileRow({
+          username: 'race-created-user',
+        }),
+        error: null,
+      });
+    table.single.mockResolvedValueOnce({
+      data: null,
+      error: {
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "user_profiles_pkey"',
+      },
+    });
+
+    const result = await loadUserProfile('user-1');
+
+    expect(table.insert).toHaveBeenCalledWith({
+      id: 'user-1',
+    });
+    expect(result.wasProvisioned).toBe(true);
+    expect(result.profile.username).toBe('race-created-user');
+  });
+
   it('trims usernames and provisions before updating when save is the first profile write', async () => {
     table.maybeSingle.mockResolvedValueOnce({
       data: null,
@@ -135,5 +164,22 @@ describe('auth profile service', () => {
       username: 'trimmed-name',
     });
     expect(result.username).toBe('trimmed-name');
+  });
+
+  it('surfaces save failures with the profile-service fallback message', async () => {
+    table.maybeSingle.mockResolvedValueOnce({
+      data: createProfileRow({
+        username: 'existing-user',
+      }),
+      error: null,
+    });
+    table.single.mockResolvedValueOnce({
+      data: null,
+      error: {
+        message: '',
+      },
+    });
+
+    await expect(saveUsername('user-1', 'next-name')).rejects.toThrow('Unable to save username right now.');
   });
 });

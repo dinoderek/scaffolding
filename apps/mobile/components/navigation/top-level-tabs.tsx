@@ -42,6 +42,7 @@ export function TopLevelTabs({
         label="⚙"
         onPress={onPressSettings}
         style={styles.settingsButton}
+        testID="top-level-settings-button"
         textStyle={styles.settingsButtonText}
         variant="secondary"
       />

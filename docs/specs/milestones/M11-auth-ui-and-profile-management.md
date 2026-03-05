@@ -4,7 +4,7 @@
 
 - Milestone ID: `M11`
 - Title: `Auth UI and Profile Management`
-- Status: `in_progress`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Target window: `2026-03`
 
@@ -165,7 +165,7 @@ This milestone is intentionally limited to auth and profile UX. It does **not** 
 1. `docs/tasks/complete/T-20260304-01-m11-auth-client-session-bootstrap.md` - add mobile auth client wiring, session restore, and auth-state service. (`completed`)
 2. `docs/tasks/complete/T-20260304-02-m11-settings-and-profile-navigation.md` - add settings entrypoint, settings surface, and profile screen route/navigation. (`completed`)
 3. `docs/tasks/complete/T-20260304-03-m11-profile-backend-model-and-update-flows.md` - add `user_profiles`, profile load/save, and authenticated email/password update flows. (`completed`)
-4. `docs/tasks/T-20260304-04-m11-auth-profile-tests-and-doc-updates.md` - add remaining auth/profile coverage, Maestro proof path, and any final M11 doc cleanup. (`planned`)
+4. `docs/tasks/complete/T-20260304-04-m11-auth-profile-tests-and-doc-updates.md` - add remaining auth/profile coverage, Maestro proof path, and any final M11 doc cleanup. (`completed`)
 
 Rule:
 
@@ -183,8 +183,15 @@ Rule:
 ## Completion note (fill when milestone closes)
 
 - What changed:
+  - completed the remaining M11 auth/profile Jest coverage for sign-in failure, session-restore failure, lazy-profile race handling, username save failure, email validation, and password update failure;
+  - added a dedicated Maestro iOS auth/profile happy-path flow and wrapper using deterministic local Supabase fixture credentials;
+  - promoted the final M11 auth/profile runtime and UI semantics into the project-level architecture, testing, API-auth, and UI docs.
 - Verification summary:
+  - targeted Jest auth/profile suites pass locally;
+  - repo fast gate passes locally;
+  - the canonical frontend slow-gate command surface now includes the dedicated `npm run test:e2e:ios:auth-profile` flow for local-Supabase proof.
 - What remains:
+  - hosted auth/provider smoke stays out of scope for M11 and remains a follow-on deployment concern.
 
 ## Status update checklist (mandatory during task closeout)
 

@@ -47,6 +47,7 @@ This is the shortest operational summary. Use the "Further reading" section when
 - Never assume the client can override ownership (`owner_user_id`) for another user.
 - For M11 profile work, read/write `app_public.user_profiles` as the authenticated user and lazily create the row on first profile load/save if it does not exist yet.
 - Email and password updates stay on the `Supabase Auth` user object (`auth.updateUser`), not in `app_public.user_profiles`.
+- Keep auth/profile failures route-local and inline; sign-in/sign-out/profile errors must not block local-only tracker routes or imply hidden sync side effects.
 - Handle auth failures and `RLS` denials as expected runtime outcomes (not exceptional backend bugs by default).
 - Do not embed or request `service_role` credentials for any app feature.
 
@@ -57,6 +58,7 @@ This is the shortest operational summary. Use the "Further reading" section when
 - Prefer real local Supabase Auth sign-in flows for auth tests (success/failure), not only mocked tokens.
 - For mobile auth bootstrap/session work, cover the no-session, stored-session, and sign-out/session-clear paths before moving to profile UI tasks.
 - For M11 profile changes, add local-Supabase contract coverage for `user_profiles` owner read/update/insert behavior plus mobile tests for username/email/password mutation states.
+- For final M11 auth/profile proof, run the real iOS simulator happy path against local Supabase using the deterministic fixture credentials exposed by `supabase/scripts/auth-fixture-constants.sh`.
 - Required test coverage for auth-sensitive API changes:
   - success path
   - unauthenticated denial

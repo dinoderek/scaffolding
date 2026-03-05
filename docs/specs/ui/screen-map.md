@@ -65,6 +65,7 @@ Brief entrypoint map of the current mobile screens.
   - minimal account/settings entry screen for the M11 auth/profile flow
 - Key states (high level):
   - one tappable account/profile card
+  - available from the shared settings utility action regardless of auth state
 - Key exits:
   - `profile`
   - back to the previous route via stack navigation
@@ -82,6 +83,7 @@ Brief entrypoint map of the current mobile screens.
   - inline username save success/failure
   - inline email update success/pending/failure
   - inline password update success/failure with secondary sign-out
+  - sign-out failure feedback that stays on the same route
 - Key exits:
   - in-place rerender between signed-out and signed-in states
   - back to `settings` (or previous route) via stack navigation

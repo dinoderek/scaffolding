@@ -57,6 +57,7 @@ Brief entrypoint contract for current mobile routes, query/path params, and allo
   - none
 - Behavior:
   - reached from the shared top-level navigation utility action on `session-list` and `exercise-catalog`
+  - remains accessible while logged out; it does not require an authenticated session before opening `/profile`
   - routes to `/profile` from the `Profile` destination row
 
 6. `/profile`
@@ -64,8 +65,10 @@ Brief entrypoint contract for current mobile routes, query/path params, and allo
 - Params:
   - none
 - Behavior:
+  - may briefly render a restoring banner while auth bootstrap resolves a stored session
   - renders in-place logged-out vs signed-in account states from the shared auth provider snapshot
   - sign-in/sign-out change route state without redirecting away from `/profile`
+  - inline auth/profile failures do not redirect away from `/profile` or block returning to local-only routes
 
 7. `/completed-session/[sessionId]`
 - File: `apps/mobile/app/completed-session/[sessionId].tsx`

@@ -1,0 +1,53 @@
+appId: com.dinoderek.mobile
+---
+- tapOn:
+    text: "Open"
+    optional: true
+- tapOn:
+    text: "mobile"
+    optional: true
+- tapOn:
+    text: "Sessions"
+    optional: true
+- tapOn:
+    text: "Open"
+    optional: true
+- tapOn:
+    text: "Continue"
+    optional: true
+- tapOn:
+    text: "Close"
+    optional: true
+- assertVisible:
+    id: "session-list-screen"
+- takeScreenshot: "05-auth-profile-logged-out-start"
+- tapOn:
+    id: "top-level-settings-button"
+- assertVisible:
+    id: "settings-screen"
+- tapOn:
+    id: "settings-profile-row"
+- assertVisible:
+    id: "profile-signed-out-card"
+- tapOn:
+    id: "profile-email-input"
+- inputText: "${MAESTRO_AUTH_PROFILE_EMAIL}"
+- tapOn:
+    id: "profile-password-input"
+- inputText: "${MAESTRO_AUTH_PROFILE_PASSWORD}"
+- tapOn:
+    id: "profile-sign-in-button"
+- assertVisible:
+    id: "profile-signed-in-card"
+- takeScreenshot: "06-auth-profile-signed-in"
+- tapOn:
+    id: "profile-username-input"
+- inputText: "${MAESTRO_AUTH_PROFILE_USERNAME}"
+- tapOn:
+    id: "profile-username-save-button"
+- assertVisible: "Username saved."
+- tapOn:
+    id: "profile-sign-out-button"
+- assertVisible:
+    id: "profile-signed-out-card"
+- takeScreenshot: "07-auth-profile-signed-out-end"

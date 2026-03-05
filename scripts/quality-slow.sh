@@ -36,6 +36,9 @@ run_frontend() {
 
   echo "[quality-slow] frontend: test:e2e:ios:data-smoke"
   (cd "${REPO_ROOT}/apps/mobile" && npm run test:e2e:ios:data-smoke)
+
+  echo "[quality-slow] frontend: test:e2e:ios:auth-profile"
+  (cd "${REPO_ROOT}/apps/mobile" && npm run test:e2e:ios:auth-profile)
 }
 
 run_backend() {

@@ -22,6 +22,7 @@ import {
   bootstrapAuthState,
   getAuthSnapshot,
   getSupabaseMobileClient,
+  signInWithPassword,
   signOut,
   updateUserEmail,
   updateUserPassword,
@@ -60,6 +61,7 @@ describe('auth service bootstrap', () => {
   const mockUnsubscribe = jest.fn();
   const mockGetSession = jest.fn();
   const mockOnAuthStateChange = jest.fn();
+  const mockSignInWithPassword = jest.fn();
   const mockSignOut = jest.fn();
   const mockUpdateUser = jest.fn();
 
@@ -73,6 +75,7 @@ describe('auth service bootstrap', () => {
     mockSecureStoreSetItemAsync.mockReset();
     mockGetSession.mockReset();
     mockOnAuthStateChange.mockReset();
+    mockSignInWithPassword.mockReset();
     mockSignOut.mockReset();
     mockUpdateUser.mockReset();
     mockUnsubscribe.mockReset();
@@ -89,7 +92,7 @@ describe('auth service bootstrap', () => {
       auth: {
         getSession: mockGetSession,
         onAuthStateChange: mockOnAuthStateChange,
-        signInWithPassword: jest.fn(),
+        signInWithPassword: mockSignInWithPassword,
         signOut: mockSignOut,
         updateUser: mockUpdateUser,
       },
@@ -186,6 +189,63 @@ describe('auth service bootstrap', () => {
     expect(snapshot.session).toBe(storedSession);
     expect(snapshot.user?.id).toBe('user-1');
     expect(snapshot.user?.email).toBe('user@example.test');
+  });
+
+  it('surfaces session restore failures without leaving the bootstrap stuck', async () => {
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: null,
+      },
+      error: {
+        message: 'Session restore failed',
+      },
+    });
+
+    const snapshot = await bootstrapAuthState();
+
+    expect(snapshot.status).toBe('ready');
+    expect(snapshot.session).toBeNull();
+    expect(snapshot.user).toBeNull();
+    expect(snapshot.lastError).toBe('Session restore failed');
+  });
+
+  it('surfaces invalid sign-in failures and preserves the logged-out snapshot', async () => {
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: null,
+      },
+      error: null,
+    });
+    mockSignInWithPassword.mockResolvedValue({
+      data: {
+        session: null,
+      },
+      error: {
+        message: 'Invalid login credentials',
+      },
+    });
+
+    await bootstrapAuthState();
+
+    await expect(
+      signInWithPassword({
+        email: 'user@example.test',
+        password: 'WrongPassword!999',
+      })
+    ).rejects.toMatchObject({
+      message: 'Invalid login credentials',
+    });
+
+    expect(mockSignInWithPassword).toHaveBeenCalledWith({
+      email: 'user@example.test',
+      password: 'WrongPassword!999',
+    });
+    expect(getAuthSnapshot()).toMatchObject({
+      status: 'ready',
+      session: null,
+      user: null,
+      lastError: 'Invalid login credentials',
+    });
   });
 
   it('signs out and clears the restored session snapshot', async () => {

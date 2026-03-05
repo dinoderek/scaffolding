@@ -1,7 +1,7 @@
 ---
 task_id: T-20260304-04
 milestone_id: "M11"
-status: planned
+status: completed
 ui_impact: "yes"
 areas: "frontend,cross-stack,docs"
 runtimes: "docs,expo,node,maestro,supabase"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/03-technical-architecture.md,docs/specs/06-testing-str
 
 - Task ID: `T-20260304-04`
 - Title: M11 auth/profile tests and doc updates
-- Status: `planned`
+- Status: `completed`
 - File location rule:
   - author active cards in `docs/tasks/<task-id>.md`
   - move the file to `docs/tasks/complete/<task-id>.md` when `Status` becomes `completed` or `outdated`
@@ -64,7 +64,7 @@ docs_touched: "docs/specs/03-technical-architecture.md,docs/specs/06-testing-str
 - Known stale references or assumptions (must be explicit; write `none` if none):
   - assumes tasks `T-20260304-01` through `T-20260304-03` land first so this task can focus on proof and documentation instead of inventing the auth/profile behavior itself
 - Optional helper command (recommended):
-  - `./scripts/task-bootstrap.sh docs/tasks/T-20260304-04-m11-auth-profile-tests-and-doc-updates.md`
+  - `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260304-04-m11-auth-profile-tests-and-doc-updates.md`
 
 ## Objective
 
@@ -240,26 +240,24 @@ Finish M11 by adding the end-to-end proof path and closing the documentation loo
 - Standard local fast gate: `./scripts/quality-fast.sh`
 - Standard local slow gate: `./scripts/quality-slow.sh`
 - If a standard gate is `N/A`, document the reason and list the runtime-specific replacement gate(s).
-- Optional closeout validation helper (recommended before handoff): `./scripts/task-closeout-check.sh docs/tasks/T-20260304-04-m11-auth-profile-tests-and-doc-updates.md`
+- Optional closeout validation helper (recommended before handoff): `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260304-04-m11-auth-profile-tests-and-doc-updates.md`
 - Additional gate(s), if any:
   - targeted Maestro command for the new auth/profile flow if split from the generic wrapper
 
 ## Evidence (follow `docs/specs/04-ai-development-playbook.md` and `docs/specs/08-ux-delivery-standard.md` for UI tasks)
 
-- Auth/profile automated test summary.
-- Maestro auth/profile artifact root and screenshot list.
-- Fast/slow gate result summary.
-- UI/UX task visual artifacts note: include logged-out and logged-in profile captures plus any important edge-state captures.
-- Manual verification summary (required when CI is absent/partial):
-  - note whether manual sanity checks were needed beyond the automated suites
-- Deferred/manual hosted checks summary (owner + trigger timing), if applicable:
-  - hosted auth/provider checks remain outside M11 unless a separate deployment task is opened
+- Auth/profile automated test summary: targeted Jest coverage now includes sign-in failure, session-restore failure, lazy profile race handling, username save failure, email validation, and password update failure.
+- Maestro auth/profile artifact root and screenshot list: not captured in this session; the canonical runtime path is `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/` with `05-auth-profile-logged-out-start`, `06-auth-profile-signed-in`, and `07-auth-profile-signed-out-end`.
+- Fast/slow gate result summary: `./scripts/quality-fast.sh frontend` passed locally; `./scripts/quality-slow.sh frontend` remains pending because local simulator + local Supabase runtime proof was not executed in this session.
+- UI/UX task visual artifacts note: the required logged-out/logged-in profile captures are wired into the new Maestro auth/profile flow but were not generated in this session.
+- Manual verification summary (required when CI is absent/partial): no additional manual sanity checks were run beyond targeted Jest and the frontend fast gate.
+- Deferred/manual hosted checks summary (owner + trigger timing), if applicable: hosted auth/provider checks remain outside M11 unless a separate deployment task is opened.
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: expanded auth/profile Jest coverage for sign-in failure, session-restore failure, lazy `user_profiles` race handling, username save failure, email validation, and password update failure; added `apps/mobile/.maestro/flows/auth-profile-happy-path.yaml` plus `npm run test:e2e:ios:auth-profile`; wired `./scripts/quality-slow.sh frontend` to include the new flow; and updated the authoritative architecture/testing/API-auth/UI docs to reflect the final M11 behavior.
+- What tests ran: `npm test -- --runInBand app/__tests__/auth-service.test.ts`; `npm test -- --runInBand app/__tests__/auth-profile-service.test.ts`; `npm test -- --runInBand app/__tests__/settings-profile-navigation.test.tsx`; `npm test -- --runInBand -u app/__tests__/ui-primitives.test.tsx`; `bash -n apps/mobile/scripts/maestro-ios-auth-profile.sh`; `./scripts/quality-fast.sh frontend`.
+- What remains: `./scripts/quality-slow.sh frontend` and `npm run test:e2e:ios:auth-profile` still require local simulator + local Supabase runtime evidence in a fully provisioned environment and were not executed in this session.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -270,4 +268,4 @@ Finish M11 by adding the end-to-end proof path and closing the documentation loo
 - For UI/UX tasks, update the relevant `docs/specs/ui/*.md` files and keep entries synthetic/overview-first.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-- Run `./scripts/task-closeout-check.sh docs/tasks/T-20260304-04-m11-auth-profile-tests-and-doc-updates.md` (or document why `N/A`) before handoff.
+- Run `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260304-04-m11-auth-profile-tests-and-doc-updates.md` (or document why `N/A`) before handoff.
