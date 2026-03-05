@@ -1,13 +1,13 @@
 ---
 task_id: T-20260304-04
 milestone_id: "M12"
-status: planned
+status: completed
 ui_impact: "no"
 areas: "docs|frontend"
 runtimes: "docs|node|expo|maestro"
 gates_fast: "./scripts/quality-fast.sh frontend"
 gates_slow: "./scripts/quality-slow.sh frontend"
-docs_touched: "docs/specs/milestones/M12-exercise-tags.md,docs/specs/06-testing-strategy.md,docs/specs/ui/screen-map.md,docs/specs/ui/ux-rules.md,docs/specs/ui/components-catalog.md"
+docs_touched: "apps/mobile/app/__tests__/exercise-tag-repository.test.ts,docs/specs/06-testing-strategy.md,docs/specs/milestones/M12-exercise-tags.md"
 ---
 
 # Task Card
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/milestones/M12-exercise-tags.md,docs/specs/06-testing-
 
 - Task ID: `T-20260304-04`
 - Title: M12 tag tests and doc updates
-- Status: `planned`
+- Status: `completed`
 - File location rule:
   - author active cards in `docs/tasks/T-20260304-04-m12-tag-tests-and-doc-updates.md`
   - move the file to `docs/tasks/complete/T-20260304-04-m12-tag-tests-and-doc-updates.md` when `Status` becomes `completed` or `outdated`
@@ -105,12 +105,12 @@ Close M12 with the missing targeted tests, verification evidence, and authoritat
 ## Docs touched (required)
 
 - Planned docs/spec files to update and why:
-  - `docs/specs/milestones/M12-exercise-tags.md` - final task states and milestone closeout notes
-  - `docs/specs/06-testing-strategy.md` - only if M12 adds a stable new verification expectation worth promoting to project level
-  - `docs/specs/ui/screen-map.md` - if recorder/completed-edit state inventory changed
-  - `docs/specs/ui/ux-rules.md` - if tag modal/chip/management semantics changed current UI behavior
-  - `docs/specs/ui/components-catalog.md` - if a reusable tag-related component was introduced
-  - `docs/specs/ui/navigation-contract.md` - only if implementation changed route/query/transition behavior; otherwise record explicit no-update rationale
+  - `docs/specs/milestones/M12-exercise-tags.md` - final task states and milestone closeout notes (`updated`)
+  - `docs/specs/06-testing-strategy.md` - promoted stable M12 testing expectations into project-level policy (`updated`)
+  - `docs/specs/ui/screen-map.md` - no update; state inventory was already updated by `T-20260304-03` and this task changed no UI behavior
+  - `docs/specs/ui/ux-rules.md` - no update; tag semantics were already updated by `T-20260304-03` and remained unchanged
+  - `docs/specs/ui/components-catalog.md` - no update; this task introduced no new reusable UI component
+  - `docs/specs/ui/navigation-contract.md` - no update; no route/query/transition behavior changed in this closeout task
 - For significant cross-cutting behavior changes:
   - `docs/specs/06-testing-strategy.md`
 - Rule:
@@ -165,18 +165,25 @@ Close M12 with the missing targeted tests, verification evidence, and authoritat
 
 ## Evidence
 
-- Final test-command summary for M12
-- `quality-slow frontend` artifact root and concise result summary
-- Manual verification summary (required when CI is absent/partial):
-  - confirm the implemented add/create/rename/delete/undelete/remove flows still match the milestone contract
+- Final test-command summary for M12:
+  - `npm run test -- --runInBand app/__tests__/exercise-tag-repository.test.ts app/__tests__/session-recorder-interactions.test.tsx app/__tests__/domain-schema-migrations.test.ts` (`pass`)
+  - added coverage case in `app/__tests__/exercise-tag-repository.test.ts`: assigned tags remain listable when their tag definition is soft-deleted (historical assignment preservation)
+  - `./scripts/quality-fast.sh frontend` (`pass`; non-blocking existing lint warnings remain in legacy tests)
+- `quality-slow frontend` artifact root and concise result summary:
+  - `./scripts/quality-slow.sh frontend` (`pass`)
+  - artifact roots:
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260305-142244-50195` (smoke launch)
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260305-142341-50993` (data runtime smoke)
+    - `apps/mobile/artifacts/maestro/ad-hoc/20260305-142501-51774` (auth profile happy path)
+- Manual verification summary (required when CI is absent/partial): M12 contract checks remain aligned with tests and simulator evidence: add/select/create/manage/remove tag flows are covered in recorder interactions, completed-edit attach/remove parity is covered, and schema/repository constraints remain locked by migration/repository tests and full frontend gates.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable:
   - `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: added one remaining repository coverage case for M12 historical-assignment semantics (`soft-deleted tag definitions still appear in assigned-tag reads`), promoted a stable M12 exercise-tag testing policy into `docs/specs/06-testing-strategy.md`, marked milestone/task closeout state in `docs/specs/milestones/M12-exercise-tags.md`, and recorded explicit no-update rationale for `docs/specs/ui/screen-map.md`, `docs/specs/ui/ux-rules.md`, `docs/specs/ui/components-catalog.md`, and `docs/specs/ui/navigation-contract.md`.
+- What tests ran: `npm run test -- --runInBand app/__tests__/exercise-tag-repository.test.ts app/__tests__/session-recorder-interactions.test.tsx app/__tests__/domain-schema-migrations.test.ts` (`pass`); `./scripts/quality-fast.sh frontend` (`pass`); `./scripts/quality-slow.sh frontend` (`pass`).
+- What remains: none for M12 task scope.
 
 ## Status update checklist (mandatory at closeout)
 

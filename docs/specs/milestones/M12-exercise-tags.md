@@ -4,7 +4,7 @@
 
 - Milestone ID: `M12`
 - Title: `Exercise Tags`
-- Status: `in_progress`
+- Status: `completed`
 - Owner: `AI + human reviewer`
 - Target window: `post-MVP (TBD)`
 
@@ -153,7 +153,7 @@ This milestone is intentionally focused on tag capture, management, and persiste
 1. `docs/tasks/complete/T-20260304-01-m12-session-exercise-definition-link-and-tag-schema.md` - fixed the missing durable `exercise_definition_id` linkage on logged session exercises and implemented the local schema/Drizzle migration artifacts for tag definitions and tag assignments. (`completed`)
 2. `docs/tasks/complete/T-20260304-02-m12-tag-repository-and-domain-rules.md` - implement repository/domain APIs for tag suggestion, create, rename, attach/remove, delete/undelete, and validation behavior. (`completed`)
 3. `docs/tasks/complete/T-20260304-03-m12-recorder-and-completed-edit-tag-ui.md` - added session-recorder and completed-session edit UI for tag chips, add-tag flow, and manage-tags flow including rename/delete/undelete interactions. (`completed`)
-4. `docs/tasks/T-20260304-04-m12-tag-tests-and-doc-updates.md` - add targeted tests and update affected project/UI docs after the feature contract is implemented. (`planned`)
+4. `docs/tasks/complete/T-20260304-04-m12-tag-tests-and-doc-updates.md` - added final closeout coverage/evidence, promoted stable exercise-tag testing expectations, and finalized milestone status/docs updates. (`completed`)
 
 Rule:
 
@@ -171,9 +171,9 @@ Rule:
 
 ## Completion note (fill when milestone closes)
 
-- What changed:
-- Verification summary:
-- What remains:
+- What changed: delivered M12 end-to-end with durable `session_exercises.exercise_definition_id`, exercise-scoped tag-definition + assignment schema, repository/domain validation + attach/remove semantics, recorder and completed-edit tag UI flows, and final closeout docs/testing updates (including project-level exercise-tag testing policy).
+- Verification summary: targeted M12 Jest suites passed for schema/repository/recorder interactions, `./scripts/quality-fast.sh frontend` passed, and `./scripts/quality-slow.sh frontend` passed with fresh Maestro artifacts under `apps/mobile/artifacts/maestro/ad-hoc/20260305-142244-50195`, `apps/mobile/artifacts/maestro/ad-hoc/20260305-142341-50993`, and `apps/mobile/artifacts/maestro/ad-hoc/20260305-142501-51774`.
+- What remains: none for M12 scope; follow-on work is a future analytics milestone that consumes `(exercise_definition_id, tag_definition_id)` data.
 
 ## Status update checklist (mandatory during task closeout)
 

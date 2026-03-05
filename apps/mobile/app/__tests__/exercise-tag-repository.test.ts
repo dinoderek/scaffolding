@@ -187,6 +187,38 @@ describe('exercise tag repository', () => {
     });
   });
 
+  it('keeps historical assignment visibility when assigned tags point to soft-deleted definitions', async () => {
+    const store = createMockStore();
+    const repository = createExerciseTagRepository(store);
+    const deletedAt = new Date('2026-03-05T14:00:00.000Z');
+
+    store.listAssignedTags.mockResolvedValue([
+      {
+        assignmentId: 'assignment-1',
+        sessionExerciseId: 'session-exercise-1',
+        tagDefinitionId: 'tag-1',
+        exerciseDefinitionId: 'exercise-1',
+        name: 'Competition Pause',
+        normalizedName: 'competition pause',
+        deletedAt,
+        assignedAt: new Date('2026-03-05T13:59:00.000Z'),
+      },
+    ]);
+
+    const assigned = await repository.listAssignedTagsForSessionExercise('session-exercise-1');
+
+    expect(assigned).toEqual([
+      expect.objectContaining({
+        assignmentId: 'assignment-1',
+        tagDefinitionId: 'tag-1',
+        deletedAt,
+      }),
+    ]);
+    expect(store.listAssignedTags).toHaveBeenCalledWith({
+      sessionExerciseId: 'session-exercise-1',
+    });
+  });
+
   it('rejects cross-definition tag assignment for logged exercises', async () => {
     const store = createMockStore();
     const repository = createExerciseTagRepository(store);

@@ -55,6 +55,17 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
 - During execution sessions, run a targeted test or gate after each meaningful change, then run `./scripts/quality-fast.sh` before task closeout.
 - Run `./scripts/quality-slow.sh <area>` when the task card's risk triggers require slower local runtime/contract checks.
 
+## Exercise-tag coverage policy (M12 onward)
+
+- Applies to exercise-tag schema/repository/UI work in the mobile local runtime.
+- Required coverage should include:
+  - schema/migration assertions for `exercise_tag_definitions`, `session_exercise_tags`, and durable `session_exercises.exercise_definition_id` linkage,
+  - repository/domain assertions for normalized duplicate prevention, scoped attach validation, and assignment uniqueness protection,
+  - assignment-history semantics where soft-deleted tag definitions stay hidden from default suggestions but existing logged-exercise assignments remain queryable/listable,
+  - recorder interaction assertions for add/select/create/manage (rename/delete/undelete) and chip removal,
+  - completed-edit parity assertions for tag attach/remove behavior already supported in active recorder mode.
+- Use targeted Jest coverage for the scenario matrix, and require `./scripts/quality-slow.sh frontend` at milestone closeout or when runtime-sensitive recorder tag behavior changes.
+
 ## Mobile auth bootstrap coverage policy (M11 onward)
 
 - Applies to mobile auth/session-foundation work before generic sync exists.
