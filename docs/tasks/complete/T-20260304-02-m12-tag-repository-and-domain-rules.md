@@ -1,7 +1,7 @@
 ---
 task_id: T-20260304-02
 milestone_id: "M12"
-status: planned
+status: completed
 ui_impact: "no"
 areas: "frontend|docs"
 runtimes: "docs|node|expo|sql"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/milestones/M12-exercise-tags.md"
 
 - Task ID: `T-20260304-02`
 - Title: M12 tag repository and domain rules
-- Status: `planned`
+- Status: `completed`
 - File location rule:
   - author active cards in `docs/tasks/T-20260304-02-m12-tag-repository-and-domain-rules.md`
   - move the file to `docs/tasks/complete/T-20260304-02-m12-tag-repository-and-domain-rules.md` when `Status` becomes `completed` or `outdated`
@@ -56,7 +56,7 @@ docs_touched: "docs/specs/milestones/M12-exercise-tags.md"
 - Known stale references or assumptions (must be explicit; write `none` if none):
   - assumes Task `T-20260304-01` lands first so repository code can rely on durable `exercise_definition_id`
 - Optional helper command (recommended):
-  - `./scripts/task-bootstrap.sh docs/tasks/T-20260304-02-m12-tag-repository-and-domain-rules.md`
+  - `./scripts/task-bootstrap.sh docs/tasks/complete/T-20260304-02-m12-tag-repository-and-domain-rules.md`
 
 ## Objective
 
@@ -157,24 +157,25 @@ Implement the repository/domain layer for exercise tags so tag creation, rename,
 
 - Standard local fast gate: `./scripts/quality-fast.sh frontend`
 - Standard local slow gate: `N/A`
-- Optional closeout validation helper (recommended before handoff): `./scripts/task-closeout-check.sh docs/tasks/T-20260304-02-m12-tag-repository-and-domain-rules.md`
+- Optional closeout validation helper (recommended before handoff): `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260304-02-m12-tag-repository-and-domain-rules.md`
 - Additional gate(s), if any:
   - targeted repository Jest command(s)
 
 ## Evidence
 
-- Repository behavior summary for create/rename/delete/undelete/attach/remove
-- Targeted repository test results
-- Manual verification summary (required when CI is absent/partial):
-  - confirm repository returns stable suggestion and assignment semantics for the UI layer to consume
+- Repository behavior summary for create/rename/delete/undelete/attach/remove:
+  - repository now enforces trimmed name input, preserved display casing, lowercased duplicate key checks, typed domain errors, scoped suggestion listing, and cross-definition assignment validation.
+- Targeted repository test results:
+  - `app/__tests__/exercise-tag-repository.test.ts` passed with 11/11 tests covering list/suggestion defaults, create/rename validation, delete/undelete persistence calls, cross-definition assignment rejection, duplicate assignment rejection, and assignment list/remove behavior.
+- Manual verification summary (required when CI is absent/partial): verified repository contracts and exported helpers align with planned recorder/manage-tags integration points (`listTagSuggestions`, `create/rename`, `delete/undelete`, `attach/remove`, `listAssignedTagsForSessionExercise`) and return stable domain error codes for UI handling.
 - Deferred/manual hosted checks summary (owner + trigger timing), if applicable:
   - `N/A`
 
 ## Completion note (fill at end per `docs/specs/04-ai-development-playbook.md`)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: added `apps/mobile/src/data/exercise-tags.ts` with a new Drizzle-backed exercise-tag store and repository APIs for scoped listing/suggestions, create, rename, soft-delete/undelete, logged-exercise attach/remove, and assigned-tag listing; implemented tag-name normalization (trim + case-insensitive duplicate key with preserved display casing) and explicit domain errors for blank names, duplicate names, cross-definition assignment, and duplicate assignment; wired exports through `apps/mobile/src/data/index.ts`; added `apps/mobile/app/__tests__/exercise-tag-repository.test.ts` covering the repository/domain rules.
+- What tests ran: `npm test -- --runInBand app/__tests__/exercise-tag-repository.test.ts`; `./scripts/quality-fast.sh frontend` (pass; lint reports pre-existing warnings only).
+- What remains: M12 tasks `T-20260304-03` (tag UI wiring) and `T-20260304-04` (additional tests/doc closeout) remain open.
 
 ## Status update checklist (mandatory at closeout)
 
@@ -184,4 +185,4 @@ Implement the repository/domain layer for exercise tags so tag creation, rename,
 - If the task changed significant cross-cutting behavior, ensure the relevant project-level docs (`03`, `04`, `06`) were updated in the same session rather than only the milestone/task docs.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.
-- Run `./scripts/task-closeout-check.sh docs/tasks/T-20260304-02-m12-tag-repository-and-domain-rules.md` (or document why `N/A`) before handoff.
+- Run `./scripts/task-closeout-check.sh docs/tasks/complete/T-20260304-02-m12-tag-repository-and-domain-rules.md` (or document why `N/A`) before handoff.
