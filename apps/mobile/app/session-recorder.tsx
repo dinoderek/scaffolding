@@ -38,6 +38,8 @@ import {
 } from '@/src/data';
 import {
   listExerciseCatalogExercises,
+  listExerciseCatalogMuscleGroups,
+  type ExerciseCatalogMuscleGroup,
   type ExerciseCatalogExercise,
 } from '@/src/data/exercise-catalog';
 import { createDraftAutosaveController, type DraftAutosaveController } from '@/src/session-recorder/draft-autosave';
@@ -201,6 +203,37 @@ const getCompletedEditEndTimeValidationMessage = (
 function hasPersistableSessionContent(session: Session): boolean {
   return session.locationId !== null || session.exercises.length > 0;
 }
+
+const normalizeTextSearchWords = (value: string): string[] =>
+  value
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((word) => word.length > 0);
+
+const indexExerciseCatalogMuscleGroups = (
+  muscleGroups: ExerciseCatalogMuscleGroup[]
+): Record<string, ExerciseCatalogMuscleGroup> =>
+  muscleGroups.reduce<Record<string, ExerciseCatalogMuscleGroup>>((indexed, muscleGroup) => {
+    indexed[muscleGroup.id] = muscleGroup;
+    return indexed;
+  }, {});
+
+const buildExercisePickerSearchText = (
+  exercise: ExerciseCatalogExercise,
+  muscleGroupsById: Record<string, ExerciseCatalogMuscleGroup>
+): string => {
+  const muscleTerms = exercise.mappings.flatMap((mapping) => {
+    const matchedMuscleGroup = muscleGroupsById[mapping.muscleGroupId];
+    if (!matchedMuscleGroup) {
+      return [mapping.muscleGroupId];
+    }
+
+    return [mapping.muscleGroupId, matchedMuscleGroup.displayName, matchedMuscleGroup.familyName];
+  });
+
+  return [exercise.name, ...muscleTerms].join(' ').toLowerCase();
+};
 
 const toPersistDraftExercises = (session: Session) =>
   session.exercises.map((exercise) => ({
@@ -373,6 +406,10 @@ export default function SessionRecorderScreen() {
   const [completedEditEndTouched, setCompletedEditEndTouched] = useState(false);
   const [completedEditSubmitAttempted, setCompletedEditSubmitAttempted] = useState(false);
   const [exercisePickerOptions, setExercisePickerOptions] = useState<ExerciseCatalogExercise[]>([]);
+  const [exercisePickerSearchValue, setExercisePickerSearchValue] = useState('');
+  const [exercisePickerMuscleGroupsById, setExercisePickerMuscleGroupsById] = useState<
+    Record<string, ExerciseCatalogMuscleGroup>
+  >({});
   const [isExerciseCatalogLoading, setIsExerciseCatalogLoading] = useState(false);
   const [exerciseCatalogLoadError, setExerciseCatalogLoadError] = useState<string | null>(null);
   const [isExerciseCreateModalVisible, setIsExerciseCreateModalVisible] = useState(false);
@@ -626,8 +663,12 @@ export default function SessionRecorderScreen() {
     setExerciseCatalogLoadError(null);
 
     try {
-      const loadedExercises = await listExerciseCatalogExercises();
+      const [loadedExercises, loadedMuscleGroups] = await Promise.all([
+        listExerciseCatalogExercises(),
+        listExerciseCatalogMuscleGroups(),
+      ]);
       setExercisePickerOptions(loadedExercises);
+      setExercisePickerMuscleGroupsById(indexExerciseCatalogMuscleGroups(loadedMuscleGroups));
     } catch {
       setExerciseCatalogLoadError('Unable to load exercises right now.');
     } finally {
@@ -644,11 +685,15 @@ export default function SessionRecorderScreen() {
         setExerciseCatalogLoadError(null);
 
         try {
-          const loadedExercises = await listExerciseCatalogExercises();
+          const [loadedExercises, loadedMuscleGroups] = await Promise.all([
+            listExerciseCatalogExercises(),
+            listExerciseCatalogMuscleGroups(),
+          ]);
           if (cancelled) {
             return;
           }
           setExercisePickerOptions(loadedExercises);
+          setExercisePickerMuscleGroupsById(indexExerciseCatalogMuscleGroups(loadedMuscleGroups));
         } catch {
           if (cancelled) {
             return;
@@ -712,6 +757,20 @@ export default function SessionRecorderScreen() {
         ? state.locations
         : state.locations.filter((location) => !location.archived),
     [state.locations, state.showArchivedInManager]
+  );
+  const exercisePickerSearchWords = useMemo(
+    () => normalizeTextSearchWords(exercisePickerSearchValue),
+    [exercisePickerSearchValue]
+  );
+  const filteredExercisePickerOptions = useMemo(
+    () =>
+      exercisePickerSearchWords.length === 0
+        ? exercisePickerOptions
+        : exercisePickerOptions.filter((exercisePreset) => {
+            const searchText = buildExercisePickerSearchText(exercisePreset, exercisePickerMuscleGroupsById);
+            return exercisePickerSearchWords.some((searchWord) => searchText.includes(searchWord));
+          }),
+    [exercisePickerMuscleGroupsById, exercisePickerOptions, exercisePickerSearchWords]
   );
   const exerciseIdsKey = useMemo(
     () => state.session.exercises.map((exercise) => exercise.id).join('|'),
@@ -1022,6 +1081,7 @@ export default function SessionRecorderScreen() {
       exerciseActionMenuVisible: false,
       activeExerciseActionId: null,
     }));
+    setExercisePickerSearchValue('');
     void reloadExercisePickerOptions();
   };
 
@@ -1031,6 +1091,7 @@ export default function SessionRecorderScreen() {
       exercisePickerVisible: false,
       exerciseSelectionTargetId: null,
     }));
+    setExercisePickerSearchValue('');
   };
 
   const selectExercisePreset = (exercisePresetId: string) => {
@@ -1747,9 +1808,6 @@ export default function SessionRecorderScreen() {
                   </Pressable>
                 </View>
               ))}
-              {exercise.tags.length === 0 ? (
-                <Text style={styles.exerciseTagEmptyText}>No tags yet.</Text>
-              ) : null}
             </View>
           </View>
         )}
@@ -1940,8 +1998,33 @@ export default function SessionRecorderScreen() {
             onPress={dismissExerciseModal}
           />
 
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Select Exercise</Text>
+          <View style={[styles.modalCard, styles.exercisePickerModalCard]}>
+            <View style={styles.exercisePickerHeaderRow}>
+              <Text style={styles.modalTitle}>Select Exercise</Text>
+              <View style={styles.exercisePickerHeaderActionRow}>
+                <Pressable
+                  accessibilityLabel="Open exercise catalog manage flow"
+                  style={styles.exercisePickerIconButton}
+                  onPress={openExerciseCatalogFromRecorder}>
+                  <Text style={styles.exercisePickerIconButtonText}>≡</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityLabel="Open inline exercise create"
+                  style={styles.exercisePickerIconButton}
+                  onPress={openInlineExerciseCreate}>
+                  <Text style={styles.exercisePickerIconButtonText}>+</Text>
+                </Pressable>
+              </View>
+            </View>
+            <TextInput
+              accessibilityLabel="Exercise filter input"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="Filter by exercise or muscle group"
+              style={styles.input}
+              value={exercisePickerSearchValue}
+              onChangeText={setExercisePickerSearchValue}
+            />
             <ScrollView contentContainerStyle={styles.modalList}>
               {isExerciseCatalogLoading ? <Text style={styles.emptyText}>Loading exercises...</Text> : null}
               {!isExerciseCatalogLoading && exerciseCatalogLoadError ? (
@@ -1949,7 +2032,7 @@ export default function SessionRecorderScreen() {
               ) : null}
               {!isExerciseCatalogLoading && !exerciseCatalogLoadError ? (
                 <>
-                  {exercisePickerOptions.map((exercisePreset) => (
+                  {filteredExercisePickerOptions.map((exercisePreset) => (
                     <Pressable
                       key={exercisePreset.id}
                       accessibilityLabel={`Select exercise ${exercisePreset.name}`}
@@ -1958,29 +2041,15 @@ export default function SessionRecorderScreen() {
                       <Text style={styles.pickerOptionText}>{exercisePreset.name}</Text>
                     </Pressable>
                   ))}
-                  {exercisePickerOptions.length === 0 ? (
-                    <Text style={styles.emptyText}>No active exercises available.</Text>
+                  {filteredExercisePickerOptions.length === 0 ? (
+                    <Text style={styles.emptyText}>
+                      {exercisePickerOptions.length === 0 ? 'No active exercises available.' : 'No exercises match that filter.'}
+                    </Text>
                   ) : null}
                 </>
               ) : null}
             </ScrollView>
 
-            <View style={styles.equalButtonRow}>
-              <Pressable
-                style={styles.secondaryActionButton}
-                onPress={() => {
-                  openExerciseCatalogFromRecorder();
-                }}>
-                <Text style={styles.secondaryActionButtonText}>Manage</Text>
-              </Pressable>
-              <Pressable
-                style={styles.secondaryActionButton}
-                onPress={() => {
-                  openInlineExerciseCreate();
-                }}>
-                <Text style={styles.secondaryActionButtonText}>Add new</Text>
-              </Pressable>
-            </View>
           </View>
         </View>
       </Modal>
@@ -2473,10 +2542,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: uiColors.textMuted,
   },
-  exerciseTagEmptyText: {
-    fontSize: 12,
-    color: uiColors.textSecondary,
-  },
   setList: {
     gap: 8,
   },
@@ -2576,6 +2641,36 @@ const styles = StyleSheet.create({
     backgroundColor: uiColors.surfaceDefault,
     padding: 16,
     gap: 12,
+  },
+  exercisePickerModalCard: {
+    height: '80%',
+  },
+  exercisePickerHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  exercisePickerHeaderActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exercisePickerIconButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: uiColors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: uiColors.surfaceDefault,
+  },
+  exercisePickerIconButtonText: {
+    fontSize: 18,
+    lineHeight: 18,
+    fontWeight: '700',
+    color: uiColors.textMuted,
   },
   tagModalCard: {
     height: '80%',

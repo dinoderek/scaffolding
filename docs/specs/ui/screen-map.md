@@ -42,7 +42,7 @@ Brief entrypoint map of the current mobile screens.
 - Key states (high level):
   - active mode
   - completed-edit loading/error/content states
-  - in-route picker/editor/action modals
+  - in-route picker/editor/action modals (exercise picker includes text filtering by exercise name + linked muscle groups, with compact header icon actions for manage/add)
   - in-route exercise-tag add/manage modals (search/select/create, rename/delete/undelete, deleted-visibility toggle)
 - Key exits:
   - `exercise-catalog` (`source=session-recorder&intent=manage` from exercise picker)

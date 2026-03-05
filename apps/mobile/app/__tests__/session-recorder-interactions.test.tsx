@@ -261,25 +261,27 @@ jest.mock('@/src/data/exercise-catalog', () => ({
       id: 'sys_barbell_back_squat',
       name: 'Barbell Squat',
       deletedAt: null,
-      mappings: [],
+      mappings: [{ id: 'map-squat-quads', muscleGroupId: 'quads', weight: 1, role: 'primary' }],
     },
     {
       id: 'sys_barbell_bench_press',
       name: 'Bench Press',
       deletedAt: null,
-      mappings: [],
+      mappings: [{ id: 'map-bench-chest', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
     },
     {
       id: 'sys_romanian_deadlift',
       name: 'Deadlift',
       deletedAt: null,
-      mappings: [],
+      mappings: [{ id: 'map-deadlift-hamstrings', muscleGroupId: 'hamstrings', weight: 1, role: 'primary' }],
     },
   ]),
   listExerciseCatalogMuscleGroups: jest.fn().mockResolvedValue([
     { id: 'chest', displayName: 'Chest', familyName: 'Chest', sortOrder: 0 },
     { id: 'triceps', displayName: 'Triceps', familyName: 'Arms', sortOrder: 1 },
     { id: 'delts_front', displayName: 'Front Delts', familyName: 'Shoulders', sortOrder: 2 },
+    { id: 'quads', displayName: 'Quads', familyName: 'Legs', sortOrder: 3 },
+    { id: 'hamstrings', displayName: 'Hamstrings', familyName: 'Legs', sortOrder: 4 },
   ]),
   saveExerciseCatalogExercise: jest.fn().mockImplementation(async (input: any) => ({
     id: input.id ?? 'custom-exercise-1',
@@ -393,6 +395,7 @@ describe('SessionRecorderScreen exercise interactions', () => {
     expect(screen.queryByText('Select Exercise')).toBeNull();
     expect(screen.getByText('Barbell Squat')).toBeTruthy();
     expect(screen.queryByText('No exercises logged yet.')).toBeNull();
+    expect(screen.queryByText('No tags yet.')).toBeNull();
 
     fireEvent.changeText(screen.getByLabelText('Weight for exercise 1 set 1'), '225');
     fireEvent.changeText(screen.getByLabelText('Reps for exercise 1 set 1'), '5');
@@ -401,11 +404,34 @@ describe('SessionRecorderScreen exercise interactions', () => {
     expect(screen.getByDisplayValue('5')).toBeTruthy();
   });
 
+  it('filters exercise picker by any query word across exercise names and muscle groups', async () => {
+    render(<SessionRecorderScreen />);
+
+    fireEvent.press(screen.getByText('Log new exercise'));
+    expect(await screen.findByLabelText('Select exercise Barbell Squat')).toBeTruthy();
+    expect(screen.getByLabelText('Select exercise Bench Press')).toBeTruthy();
+    expect(screen.getByLabelText('Select exercise Deadlift')).toBeTruthy();
+
+    fireEvent.changeText(screen.getByLabelText('Exercise filter input'), '   squAT   press  ');
+    await waitFor(() => {
+      expect(screen.getByLabelText('Select exercise Barbell Squat')).toBeTruthy();
+      expect(screen.getByLabelText('Select exercise Bench Press')).toBeTruthy();
+      expect(screen.queryByLabelText('Select exercise Deadlift')).toBeNull();
+    });
+
+    fireEvent.changeText(screen.getByLabelText('Exercise filter input'), '  CHEST ');
+    await waitFor(() => {
+      expect(screen.getByLabelText('Select exercise Bench Press')).toBeTruthy();
+      expect(screen.queryByLabelText('Select exercise Barbell Squat')).toBeNull();
+      expect(screen.queryByLabelText('Select exercise Deadlift')).toBeNull();
+    });
+  });
+
   it('creates a new exercise inline from the picker and keeps set add/remove interactions intact', async () => {
     render(<SessionRecorderScreen />);
 
     fireEvent.press(screen.getByText('Log new exercise'));
-    fireEvent.press(screen.getByText('Add new'));
+    fireEvent.press(screen.getByLabelText('Open inline exercise create'));
     expect(mockPush).not.toHaveBeenCalled();
     expect(await screen.findByText('Create Exercise')).toBeTruthy();
 
@@ -603,7 +629,7 @@ describe('SessionRecorderScreen exercise interactions', () => {
 
     fireEvent.press(screen.getByText('Log new exercise'));
     expect(await screen.findByLabelText('Select exercise Barbell Squat')).toBeTruthy();
-    fireEvent.press(screen.getByText('Manage'));
+    fireEvent.press(screen.getByLabelText('Open exercise catalog manage flow'));
     expect(mockPush).toHaveBeenCalledWith('/exercise-catalog?source=session-recorder&intent=manage');
     expect(screen.queryByText('Select Exercise')).toBeNull();
   });
@@ -614,7 +640,7 @@ describe('SessionRecorderScreen exercise interactions', () => {
     fireEvent.press(screen.getByText('Log new exercise'));
     expect(await screen.findByLabelText('Select exercise Barbell Squat')).toBeTruthy();
 
-    fireEvent.press(screen.getByText('Manage'));
+    fireEvent.press(screen.getByLabelText('Open exercise catalog manage flow'));
     expect(screen.queryByText('Select Exercise')).toBeNull();
 
     act(() => {
@@ -638,7 +664,7 @@ describe('SessionRecorderScreen exercise interactions', () => {
     });
 
     fireEvent.press(screen.getByText('Log new exercise'));
-    fireEvent.press(screen.getByText('Add new'));
+    fireEvent.press(screen.getByLabelText('Open inline exercise create'));
     expect(await screen.findByText('Create Exercise')).toBeTruthy();
 
     fireEvent.changeText(screen.getByLabelText('Exercise definition name'), 'Cable Fly');

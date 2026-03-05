@@ -53,8 +53,9 @@ Document app-specific UI semantics and guardrails for the current mobile app.
      - session list action menus
      - exercise catalog editor/action/delete modals
      - session recorder gym/exercise pickers/action menus and inline exercise creation editor
-2. Modal open/close is treated as state within the current route and should not be documented as a navigation transition.
-3. Dismiss overlays via backdrop press are common and expected when the flow is not destructive-final.
+2. In the `session-recorder` exercise picker, `Manage` and `Add new` are compact icon actions in the modal header row (same row as the title), replacing the old bottom text-button row.
+3. Modal open/close is treated as state within the current route and should not be documented as a navigation transition.
+4. Dismiss overlays via backdrop press are common and expected when the flow is not destructive-final.
 
 ### 3. Screen layout and spacing conventions (current app behavior)
 
@@ -78,11 +79,15 @@ Document app-specific UI semantics and guardrails for the current mobile app.
 2. Exercise catalog uses explicit field labels + inline validation/error messages and is the strongest current form pattern reference.
 3. `session-recorder` completed-edit mode includes start/end validation and an autosave-paused notice when timestamps are invalid.
 4. Validation/error feedback should remain near the relevant field/control whenever possible.
-5. The M11 profile sign-in form keeps auth failure messaging inline inside the same card as the email/password inputs.
-6. When auth config is unavailable, the profile route shows a warning state and disables sign-in rather than failing only after submit.
-7. The M11 profile sign-in form performs basic client-side email-shape validation before attempting the auth request.
-8. The signed-in profile route keeps `username`, email, and password edits in separate stacked sections with section-local submit buttons and inline feedback.
-9. Username save, email update, password update, and sign-out failures all stay inline on the profile route instead of redirecting or collapsing back to another screen.
+5. The `session-recorder` exercise picker includes a text filter that:
+   - trims and collapses extra whitespace in user input,
+   - matches case-insensitively,
+   - matches when any typed word appears in either exercise names or linked muscle-group metadata.
+6. The M11 profile sign-in form keeps auth failure messaging inline inside the same card as the email/password inputs.
+7. When auth config is unavailable, the profile route shows a warning state and disables sign-in rather than failing only after submit.
+8. The M11 profile sign-in form performs basic client-side email-shape validation before attempting the auth request.
+9. The signed-in profile route keeps `username`, email, and password edits in separate stacked sections with section-local submit buttons and inline feedback.
+10. Username save, email update, password update, and sign-out failures all stay inline on the profile route instead of redirecting or collapsing back to another screen.
 
 ### 6. Loading, empty, error, and feedback state handling
 
