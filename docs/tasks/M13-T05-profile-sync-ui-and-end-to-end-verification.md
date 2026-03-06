@@ -41,7 +41,7 @@ docs_touched: "docs/specs/milestones/M13-simple-backend-sync.md,docs/specs/ui/sc
 
 ## Objective
 
-Deliver the profile sync controls/status UX and close M13 verification with explicit proof for the two required user journeys.
+Deliver the profile sync controls/status UX and provide explicit proof for the two required user journeys owned by this task.
 
 ## Scope
 
@@ -57,6 +57,7 @@ Deliver the profile sync controls/status UX and close M13 verification with expl
 
 - New sync protocol/schema changes.
 - Multi-device semantics.
+- Reinstall restore-state parity verification (owned by `M13-T06`).
 
 ## UX Contract
 
@@ -94,10 +95,11 @@ Deliver the profile sync controls/status UX and close M13 verification with expl
 4. `./scripts/quality-fast.sh frontend` passes.
 5. `./scripts/quality-slow.sh frontend` passes with artifact evidence recorded.
 6. UI docs are updated for any changed profile/settings route behavior and semantics.
+7. Reinstall restore-parity proof is explicitly delegated to `docs/tasks/M13-T06-reinstall-restore-state-parity.md`.
 
 ## Docs touched (required)
 
-- `docs/specs/milestones/M13-simple-backend-sync.md` - closeout status and verification summary.
+- `docs/specs/milestones/M13-simple-backend-sync.md` - closeout status and journey-proof summary (restore-parity tracked in `M13-T06`).
 - `docs/specs/ui/screen-map.md` - profile/settings state updates if changed.
 - `docs/specs/ui/navigation-contract.md` - route/transition updates if changed.
 - `docs/specs/ui/ux-rules.md` - sync status semantics in profile UI.

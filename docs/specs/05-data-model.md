@@ -133,3 +133,11 @@ Update this file in the same task/session when any of the following change:
 - backend schema entities participating in user backup/sync,
 - sync data-scope boundaries,
 - identity/ownership invariants that affect data integrity.
+
+Sync impact gate (mandatory for every data-model change):
+
+- EVERY time a data model entity/relationship/ownership boundary is added or changed, sync impact MUST be explicitly addressed in the same task/session.
+- The task must record one explicit decision:
+  - `in sync scope` (with contract/mapping + implementation/test updates), or
+  - `out of sync scope` (with explicit rationale and guardrails).
+- Do not leave new/changed data-model elements with undefined sync behavior.

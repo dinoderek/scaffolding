@@ -57,6 +57,23 @@ Rule:
 - do not leave the authoritative description of significant sync/auth/offline behavior only in milestone/task docs;
 - promote stable behavior and verification expectations into the project-level docs above.
 
+## Data-model change sync gate (mandatory)
+
+Whenever a task changes the data model (add/change/remove entity, relationship, ownership classification, or sync-relevant field), sync impact MUST be addressed in the same task/session.
+
+Required decision (explicit, no implicit defaults):
+
+1. `In sync scope`:
+   - update `docs/specs/05-data-model.md`,
+   - update sync contract/mapping docs (`supabase/session-sync-api-contract.md` and/or milestone/task docs as applicable),
+   - update implementation/tests for sync behavior.
+2. `Out of sync scope`:
+   - document explicit rationale and boundary in the active task card and `docs/specs/05-data-model.md`,
+   - update verification expectations so exclusion is intentional and tested/guarded.
+
+Closeout rule:
+- do not mark a data-model-changing task `completed` unless its sync impact decision and required docs/test updates are complete.
+
 ## Runtime terminology and gate profiles
 
 Use these definitions when a task says "runtime", "runtime-specific gates", or "runtime-appropriate equivalents".
