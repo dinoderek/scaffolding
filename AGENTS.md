@@ -10,6 +10,7 @@ It defines what to load first and where detailed rules live.
 - `docs/specs/README.md`
 - `docs/specs/00-product.md`
 - `docs/specs/03-technical-architecture.md`
+- `docs/specs/05-data-model.md`
 - `docs/specs/04-ai-development-playbook.md`
 - `docs/specs/06-testing-strategy.md`
 - `docs/specs/09-project-structure.md`

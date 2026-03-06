@@ -1,6 +1,6 @@
 ---
 # Minimal machine-readable task metadata 
-task_id: <Milestone ID>-<Task Sequence>-<Task short name>
+task_id: <Milestone ID>-T<Task Sequence>-<Task short name>
 milestone_id: "M#"
 status: planned
 ui_impact: "yes|no"
@@ -14,9 +14,9 @@ docs_touched: "comma-separated paths or none"
 # Filename naming
 `docs/tasks/<task-id>.md`
 
-Where `<task-id>` is: `<Milestone ID>-<Task Sequence>-<Task short name>`
+Where `<task-id>` is: `<Milestone ID>-T<Task Sequence>-<Task short name>`
 
-So for example: `M33-04-Do_Something.md`
+So for example: `M33-T04-Do_Something.md`
 
 # Task Card Template
 
@@ -36,6 +36,7 @@ So for example: `M33-04-Do_Something.md`
 - Project directives: `docs/specs/README.md`
 - Milestone spec: `docs/specs/milestones/<milestone-id>.md`
 - Architecture (if relevant): `docs/specs/03-technical-architecture.md`
+- Data model (if relevant): `docs/specs/05-data-model.md`
 - Testing strategy: `docs/specs/06-testing-strategy.md`
 - Project structure: `docs/specs/09-project-structure.md` (always load for context; update only when task changes paths/layout/conventions)
 - UX standard (UI/UX tasks only; remove for non-UX tasks): `docs/specs/08-ux-delivery-standard.md`
@@ -120,6 +121,7 @@ UI task acceptance boilerplate (include/adapt when `UI Impact = yes`; remove for
 - For significant cross-cutting behavior changes (for example sync model, auth-gated sync behavior, conflict policy, offline/online semantics, runtime topology, or test-layer expectations), include the relevant project-level docs here:
   - `docs/specs/03-technical-architecture.md`
   - `docs/specs/04-ai-development-playbook.md`
+  - `docs/specs/05-data-model.md`
   - `docs/specs/06-testing-strategy.md`
 - Rule:
   - milestone/task docs are not substitutes for these project-level docs when behavior or verification expectations become part of the shared project contract
@@ -184,7 +186,7 @@ UI task acceptance boilerplate (include/adapt when `UI Impact = yes`; remove for
 - Update `Status` to `completed`, `blocked`, or `outdated`.
 - If `Status = completed` or `outdated`, move the task card to `docs/tasks/complete/` and update affected references in the same session.
 - Ensure completion note is filled before handoff.
-- If the task changed significant cross-cutting behavior, ensure the relevant project-level docs (`03`, `04`, `06`) were updated in the same session rather than only the milestone/task docs.
+- If the task changed significant cross-cutting behavior, ensure the relevant project-level docs (`03`, `04`, `05`, `06`) were updated in the same session rather than only the milestone/task docs.
 - For UI/UX tasks, update the relevant `docs/specs/ui/*.md` files (or record explicit `no update` rationale) and keep entries synthetic/overview-first.
 - If significant project-structure changes were made, update `docs/specs/09-project-structure.md` and mention it in completion note.
 - Update parent milestone task breakdown/status in the same session.

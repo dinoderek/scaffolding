@@ -11,6 +11,7 @@
 - Project directives: `docs/specs/README.md`
 - Product overview: `docs/specs/00-product.md`
 - Architecture: `docs/specs/03-technical-architecture.md`
+- Data model: `docs/specs/05-data-model.md`
 - Testing strategy: `docs/specs/06-testing-strategy.md`
 - Project structure: `docs/specs/09-project-structure.md`
 

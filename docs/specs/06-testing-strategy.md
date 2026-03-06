@@ -93,17 +93,20 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - backend-unavailable/profile-fetch failure staying inline on the profile route without signing the user out.
 - Prefer deterministic Jest coverage for the mobile auth/profile service wrappers and the profile route state transitions, then add local-Supabase + `Maestro` proof for the full happy path with deterministic fixture credentials.
 
-## Sync integration coverage policy (M11 onward)
+## Sync integration coverage policy (M13 onward)
 
 - Applies to mobile/frontend-backend sync work.
 - Required coverage should include the relevant subset of:
-  - local/frontend ahead of backend,
-  - backend ahead of local/frontend,
+  - first-enable bootstrap pull + local merge + convergence flush,
+  - event outbox ordering (`sequence_in_device`) and idempotency (`event_id`) behavior,
+  - full M13 data-scope backup coverage across user-owned entities (not only session-core tables),
+  - cadence behavior by context (`60s` general, `10s` while on `session-recorder`),
+  - already-logged-in journey: user starts session recording and sync eventually converges,
+  - logged-out-then-login journey: user logs in, bootstrap/merge converges, starts session recording, and sync eventually converges,
   - auth missing/expired or sync disabled due to no authenticated session,
-  - offline or backend-unavailable retry/recovery behavior,
-  - conflict resolution or conflict-avoidance path,
-  - delete/tombstone parity when sync scope includes removable entities.
-- Use mocks/fakes for the broader scenario matrix, then add at least one real cross-stack proof path with `Maestro` + local `Supabase` once the sync engine exists.
+  - offline or backend-unavailable retry/recovery behavior with locked backoff policy constants,
+  - projection/read-model correctness after event ingest/replay.
+- Use mocks/fakes for broad scenario coverage, then require at least one real cross-stack proof path with local `Supabase` validating event ingest, idempotent retries, and restorable projection state.
 
 ## Maestro contract ownership (M10)
 

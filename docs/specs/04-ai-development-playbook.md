@@ -10,6 +10,7 @@ Define the minimum scaffolding required before feature development, and standard
    - `docs/specs/README.md`
    - `docs/specs/00-product.md`
    - `docs/specs/03-technical-architecture.md`
+   - `docs/specs/05-data-model.md`
    - `docs/specs/06-testing-strategy.md`
    - `docs/specs/09-project-structure.md`
    - `docs/specs/08-ux-delivery-standard.md` (required for UI tasks)
@@ -23,6 +24,7 @@ Define the minimum scaffolding required before feature development, and standard
 1. Project level:
    - `docs/specs/README.md`
    - `docs/specs/03-technical-architecture.md`
+   - `docs/specs/05-data-model.md`
    - `docs/specs/06-testing-strategy.md`
    - `docs/specs/09-project-structure.md`
    - `docs/specs/11-maestro-runtime-and-testing-conventions.md` (required for Maestro runtime/testing work)
@@ -45,6 +47,8 @@ When a task materially changes cross-cutting behavior, update the relevant proje
   - for architecture/runtime behavior changes such as sync model, auth-gated sync behavior, conflict policy, offline/online semantics, or new subsystem boundaries
 - `docs/specs/04-ai-development-playbook.md`
   - for execution/context-loading workflow changes future agents must follow
+- `docs/specs/05-data-model.md`
+  - for schema/entity ownership changes, sync-scope boundary changes, or updated data-model invariants
 - `docs/specs/06-testing-strategy.md`
   - for new test layers, changed verification expectations, or changed sync/offline/auth coverage requirements
 
@@ -186,13 +190,14 @@ Provide these references at execution start:
 2. Active milestone spec
 3. Active task card
 4. Any changed parent specs
-5. `docs/specs/09-project-structure.md` (always load for context; update only when task changes paths/layout/conventions)
-6. `docs/specs/08-ux-delivery-standard.md` (for UI tasks)
-7. `docs/specs/ui/README.md` (for UI tasks; use as the index to load only the relevant UI docs)
-8. Relevant `docs/specs/ui/*.md` bundle docs for the task (UI tasks only; usually `ux-rules`, `screen-map`, `navigation-contract`, `components-catalog`)
-9. `docs/specs/10-api-authn-authz-guidelines.md` (for backend API/auth work and API-consuming integration tasks)
-10. `supabase/session-sync-api-contract.md` (for session sync API work and FE/backend sync integration tasks, when present)
-11. `docs/specs/11-maestro-runtime-and-testing-conventions.md` (required for tasks that touch `apps/mobile/.maestro/**`, `apps/mobile/scripts/maestro*`, the Maestro harness/runtime helpers, or that require real iOS simulator smoke validation)
+5. `docs/specs/05-data-model.md` (always load when task touches schema/entities/sync scope; update when data-model boundaries change)
+6. `docs/specs/09-project-structure.md` (always load for context; update only when task changes paths/layout/conventions)
+7. `docs/specs/08-ux-delivery-standard.md` (for UI tasks)
+8. `docs/specs/ui/README.md` (for UI tasks; use as the index to load only the relevant UI docs)
+9. Relevant `docs/specs/ui/*.md` bundle docs for the task (UI tasks only; usually `ux-rules`, `screen-map`, `navigation-contract`, `components-catalog`)
+10. `docs/specs/10-api-authn-authz-guidelines.md` (for backend API/auth work and API-consuming integration tasks)
+11. `supabase/session-sync-api-contract.md` (for session sync API work and FE/backend sync integration tasks, when present)
+12. `docs/specs/11-maestro-runtime-and-testing-conventions.md` (required for tasks that touch `apps/mobile/.maestro/**`, `apps/mobile/scripts/maestro*`, the Maestro harness/runtime helpers, or that require real iOS simulator smoke validation)
 
 Recommended bootstrap helper (optional but preferred when available):
 
