@@ -111,6 +111,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - response contract semantics (`SUCCESS | FAILURE`, failure `error_index`, `should_retry`, free-text `message`, optional `error_event_id`),
   - projection/read-model correctness after event ingest/replay.
 - Use mocks/fakes for broad scenario coverage, then require at least one real cross-stack proof path with local `Supabase` validating event ingest, idempotent retries, and restorable projection state.
+- Backend-first M13 ingest/projection tasks should include the real local contract suite `./supabase/scripts/test-sync-events-ingest-contract.sh`.
 
 ## Maestro contract ownership (M10)
 
@@ -134,7 +135,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - `./scripts/quality-fast.sh frontend` -> `apps/mobile` `lint` + `typecheck` + `test`
   - `./scripts/quality-fast.sh backend` -> `./supabase/scripts/test-fast.sh`
   - `./scripts/quality-slow.sh frontend` -> `Maestro` local simulator smoke + data-smoke + auth/profile happy-path commands
-  - `./scripts/quality-slow.sh backend` -> local backend auth/RLS and sync API contract suites (shared Supabase runtime baseline enforced)
+- `./scripts/quality-slow.sh backend` -> local backend auth/RLS, sync API contract, and sync ingest contract suites (shared Supabase runtime baseline enforced)
 - Rule:
   - wrappers reduce checklist repetition, but task cards still own trigger conditions and any hosted/manual checks.
 
@@ -145,6 +146,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - current required entrypoints include:
     - `./supabase/scripts/test-auth-authz.sh`
     - `./supabase/scripts/test-sync-api-contract.sh`
+    - `./supabase/scripts/test-sync-events-ingest-contract.sh`
     - `npm run test:e2e:ios:auth-profile` (via `apps/mobile/scripts/maestro-ios-auth-profile.sh`)
 - Expected baseline state:
   - a local Supabase runtime is reachable,
@@ -226,7 +228,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - `./supabase/scripts/test-fast.sh` (combined fast backend-local smoke suite)
   - repo-level wrapper mapping:
     - `./scripts/quality-fast.sh backend` -> `./supabase/scripts/test-fast.sh`
-    - `./scripts/quality-slow.sh backend` -> backend contract suites (`test-auth-authz.sh`, `test-sync-api-contract.sh`) that each call `ensure-local-runtime-baseline.sh`
+    - `./scripts/quality-slow.sh backend` -> backend contract suites (`test-auth-authz.sh`, `test-sync-api-contract.sh`, `test-sync-events-ingest-contract.sh`) that each call `ensure-local-runtime-baseline.sh`
 - Current automated backend-local coverage (minimum baseline):
   - migration/reset/seed flow
   - deterministic fixture presence (`anonymous`, `user_a`, `user_b`, optional helper fixture)

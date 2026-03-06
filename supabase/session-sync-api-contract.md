@@ -1,4 +1,4 @@
-# Session Sync API Contract (`M5 baseline` + `M13 planned event contract`)
+# Session Sync API Contract (`M5 baseline` + `M13 event contract`)
 
 ## Super simple summary
 
@@ -13,7 +13,7 @@
 ## Status / scope
 
 - M5 baseline status: implemented for local/backend validation.
-- M13 event contract status: planned and locked as the source-of-truth contract for implementation tasks `M13-T02+`.
+- M13 event contract status: locked and implemented on backend for `M13-T03`.
 - Current M5 implemented entities:
   - `gyms`
   - `sessions`
@@ -28,9 +28,8 @@
   - `exercise_muscle_mappings`
   - `exercise_tag_definitions`
   - `session_exercise_tags`
-- Out of scope for this contract lock:
+- Out of scope for this contract:
   - client outbox runtime implementation details
-  - backend ingest endpoint implementation details
   - multi-device conflict semantics
 
 ## Contract versions and precedence
@@ -38,11 +37,11 @@
 | Contract surface | Status | Primary client use |
 | --- | --- | --- |
 | M5 `PostgREST` row CRUD | Implemented (legacy baseline) | Existing baseline integrations and backend internals |
-| M13 `sync.events.ingest` batch envelope | Planned (locked) | Required client sync wire protocol for M13 |
+| M13 `sync.events.ingest` batch envelope | Implemented (backend) | Required client sync wire protocol for M13 |
 
 Rule:
 
-- when M13 client sync behavior is implemented, the mobile client must use the M13 event protocol as the primary wire contract.
+- M13 mobile sync wiring must use the M13 event protocol as the primary wire contract.
 
 ## M13 event contract (locked)
 
@@ -99,6 +98,19 @@ Optional event fields:
 | --- | --- | --- |
 | `schema_version` | integer | optional, defaults to `1`; reject when unsupported. |
 | `trace_id` | `uuid` string | optional diagnostics correlation id. |
+
+Implementation note (`M13-T03`):
+
+- current backend validation is strict on ordering/compatibility but permissive on id string format (`batch_id`, `event_id`, `trace_id`) to preserve compatibility with the current mobile outbox id generation; client contract target remains UUID-like ids.
+
+### M13 backend endpoint mapping (implemented)
+
+- Provider-neutral method: `sync.events.ingest`
+- Supabase mapping: `POST /rest/v1/rpc/sync_events_ingest`
+- Schema profile headers:
+  - `Accept-Profile: app_public`
+  - `Content-Profile: app_public`
+- Body shape: request envelope fields `device_id`, `batch_id`, `sent_at_ms`, `events`.
 
 ### Entity-to-event mapping (full M13 scope)
 
@@ -357,17 +369,24 @@ Coverage includes:
 - cross-user read/update denial
 - cross-user parent/child ownership mismatch denial
 
-M13 contract-lock verification expectations (to be implemented in M13 follow-up tasks):
+M13 backend ingest/projection integration/contract suite (`M13-T03`):
 
-- request envelope validation for required vs optional fields
-- entity/event compatibility validation for all eight M13 data-scope entities
+- `supabase/tests/sync-events-ingest-contract.sh`
+- wrapper: `supabase/scripts/test-sync-events-ingest-contract.sh`
+
+Coverage includes:
+
+- authenticated success-path ingest across all eight M13 data-scope entities with projection verification
+- request-order processing with stop-on-first-failure + prefix-commit proof
 - idempotency checks:
-  - duplicate event with same payload -> success without replay side effects
-  - duplicate event id with changed payload -> `FAILURE` + `should_retry=false`
+  - duplicate replay with same event body -> `SUCCESS` no-op
+  - duplicate `event_id` with changed event body -> `FAILURE` + `should_retry=false`
 - ordering checks:
-  - strict in-order batch processing
-  - stop-on-first-failure at `error_index`
-  - prefix commit behavior (pre-failure events applied; failure event and later events not applied)
+  - sequence gap -> `FAILURE` + `should_retry=true`
+  - recovery after sequence gap with missing event replay
 - response-envelope checks:
   - `status=SUCCESS` for full success batches
-  - `status=FAILURE` with `error_index`, `should_retry`, and free-text `message`
+  - `status=FAILURE` with `error_index`, `should_retry`, optional `error_event_id`, and free-text `message`
+- auth/RLS denial checks:
+  - unauthenticated ingest denied
+  - cross-user reads denied on ingest metadata and projected rows

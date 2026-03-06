@@ -1,7 +1,7 @@
 ---
 task_id: M13-T03-backend-ingest-idempotency-and-projection
 milestone_id: "M13"
-status: planned
+status: completed
 ui_impact: "no"
 areas: "backend|cross-stack"
 runtimes: "supabase|sql|deno"
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/milestones/M13-simple-backend-sync.md,docs/specs/05-da
 
 - Task ID: `M13-T03-backend-ingest-idempotency-and-projection`
 - Title: M13 backend event ingest, idempotency, and projection
-- Status: `planned`
+- Status: `completed`
 - File location rule:
   - author active cards in `docs/tasks/<task-id>.md`
   - move the file to `docs/tasks/complete/<task-id>.md` when `Status` becomes `completed` or `outdated`
@@ -106,6 +106,6 @@ Implement backend event ingest and projection so outbox events are applied idemp
 
 ## Completion note (fill at end)
 
-- What changed:
-- What tests ran:
-- What remains:
+- What changed: added migration `supabase/migrations/20260306170000_m13_sync_events_ingest_projection.sql` implementing M13 ingest metadata tables, full-scope projection tables/columns/constraints/RLS, and RPC endpoint `app_public.sync_events_ingest` with strict request-order processing, stop-on-first-failure, prefix commit, idempotency by `(owner_user_id, device_id, event_id)`, and projection apply dispatch; added backend contract suite `supabase/tests/sync-events-ingest-contract.sh` plus wrapper `supabase/scripts/test-sync-events-ingest-contract.sh`; wired the new suite into `./scripts/quality-slow.sh backend`; updated required specs/docs (`supabase/session-sync-api-contract.md`, `docs/specs/05-data-model.md`, `docs/specs/06-testing-strategy.md`, `docs/specs/tech/client-sync-engine.md`, and `docs/specs/milestones/M13-simple-backend-sync.md`).
+- What tests ran: `./supabase/scripts/test-sync-events-ingest-contract.sh`; `./scripts/quality-fast.sh backend`; `./scripts/quality-slow.sh backend`.
+- What remains: M13-T04 (`bootstrap/merge/convergence`) and M13-T05 (`profile UX + end-to-end integration`) remain open.

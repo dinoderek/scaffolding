@@ -22,7 +22,7 @@ This document is project-level source of truth for what data exists and how it i
 - auth identity and account profile management.
 - not the same as generic sync-domain backup.
 
-3. Backend sync/projection layer (M13 planned)
+3. Backend sync/projection layer (M13 implemented baseline)
 - event ingest + projection for user-domain backup/restore.
 
 ## Local schema inventory (current)
@@ -53,16 +53,21 @@ This document is project-level source of truth for what data exists and how it i
 - `auth.users` (identity)
 - `app_public.user_profiles` (username profile data, `1:1` with `auth.users(id)`)
 
-### Sync-domain tables from M5 baseline
+### Sync-domain projection tables (M13 backend baseline)
 
-- `app_public.gyms`
+- `app_public.gyms` (`deleted_at` projection support)
 - `app_public.sessions`
-- `app_public.session_exercises`
-- `app_public.exercise_sets`
+- `app_public.session_exercises` (`exercise_definition_id` + `deleted_at` projection support)
+- `app_public.exercise_sets` (`deleted_at` projection support)
+- `app_public.exercise_definitions`
+- `app_public.exercise_muscle_mappings`
+- `app_public.exercise_tag_definitions`
+- `app_public.session_exercise_tags`
 
-Note:
-- M5 sync-domain coverage is a partial subset of current local user-owned domain entities.
-- M13 expands backup expectations to all user-owned local domain entities through event ingest + projection.
+### Ingest metadata tables (M13 backend baseline)
+
+- `app_public.sync_device_ingest_state`
+- `app_public.sync_ingested_events`
 
 ## Ownership and identity invariants
 
@@ -71,7 +76,7 @@ Note:
 3. Sync transport must be idempotent for repeated delivery attempts.
 4. Single-device assumptions are valid for M13; multi-device semantics are deferred.
 
-## M13 sync data-model contract (planned)
+## M13 sync data-model contract (implemented baseline)
 
 1. Client emits granular outbox events for user-domain mutations.
 2. Backend ingests events with idempotency key `(owner_user_id, device_id, event_id)` and strict per-device ordering via `sequence_in_device`.

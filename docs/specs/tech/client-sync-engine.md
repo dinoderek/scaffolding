@@ -83,6 +83,7 @@ Source-of-truth implementation files:
 
 3. Auth/profile/runtime integration (current M13 state)
 - Outbox/scheduler are local-runtime capable; auth-gated transport configuration is handled by subsequent M13 tasks.
+- Backend ingest endpoint is implemented at `POST /rest/v1/rpc/sync_events_ingest` (schema `app_public`) and returns the locked `SUCCESS | FAILURE` envelope shape consumed by the client engine.
 
 4. Navigation contract coupling
 - Recorder cadence depends on route segment `session-recorder`.
@@ -108,10 +109,14 @@ Source-of-truth implementation files:
 - failed suffix remains queued.
 - next eligible attempt scheduled via locked backoff policy.
 
-5. Invalid ingest response contract
+5. Non-retryable failure (`should_retry=false`)
+- delivery state sets `retryBlocked=true`; queue remains for explicit follow-up handling.
+- current backend examples include duplicate `event_id` with changed payload and stale sequence errors.
+
+6. Invalid ingest response contract
 - treated as transport failure path; retry backoff applied.
 
-6. In-flight contention
+7. In-flight contention
 - second concurrent flush returns `in_flight`, preventing duplicate send races.
 
 ## 5) Test overview
@@ -131,6 +136,10 @@ Source-of-truth implementation files:
 4. Root wiring
 - `apps/mobile/app/__tests__/root-layout-auth-bootstrap.test.tsx`
 - coverage: scheduler bootstrap + pathname context update wiring.
+
+5. Backend ingest/projection contract
+- `supabase/tests/sync-events-ingest-contract.sh`
+- coverage: success projection, duplicate replay idempotency, duplicate-with-drift rejection, strict ordering + prefix commit, and auth/RLS denial paths.
 
 ## Maintenance rule for follow-up tasks
 

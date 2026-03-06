@@ -55,6 +55,13 @@ run_backend() {
     echo "[quality-slow] backend: test-sync-api-contract"
     "${REPO_ROOT}/supabase/scripts/test-sync-api-contract.sh"
   fi
+
+  if [[ ! -x "${REPO_ROOT}/supabase/scripts/test-sync-events-ingest-contract.sh" ]]; then
+    echo "[quality-slow] skipping backend sync-events-ingest-contract: wrapper not found or not executable"
+  else
+    echo "[quality-slow] backend: test-sync-events-ingest-contract"
+    "${REPO_ROOT}/supabase/scripts/test-sync-events-ingest-contract.sh"
+  fi
 }
 
 case "${area}" in
