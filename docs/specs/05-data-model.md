@@ -45,6 +45,9 @@ This document is project-level source of truth for what data exists and how it i
 ### Test/runtime-only data (not user backup scope)
 
 - `smoke_records`
+- `sync_outbox_events`
+- `sync_delivery_state`
+- `sync_runtime_state`
 
 ## Backend schema inventory (current)
 

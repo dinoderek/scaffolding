@@ -54,6 +54,12 @@ export const localRuntimeMigrations: RuntimeMigrationConfig = {
         tag: '0007_sync_outbox_delivery_state',
         breakpoints: true,
       },
+      {
+        idx: 8,
+        when: 1772808600000,
+        tag: '0008_sync_runtime_state',
+        breakpoints: true,
+      },
     ],
   },
   migrations: {
@@ -270,5 +276,14 @@ CREATE TABLE \`sync_outbox_events\` (
 CREATE UNIQUE INDEX \`sync_outbox_events_event_id_unique\` ON \`sync_outbox_events\` (\`event_id\`);--> statement-breakpoint
 CREATE UNIQUE INDEX \`sync_outbox_events_sequence_in_device_unique\` ON \`sync_outbox_events\` (\`sequence_in_device\`);--> statement-breakpoint
 CREATE INDEX \`sync_outbox_events_created_at_idx\` ON \`sync_outbox_events\` (\`created_at\`);`,
+    m0008: `CREATE TABLE \`sync_runtime_state\` (
+	\`id\` text PRIMARY KEY NOT NULL,
+	\`is_enabled\` integer DEFAULT 0 NOT NULL,
+	\`bootstrap_user_id\` text,
+	\`bootstrap_completed_at\` integer,
+	\`last_bootstrap_error\` text,
+	\`updated_at\` integer DEFAULT (unixepoch() * 1000) NOT NULL,
+	CONSTRAINT "sync_runtime_state_is_enabled_boolean_guard" CHECK("sync_runtime_state"."is_enabled" in (0, 1))
+);`,
   },
 };

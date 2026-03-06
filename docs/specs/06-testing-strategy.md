@@ -112,6 +112,10 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - projection/read-model correctness after event ingest/replay.
 - Use mocks/fakes for broad scenario coverage, then require at least one real cross-stack proof path with local `Supabase` validating event ingest, idempotent retries, and restorable projection state.
 - Backend-first M13 ingest/projection tasks should include the real local contract suite `./supabase/scripts/test-sync-events-ingest-contract.sh`.
+- Current frontend baseline suites for this policy include:
+  - `apps/mobile/app/__tests__/sync-bootstrap-merge.test.ts` (deterministic merge decisions + convergence-loop terminal behavior),
+  - `apps/mobile/app/__tests__/sync-runtime-bootstrap.test.ts` (first-enable trigger and logged-out-then-login bootstrap trigger),
+  - `apps/mobile/app/__tests__/sync-outbox-engine.test.ts` (batch response semantics, including retry scheduling and blocked failure mapping).
 
 ## Maestro contract ownership (M10)
 

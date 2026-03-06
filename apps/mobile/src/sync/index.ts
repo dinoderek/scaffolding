@@ -9,6 +9,15 @@ export {
   type SyncIngestTransport,
 } from './engine';
 export {
+  __privateForTests as __privateSyncBootstrapForTests,
+  fetchRemoteSyncProjectionState,
+  mergeRemoteProjectionIntoLocalState,
+  runSyncBootstrapMerge,
+  type SyncBootstrapConvergenceResult,
+  type SyncBootstrapMergeResult,
+  type SyncBootstrapRemoteState,
+} from './bootstrap';
+export {
   __resetSyncStateForTests,
   applySyncIngestResponse,
   calculateBackoffDelayMs,
@@ -29,6 +38,17 @@ export {
   type QueuedSyncEventInput,
   type SyncDeliveryStateSnapshot,
 } from './outbox';
+export {
+  __resetSyncRuntimeForTests,
+  flushSyncOutboxUntilSettled,
+  getSyncRuntimeState,
+  setSyncEnabled,
+  startSyncRuntime,
+  stopSyncRuntime,
+  type SyncBootstrapRunResult,
+  type SyncConvergenceResult,
+  type SyncRuntimeStateSnapshot,
+} from './runtime';
 export {
   createSyncScheduler,
   setDefaultSyncCadenceContext,

@@ -29,3 +29,8 @@ export {
   type SyncDeliveryState,
 } from './sync-delivery-state';
 export { syncOutboxEvents, type NewSyncOutboxEvent, type SyncOutboxEvent } from './sync-outbox-events';
+export {
+  syncRuntimeState,
+  type NewSyncRuntimeState,
+  type SyncRuntimeState,
+} from './sync-runtime-state';

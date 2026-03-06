@@ -7,7 +7,9 @@ import { AuthProvider, bootstrapAuthState } from '@/src/auth';
 import { bootstrapLocalDataLayer } from '@/src/data';
 import {
   setDefaultSyncCadenceContextFromPathname,
+  startSyncRuntime,
   startDefaultSyncScheduler,
+  stopSyncRuntime,
   stopDefaultSyncScheduler,
 } from '@/src/sync';
 
@@ -17,9 +19,11 @@ export default function RootLayout() {
   useEffect(() => {
     void bootstrapLocalDataLayer();
     void bootstrapAuthState();
+    startSyncRuntime();
     startDefaultSyncScheduler();
 
     return () => {
+      stopSyncRuntime();
       stopDefaultSyncScheduler();
     };
   }, []);

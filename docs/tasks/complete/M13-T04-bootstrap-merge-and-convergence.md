@@ -1,13 +1,13 @@
 ---
 task_id: M13-T04-bootstrap-merge-and-convergence
 milestone_id: "M13"
-status: planned
+status: completed
 ui_impact: "no"
 areas: "frontend|backend|cross-stack"
 runtimes: "node|expo|supabase"
 gates_fast: "./scripts/quality-fast.sh"
 gates_slow: "./scripts/quality-slow.sh"
-docs_touched: "docs/specs/milestones/M13-simple-backend-sync.md,docs/specs/03-technical-architecture.md,docs/specs/06-testing-strategy.md,docs/specs/tech/client-sync-engine.md"
+docs_touched: "docs/specs/milestones/M13-simple-backend-sync.md,docs/specs/03-technical-architecture.md,docs/specs/05-data-model.md,docs/specs/06-testing-strategy.md,docs/specs/tech/client-sync-engine.md"
 ---
 
 # Task Card
@@ -16,7 +16,7 @@ docs_touched: "docs/specs/milestones/M13-simple-backend-sync.md,docs/specs/03-te
 
 - Task ID: `M13-T04-bootstrap-merge-and-convergence`
 - Title: M13 first-enable bootstrap, merge, and convergence
-- Status: `planned`
+- Status: `completed`
 - File location rule:
   - author active cards in `docs/tasks/<task-id>.md`
   - move the file to `docs/tasks/complete/<task-id>.md` when `Status` becomes `completed` or `outdated`
@@ -97,12 +97,29 @@ Implement first-sync bootstrap and local merge flow, then converge outbox delive
 
 ## Evidence
 
-- merge-scenario test outputs
-- convergence proof notes
-- gate summaries
+- Targeted frontend suites:
+  - `npm run test -- app/__tests__/sync-bootstrap-merge.test.ts app/__tests__/sync-runtime-bootstrap.test.ts app/__tests__/root-layout-auth-bootstrap.test.tsx` (`pass`)
+- Gate summaries:
+  - `./scripts/quality-fast.sh frontend` (`pass`; existing repo lint warnings only)
+  - `./scripts/quality-slow.sh frontend` (`pass`; smoke, data-smoke, and auth-profile Maestro flows)
+- Convergence/failure proof notes:
+  - `sync-bootstrap-merge.test.ts` verifies deterministic merge winner selection and convergence loop terminal behavior.
+  - `sync-runtime-bootstrap.test.ts` verifies first-enable + logged-out-then-login bootstrap trigger paths.
+  - Existing `sync-outbox-engine.test.ts` coverage remains for failure mapping (`failure_retry_scheduled`, `failure_blocked`) and ingest response contract handling.
 
 ## Completion note (fill at end)
 
 - What changed:
+  - Added first-enable sync runtime state persistence (`sync_runtime_state`) and migration `m0008`.
+  - Implemented `apps/mobile/src/sync/bootstrap.ts` for remote projection fetch, deterministic local-vs-remote merge, transactional local apply, and local convergence-event enqueue.
+  - Implemented `apps/mobile/src/sync/runtime.ts` for auth-gated transport wiring, first-enable/bootstrap trigger orchestration, and convergence flushing via `flushSyncOutboxUntilSettled`.
+  - Wired runtime start/stop into root layout startup.
+  - Added targeted tests for merge determinism, convergence-loop behavior, and logged-out-then-login bootstrap trigger orchestration.
+  - Updated milestone/architecture/data-model/testing/sync-engine docs to reflect adopted bootstrap/merge/convergence behavior.
 - What tests ran:
+  - `npm run test -- app/__tests__/sync-bootstrap-merge.test.ts app/__tests__/sync-runtime-bootstrap.test.ts app/__tests__/root-layout-auth-bootstrap.test.tsx`
+  - `./scripts/quality-fast.sh frontend`
+  - `./scripts/quality-slow.sh frontend`
 - What remains:
+  - `M13-T05` for profile sync UX/status presentation and explicit journey evidence in UI flows.
+  - `M13-T06` for reinstall restore-state parity verification.

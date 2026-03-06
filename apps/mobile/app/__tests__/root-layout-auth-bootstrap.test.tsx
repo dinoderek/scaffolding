@@ -5,7 +5,9 @@ import type { ReactNode } from 'react';
 const mockBootstrapLocalDataLayer = jest.fn();
 const mockBootstrapAuthState = jest.fn();
 const mockSetDefaultSyncCadenceContextFromPathname = jest.fn();
+const mockStartSyncRuntime = jest.fn();
 const mockStartDefaultSyncScheduler = jest.fn();
+const mockStopSyncRuntime = jest.fn();
 const mockStopDefaultSyncScheduler = jest.fn();
 
 jest.mock('@/src/data', () => ({
@@ -25,7 +27,9 @@ jest.mock('@/src/auth', () => {
 jest.mock('@/src/sync', () => ({
   setDefaultSyncCadenceContextFromPathname: (...args: unknown[]) =>
     mockSetDefaultSyncCadenceContextFromPathname(...args),
+  startSyncRuntime: (...args: unknown[]) => mockStartSyncRuntime(...args),
   startDefaultSyncScheduler: (...args: unknown[]) => mockStartDefaultSyncScheduler(...args),
+  stopSyncRuntime: (...args: unknown[]) => mockStopSyncRuntime(...args),
   stopDefaultSyncScheduler: (...args: unknown[]) => mockStopDefaultSyncScheduler(...args),
 }));
 
@@ -57,7 +61,9 @@ describe('RootLayout auth bootstrap wiring', () => {
     mockBootstrapLocalDataLayer.mockReset();
     mockBootstrapAuthState.mockReset();
     mockSetDefaultSyncCadenceContextFromPathname.mockReset();
+    mockStartSyncRuntime.mockReset();
     mockStartDefaultSyncScheduler.mockReset();
+    mockStopSyncRuntime.mockReset();
     mockStopDefaultSyncScheduler.mockReset();
     mockBootstrapLocalDataLayer.mockResolvedValue(undefined);
     mockBootstrapAuthState.mockResolvedValue(undefined);
@@ -70,6 +76,7 @@ describe('RootLayout auth bootstrap wiring', () => {
       expect(mockBootstrapLocalDataLayer).toHaveBeenCalledTimes(1);
     });
     expect(mockBootstrapAuthState).toHaveBeenCalledTimes(1);
+    expect(mockStartSyncRuntime).toHaveBeenCalledTimes(1);
     expect(mockStartDefaultSyncScheduler).toHaveBeenCalledTimes(1);
     expect(mockSetDefaultSyncCadenceContextFromPathname).toHaveBeenCalledWith('/session-list');
     expect(screen.getByTestId('root-stack')).toBeTruthy();
