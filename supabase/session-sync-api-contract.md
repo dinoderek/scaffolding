@@ -119,7 +119,7 @@ Implementation note (`M13-T03`):
 | `gyms` | `upsert`, `delete` | `delete` is soft-delete; undelete uses `upsert` with tombstone cleared |
 | `sessions` | `upsert`, `delete`, `complete` | `delete` is soft-delete; undelete uses `upsert` |
 | `session_exercises` | `upsert`, `delete`, `reorder` | `delete` is soft-delete; `upsert` can undelete |
-| `exercise_sets` | `upsert`, `delete`, `reorder` | `delete` is soft-delete; `upsert` can undelete |
+| `exercise_sets` | `upsert`, `delete`, `reorder` | `delete` is soft-delete; `upsert` can undelete and may include optional `set_type` (`warm_up`, `rir_0`, `rir_1`, `rir_2`) |
 | `exercise_definitions` | `upsert`, `delete` | `delete` is soft-delete; undelete uses `upsert` |
 | `exercise_muscle_mappings` | `attach`, `detach` | `attach` can recreate a previously detached edge |
 | `exercise_tag_definitions` | `upsert`, `delete` | `delete` is soft-delete; undelete uses `upsert` |

@@ -11,6 +11,7 @@ import {
   sessionExerciseTags,
   sessions,
 } from '@/src/data/schema';
+import { normalizeSessionSetType, type SessionSetTypeValue } from '@/src/data/set-types';
 
 import { enqueueSyncEventsTx, type QueuedSyncEventInput } from './outbox';
 
@@ -59,6 +60,7 @@ type ExerciseSetRow = {
   orderIndex: number;
   weightValue: string;
   repsValue: string;
+  setType: SessionSetTypeValue;
   deletedAtMs: number | null;
   createdAtMs: number;
   updatedAtMs: number;
@@ -254,6 +256,7 @@ const parseRemoteExerciseSet = (row: Record<string, unknown>): ExerciseSetRow =>
   orderIndex: Math.max(0, Math.floor(Number(row.order_index) || 0)),
   weightValue: typeof row.weight_value === 'string' ? row.weight_value : String(row.weight_value ?? ''),
   repsValue: typeof row.reps_value === 'string' ? row.reps_value : String(row.reps_value ?? ''),
+  setType: normalizeSessionSetType(row.set_type),
   deletedAtMs: normalizeOptionalEpochMs(row.deleted_at, 'exercise_sets.deleted_at'),
   createdAtMs: normalizeEpochMs(row.created_at, 'exercise_sets.created_at'),
   updatedAtMs: normalizeEpochMs(row.updated_at, 'exercise_sets.updated_at'),
@@ -323,6 +326,31 @@ const selectRows = async (
   return data ?? [];
 };
 
+const selectExerciseSetRows = async (
+  appPublicClient: ReturnType<SupabaseClient['schema']>
+): Promise<Record<string, unknown>[]> => {
+  const preferredColumns =
+    'id,session_exercise_id,order_index,weight_value,reps_value,set_type,deleted_at,created_at,updated_at';
+  const fallbackColumns = 'id,session_exercise_id,order_index,weight_value,reps_value,deleted_at,created_at,updated_at';
+
+  const { data, error } = await appPublicClient.from('exercise_sets').select(preferredColumns);
+  if (!error) {
+    return data ?? [];
+  }
+
+  const normalizedMessage = error.message.toLowerCase();
+  const missingSetTypeColumn = normalizedMessage.includes('set_type') && normalizedMessage.includes('does not exist');
+  if (!missingSetTypeColumn) {
+    throw new Error(`Unable to fetch remote exercise_sets: ${error.message}`);
+  }
+
+  const fallbackRows = await selectRows(appPublicClient.from('exercise_sets').select(fallbackColumns), 'exercise_sets');
+  return fallbackRows.map((row) => ({
+    ...row,
+    set_type: null,
+  }));
+};
+
 export const fetchRemoteSyncProjectionState = async (client: SupabaseClient): Promise<SyncBootstrapRemoteState> => {
   const appPublicClient = client.schema('app_public');
 
@@ -356,12 +384,7 @@ export const fetchRemoteSyncProjectionState = async (client: SupabaseClient): Pr
         ),
       'session_exercises'
     ),
-    selectRows(
-      appPublicClient
-        .from('exercise_sets')
-        .select('id,session_exercise_id,order_index,weight_value,reps_value,deleted_at,created_at,updated_at'),
-      'exercise_sets'
-    ),
+    selectExerciseSetRows(appPublicClient),
     selectRows(
       appPublicClient
         .from('exercise_definitions')
@@ -456,6 +479,7 @@ const readLocalProjectionState = (tx: MergeReadTx): ProjectionState => ({
       orderIndex: row.orderIndex,
       weightValue: row.weightValue,
       repsValue: row.repsValue,
+      setType: normalizeSessionSetType(row.setType),
       deletedAtMs: null,
       createdAtMs: row.createdAt.getTime(),
       updatedAtMs: row.updatedAt.getTime(),
@@ -855,6 +879,7 @@ const buildConvergenceEvents = (state: ProjectionState): QueuedSyncEventInput[] 
         order_index: row.orderIndex,
         weight_value: row.weightValue,
         reps_value: row.repsValue,
+        set_type: row.setType,
         created_at_ms: row.createdAtMs,
         updated_at_ms: row.updatedAtMs,
       },
@@ -1036,6 +1061,7 @@ const applyMergePlanTx = (tx: MergeWriteTx, input: { mergePlan: MergePlan; now: 
           orderIndex: row.orderIndex,
           weightValue: row.weightValue,
           repsValue: row.repsValue,
+          setType: row.setType,
           createdAt: new Date(row.createdAtMs),
           updatedAt: new Date(row.updatedAtMs),
         }))

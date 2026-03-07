@@ -32,7 +32,7 @@ This document is project-level source of truth for what data exists and how it i
 - `gyms`
 - `sessions`
 - `session_exercises`
-- `exercise_sets`
+- `exercise_sets` (optional `set_type` metadata: `warm_up | rir_0 | rir_1 | rir_2 | null`)
 - `exercise_definitions`
 - `exercise_muscle_mappings`
 - `exercise_tag_definitions`
@@ -61,7 +61,7 @@ This document is project-level source of truth for what data exists and how it i
 - `app_public.gyms` (`deleted_at` projection support)
 - `app_public.sessions`
 - `app_public.session_exercises` (`exercise_definition_id` + `deleted_at` projection support)
-- `app_public.exercise_sets` (`deleted_at` projection support)
+- `app_public.exercise_sets` (`deleted_at` projection support; optional `set_type` metadata projection)
 - `app_public.exercise_definitions`
 - `app_public.exercise_muscle_mappings`
 - `app_public.exercise_tag_definitions`
@@ -85,6 +85,7 @@ This document is project-level source of truth for what data exists and how it i
 2. Backend ingests events with idempotency key `(owner_user_id, device_id, event_id)` and strict per-device ordering via `sequence_in_device`.
 3. Backend projects applied events into restorable user-state models.
 4. Restore/bootstrap must be coherent across all user-owned entities listed in this document.
+5. `exercise_sets` metadata includes optional `set_type` (`warm_up | rir_0 | rir_1 | rir_2 | null`) and remains nullable for legacy/unspecified sets.
 
 ### Canonical event envelope invariants
 

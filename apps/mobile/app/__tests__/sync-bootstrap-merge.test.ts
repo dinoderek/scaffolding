@@ -1,4 +1,4 @@
-import { __privateSyncBootstrapForTests, flushSyncOutboxUntilSettled } from '@/src/sync';
+import { __privateSyncBootstrapForTests, fetchRemoteSyncProjectionState, flushSyncOutboxUntilSettled } from '@/src/sync';
 
 type ProjectionStateInput = Parameters<typeof __privateSyncBootstrapForTests.buildMergePlan>[0]['local'];
 
@@ -194,5 +194,116 @@ describe('sync bootstrap merge determinism', () => {
 
     expect(failureResult.status).toBe('not_converged');
     expect(failureResult.lastFlushResult.status).toBe('failure_retry_scheduled');
+  });
+
+  it('includes set_type in exercise_set convergence upserts', () => {
+    const events = __privateSyncBootstrapForTests.buildConvergenceEvents({
+      gyms: [],
+      sessions: [],
+      sessionExercises: [],
+      exerciseSets: [
+        {
+          id: 'set-1',
+          sessionExerciseId: 'sx-1',
+          orderIndex: 0,
+          weightValue: '100',
+          repsValue: '5',
+          setType: 'rir_2',
+          deletedAtMs: null,
+          createdAtMs: 1_000,
+          updatedAtMs: 2_000,
+        },
+      ],
+      exerciseDefinitions: [],
+      exerciseMuscleMappings: [],
+      exerciseTagDefinitions: [],
+      sessionExerciseTags: [],
+    });
+
+    expect(events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          entityType: 'exercise_sets',
+          eventType: 'upsert',
+          payload: expect.objectContaining({
+            set_type: 'rir_2',
+          }),
+        }),
+      ])
+    );
+  });
+
+  it('falls back when remote exercise_sets.set_type column is unavailable', async () => {
+    const exerciseSetRow = {
+      id: 'set-legacy',
+      session_exercise_id: 'sx-legacy',
+      order_index: 0,
+      weight_value: '80',
+      reps_value: '12',
+      deleted_at: null,
+      created_at: 1_000,
+      updated_at: 2_000,
+    };
+    const emptyRows: Record<string, unknown>[] = [];
+
+    const selectCalls: string[] = [];
+    const client = {
+      schema: () => ({
+        from: (table: string) => ({
+          select: (columns: string) => {
+            selectCalls.push(`${table}:${columns}`);
+
+            if (table === 'exercise_sets' && columns.includes('set_type')) {
+              return Promise.resolve({
+                data: null,
+                error: { message: 'column exercise_sets.set_type does not exist' },
+              });
+            }
+
+            if (table === 'exercise_sets') {
+              return Promise.resolve({
+                data: [exerciseSetRow],
+                error: null,
+              });
+            }
+
+            const dataByTable: Record<string, Record<string, unknown>[]> = {
+              gyms: emptyRows,
+              sessions: emptyRows,
+              session_exercises: emptyRows,
+              exercise_definitions: emptyRows,
+              exercise_muscle_mappings: emptyRows,
+              exercise_tag_definitions: emptyRows,
+              session_exercise_tags: emptyRows,
+            };
+            return Promise.resolve({
+              data: dataByTable[table] ?? emptyRows,
+              error: null,
+            });
+          },
+        }),
+      }),
+    };
+
+    const remoteState = await fetchRemoteSyncProjectionState(client as never);
+    expect(remoteState.exerciseSets).toEqual([
+      {
+        id: 'set-legacy',
+        sessionExerciseId: 'sx-legacy',
+        orderIndex: 0,
+        weightValue: '80',
+        repsValue: '12',
+        setType: null,
+        deletedAtMs: null,
+        createdAtMs: 1_000,
+        updatedAtMs: 2_000,
+      },
+    ]);
+    expect(selectCalls).toContain(
+      'exercise_sets:id,session_exercise_id,order_index,weight_value,reps_value,set_type,deleted_at,created_at,updated_at'
+    );
+    expect(selectCalls).toContain(
+      'exercise_sets:id,session_exercise_id,order_index,weight_value,reps_value,deleted_at,created_at,updated_at'
+    );
   });
 });

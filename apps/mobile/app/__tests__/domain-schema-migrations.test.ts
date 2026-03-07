@@ -65,6 +65,7 @@ describe('domain schema and runtime migrations', () => {
     );
     expect(migrationSql).toContain('CREATE INDEX `sessions_deleted_at_idx` ON `sessions` (`deleted_at`)');
     expect(migrationSql).toContain('CREATE INDEX `session_exercises_exercise_definition_id_idx` ON `session_exercises` (`exercise_definition_id`)');
+    expect(migrationSql).toContain('ALTER TABLE `exercise_sets` ADD `set_type` text;');
     expect(migrationSql).toContain(
       'CONSTRAINT "exercise_muscle_mappings_weight_positive" CHECK("exercise_muscle_mappings"."weight" > 0)'
     );

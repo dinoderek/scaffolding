@@ -77,5 +77,6 @@ export {
   type SessionGraphSnapshot,
   type SessionPersistenceRecord,
 } from './session-drafts';
+export { normalizeSessionSetType, type SessionSetType, type SessionSetTypeValue } from './set-types';
 export { insertSmokeRecord, listSmokeRecords, type SmokeRecord } from './smoke-records';
 export { runLocalDataRuntimeSmoke, type LocalDataRuntimeSmokeResult } from './runtime-smoke';

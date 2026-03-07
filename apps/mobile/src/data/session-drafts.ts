@@ -2,6 +2,7 @@ import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { bootstrapLocalDataLayer, type LocalDatabase } from './bootstrap';
 import { exerciseSets, sessionExercises, sessionExerciseTags, sessions } from './schema';
+import { normalizeSessionSetType, type SessionSetTypeValue } from './set-types';
 import { enqueueSyncEventsTx, type QueuedSyncEventInput } from '@/src/sync';
 
 export type SessionDraftStatus = 'active';
@@ -10,6 +11,7 @@ export type SessionDraftSetInput = {
   id?: string;
   repsValue: string;
   weightValue: string;
+  setType?: SessionSetTypeValue;
 };
 
 export type SessionDraftExerciseInput = {
@@ -143,6 +145,7 @@ type StoredDraftSetRecord = {
   orderIndex: number;
   repsValue: string;
   weightValue: string;
+  setType: SessionSetTypeValue;
 };
 
 type StoredDraftExerciseRecord = {
@@ -370,6 +373,7 @@ const loadDraftGraphBySessionId = (database: LocalDatabase, sessionId: string): 
       orderIndex: row.orderIndex,
       repsValue: row.repsValue,
       weightValue: row.weightValue,
+      setType: normalizeSessionSetType(row.setType),
     });
     acc.set(row.sessionExerciseId, current);
     return acc;
@@ -428,6 +432,7 @@ const replaceSessionExerciseGraph = (
             orderIndex: exerciseSets.orderIndex,
             repsValue: exerciseSets.repsValue,
             weightValue: exerciseSets.weightValue,
+            setType: exerciseSets.setType,
           })
           .from(exerciseSets)
           .where(inArray(exerciseSets.sessionExerciseId, existingExerciseIds))
@@ -540,6 +545,9 @@ const replaceSessionExerciseGraph = (
 
     exercise.sets.forEach((set, setIndex) => {
       const setId = set.id?.trim() || createLocalEntityId('set');
+      const existingSet = existingSetsById.get(setId);
+      const nextSetType =
+        set.setType === undefined ? normalizeSessionSetType(existingSet?.setType) : normalizeSessionSetType(set.setType);
       nextSetIds.add(setId);
       tx.insert(exerciseSets)
         .values({
@@ -548,6 +556,7 @@ const replaceSessionExerciseGraph = (
           orderIndex: setIndex,
           repsValue: set.repsValue,
           weightValue: set.weightValue,
+          setType: nextSetType,
           createdAt: input.now,
           updatedAt: input.now,
         })
@@ -564,12 +573,12 @@ const replaceSessionExerciseGraph = (
           order_index: setIndex,
           reps_value: set.repsValue,
           weight_value: set.weightValue,
+          set_type: nextSetType,
           created_at_ms: input.now.getTime(),
           updated_at_ms: input.now.getTime(),
         },
       });
 
-      const existingSet = existingSetsById.get(setId);
       if (existingSet && existingSet.orderIndex !== setIndex) {
         syncEvents.push({
           entityType: 'exercise_sets',

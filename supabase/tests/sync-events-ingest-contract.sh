@@ -290,6 +290,7 @@ EVENTS_SUCCESS="$(jq -nc \
         order_index: 0,
         weight_value: "225",
         reps_value: "5",
+        set_type: "rir_2",
         created_at_ms: $t5,
         updated_at_ms: $t5
       }
@@ -369,9 +370,9 @@ postgrest_select "session_exercises" "id=eq.${SX_ID}&select=id,session_id,exerci
 assert_status "200" "user_a projection session_exercise read"
 assert_json_expr --arg id "${SX_ID}" --arg session_id "${SESSION_ID}" --arg exdef_id "${EXDEF_ID}" 'length == 1 and .[0].id == $id and .[0].session_id == $session_id and .[0].exercise_definition_id == $exdef_id and .[0].order_index == 0' "user_a projection session_exercise state"
 
-postgrest_select "exercise_sets" "id=eq.${SET_ID}&select=id,session_exercise_id,order_index" "${USER_A_TOKEN}"
+postgrest_select "exercise_sets" "id=eq.${SET_ID}&select=id,session_exercise_id,order_index,set_type" "${USER_A_TOKEN}"
 assert_status "200" "user_a projection exercise_set read"
-assert_json_expr --arg id "${SET_ID}" --arg sx_id "${SX_ID}" 'length == 1 and .[0].id == $id and .[0].session_exercise_id == $sx_id and .[0].order_index == 0' "user_a projection exercise_set state"
+assert_json_expr --arg id "${SET_ID}" --arg sx_id "${SX_ID}" 'length == 1 and .[0].id == $id and .[0].session_exercise_id == $sx_id and .[0].order_index == 0 and .[0].set_type == "rir_2"' "user_a projection exercise_set state"
 
 postgrest_select "exercise_definitions" "id=eq.${EXDEF_ID}&select=id,name,deleted_at" "${USER_A_TOKEN}"
 assert_status "200" "user_a projection exercise_definition read"

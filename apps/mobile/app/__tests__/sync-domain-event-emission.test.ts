@@ -344,7 +344,7 @@ describe('sync domain event emission', () => {
           id: 'exercise-1',
           exerciseDefinitionId: 'exercise-definition-1',
           name: 'Bench Press',
-          sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
+          sets: [{ id: 'set-1', repsValue: '5', weightValue: '225', setType: 'rir_0' }],
         },
       ],
     });
@@ -358,6 +358,9 @@ describe('sync domain event emission', () => {
         expect.objectContaining({
           entityType: 'exercise_sets',
           eventType: 'upsert',
+          payload: expect.objectContaining({
+            set_type: 'rir_0',
+          }),
         }),
       ])
     );

@@ -76,6 +76,7 @@ type ScopedSnapshot = {
     orderIndex: number;
     weightValue: string;
     repsValue: string;
+    setType: string | null;
     createdAtMs: number;
     updatedAtMs: number;
   }[];
@@ -218,6 +219,7 @@ const captureScopedSnapshot = (state: FakeState): ScopedSnapshot => ({
       orderIndex: row.orderIndex,
       weightValue: row.weightValue,
       repsValue: row.repsValue,
+      setType: row.setType ?? null,
       createdAtMs: row.createdAt.getTime(),
       updatedAtMs: row.updatedAt.getTime(),
     }))
@@ -531,6 +533,7 @@ const seedFixtureState = async (state: FakeState, runTag: string, now: Date): Pr
     orderIndex: 0,
     repsValue: '5',
     weightValue: '100',
+    setType: 'rir_2',
     createdAt: now,
     updatedAt: now,
   });
@@ -642,6 +645,7 @@ const seedFixtureState = async (state: FakeState, runTag: string, now: Date): Pr
         order_index: 0,
         weight_value: '100',
         reps_value: '5',
+        set_type: 'rir_2',
         created_at_ms: baseMs,
         updated_at_ms: baseMs,
       },
@@ -781,7 +785,9 @@ describe('sync reinstall restore-state parity (M13-T06)', () => {
     expect(remoteAfterUpload.gyms.some((row) => row.id === fixture.gymId)).toBe(true);
     expect(remoteAfterUpload.sessions.some((row) => row.id === fixture.sessionId)).toBe(true);
     expect(remoteAfterUpload.sessionExercises.some((row) => row.id === fixture.sessionExerciseId)).toBe(true);
-    expect(remoteAfterUpload.exerciseSets.some((row) => row.id === fixture.setId)).toBe(true);
+    expect(
+      remoteAfterUpload.exerciseSets.some((row) => row.id === fixture.setId && row.setType === 'rir_2')
+    ).toBe(true);
     expect(remoteAfterUpload.exerciseDefinitions.some((row) => row.id === fixture.exerciseDefinitionId)).toBe(true);
     expect(remoteAfterUpload.exerciseMuscleMappings.some((row) => row.id === fixture.mappingRowId)).toBe(true);
     expect(remoteAfterUpload.exerciseTagDefinitions.some((row) => row.id === fixture.tagDefinitionId)).toBe(true);

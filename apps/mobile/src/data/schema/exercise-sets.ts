@@ -16,6 +16,7 @@ export const exerciseSets = sqliteTable(
     orderIndex: integer('order_index').notNull(),
     weightValue: text('weight_value').notNull().default(''),
     repsValue: text('reps_value').notNull().default(''),
+    setType: text('set_type'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),

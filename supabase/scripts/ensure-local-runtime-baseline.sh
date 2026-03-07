@@ -79,6 +79,11 @@ runtime_rest_api_reachable() {
     >/dev/null 2>&1
 }
 
+apply_pending_local_migrations() {
+  echo "[supabase] applying pending local migrations"
+  run_supabase db push --local --include-all --yes >/dev/null
+}
+
 ensure_runtime_and_baseline() {
   local runtime_was_running=0
 
@@ -91,6 +96,8 @@ ensure_runtime_and_baseline() {
     "${SCRIPT_DIR}/reset-local.sh"
     load_supabase_status_env
   fi
+
+  apply_pending_local_migrations
 
   if ! "${SCRIPT_DIR}/smoke-seed.sh"; then
     if (( runtime_was_running == 1 )); then
