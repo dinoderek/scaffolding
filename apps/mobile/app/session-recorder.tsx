@@ -36,6 +36,7 @@ import {
   type SessionDraftSnapshot,
   type SessionGraphSnapshot,
 } from '@/src/data';
+import { SESSION_SET_TYPES, normalizeSessionSetType, type SessionSetType, type SessionSetTypeValue } from '@/src/data/set-types';
 import {
   listExerciseCatalogExercises,
   listExerciseCatalogMuscleGroups,
@@ -113,6 +114,7 @@ function mapDraftSnapshotToSession(snapshot: SessionDraftSnapshot): Session {
         id: set.id,
         reps: set.repsValue,
         weight: set.weightValue,
+        setType: normalizeSessionSetType(set.setType),
       })),
     })),
   };
@@ -132,6 +134,7 @@ function mapSessionGraphSnapshotToSession(snapshot: SessionGraphSnapshot): Sessi
         id: set.id,
         reps: set.repsValue,
         weight: set.weightValue,
+        setType: normalizeSessionSetType(set.setType),
       })),
     })),
   };
@@ -218,6 +221,7 @@ const toPersistDraftExercises = (session: Session) =>
       id: set.id,
       repsValue: set.reps,
       weightValue: set.weight,
+      setType: set.setType,
     })),
   }));
 
@@ -265,8 +269,39 @@ function createEmptySet(): SessionSet {
     id: createSetId(),
     reps: '',
     weight: '',
+    setType: null,
   };
 }
+
+const SET_TYPE_CYCLE_ORDER: SessionSetTypeValue[] = [null, ...SESSION_SET_TYPES];
+const SET_TYPE_SHORT_LABELS: Record<SessionSetType, string> = {
+  warm_up: 'WU',
+  rir_0: 'R0',
+  rir_1: 'R1',
+  rir_2: 'R2',
+};
+const SET_TYPE_MENU_LABELS: Record<SessionSetType, string> = {
+  warm_up: 'Warm-up',
+  rir_0: 'RIR 0',
+  rir_1: 'RIR 1',
+  rir_2: 'RIR 2',
+};
+
+const getSetTypeButtonLabel = (setType: SessionSetTypeValue): string =>
+  setType === null ? '•' : SET_TYPE_SHORT_LABELS[setType];
+
+const getSetTypeMenuLabel = (setType: SessionSetTypeValue): string =>
+  setType === null ? 'None' : SET_TYPE_MENU_LABELS[setType];
+
+const getSetTypeAccessibilityLabel = (setType: SessionSetTypeValue): string =>
+  setType === null ? 'none' : SET_TYPE_MENU_LABELS[setType];
+
+const getNextSetType = (setType: SessionSetTypeValue): SessionSetTypeValue => {
+  const currentType = normalizeSessionSetType(setType);
+  const currentIndex = SET_TYPE_CYCLE_ORDER.findIndex((value) => value === currentType);
+  const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % SET_TYPE_CYCLE_ORDER.length;
+  return SET_TYPE_CYCLE_ORDER[nextIndex] ?? null;
+};
 
 const constrainSetFieldInput = (field: SetFieldName, value: string): string | null => {
   if (field === 'weight') {
@@ -328,6 +363,12 @@ type SubmitCleanupPrompt = {
 };
 
 type TagModalMode = 'picker' | 'manage';
+type SetTypePickerState = {
+  exerciseId: string;
+  setId: string;
+  exerciseIndex: number;
+  setIndex: number;
+};
 
 const normalizeTagName = (value: string) => value.trim().toLowerCase();
 
@@ -444,6 +485,7 @@ export default function SessionRecorderScreen() {
   const [editingTagDefinitionId, setEditingTagDefinitionId] = useState<string | null>(null);
   const [editingTagName, setEditingTagName] = useState('');
   const [isTagMutationInFlight, setIsTagMutationInFlight] = useState(false);
+  const [activeSetTypePicker, setActiveSetTypePicker] = useState<SetTypePickerState | null>(null);
   const stateRef = useRef(state);
   const completedEditEndDateTimeRef = useRef<string | null>(completedEditEndDateTime);
   const persistedSessionIdRef = useRef<string | null>(null);
@@ -452,6 +494,7 @@ export default function SessionRecorderScreen() {
   const hasSessionMutationRef = useRef(false);
   const replayingBeforeRemoveActionRef = useRef(false);
   const pendingExercisePickerRestoreTargetRef = useRef<string | null | undefined>(undefined);
+  const suppressSetTypeCyclePressRef = useRef(false);
 
   stateRef.current = state;
   completedEditEndDateTimeRef.current = completedEditEndDateTime;
@@ -1213,6 +1256,9 @@ export default function SessionRecorderScreen() {
     if (removedExerciseId && activeTagExerciseId === removedExerciseId) {
       dismissTagModal();
     }
+    if (removedExerciseId && activeSetTypePicker?.exerciseId === removedExerciseId) {
+      setActiveSetTypePicker(null);
+    }
     clearSubmitFeedback();
     markSessionStructuralMutation();
   };
@@ -1271,6 +1317,46 @@ export default function SessionRecorderScreen() {
     markSessionTextMutation();
   };
 
+  const updateSetType = (exerciseId: string, setId: string, setType: SessionSetTypeValue) => {
+    const nextSetType = normalizeSessionSetType(setType);
+    setState((current) => ({
+      ...current,
+      session: {
+        ...current.session,
+        exercises: current.session.exercises.map((exercise) =>
+          exercise.id === exerciseId
+            ? {
+                ...exercise,
+                sets: exercise.sets.map((set) => (set.id === setId ? { ...set, setType: nextSetType } : set)),
+              }
+            : exercise
+        ),
+      },
+    }));
+    clearSubmitFeedback();
+    markSessionTextMutation();
+  };
+
+  const cycleSetType = (exerciseId: string, setId: string, currentSetType: SessionSetTypeValue) => {
+    updateSetType(exerciseId, setId, getNextSetType(currentSetType));
+  };
+
+  const openSetTypePicker = (input: SetTypePickerState) => {
+    setActiveSetTypePicker(input);
+  };
+
+  const dismissSetTypePicker = () => {
+    setActiveSetTypePicker(null);
+  };
+
+  const selectSetTypeFromPicker = (setType: SessionSetTypeValue) => {
+    if (!activeSetTypePicker) {
+      return;
+    }
+    updateSetType(activeSetTypePicker.exerciseId, activeSetTypePicker.setId, setType);
+    setActiveSetTypePicker(null);
+  };
+
   const updateSessionStartDateTime = (value: string) => {
     setState((current) => ({
       ...current,
@@ -1311,6 +1397,13 @@ export default function SessionRecorderScreen() {
         ),
       },
     }));
+    if (
+      activeSetTypePicker &&
+      activeSetTypePicker.exerciseId === exerciseId &&
+      activeSetTypePicker.setId === setId
+    ) {
+      setActiveSetTypePicker(null);
+    }
     clearSubmitFeedback();
     markSessionStructuralMutation();
   };
@@ -1635,6 +1728,14 @@ export default function SessionRecorderScreen() {
   const canCreateTagFromSearch = normalizedTagSearch.length > 0 && !hasTagDefinitionExactMatch;
   const addTagFromSearchDisabled =
     isTagMutationInFlight || !activeTagExerciseDefinitionId || !activeTagExercise || !canCreateTagFromSearch;
+  const selectedSetTypeInPicker = useMemo(() => {
+    if (!activeSetTypePicker) {
+      return null;
+    }
+    const activeExercise = state.session.exercises.find((exercise) => exercise.id === activeSetTypePicker.exerciseId);
+    const activeSet = activeExercise?.sets.find((set) => set.id === activeSetTypePicker.setId);
+    return normalizeSessionSetType(activeSet?.setType);
+  }, [activeSetTypePicker, state.session.exercises]);
   const cleanupModalTitle =
     submitCleanupPrompt?.step === 'incomplete-sets'
       ? 'Remove incomplete sets and submit?'
@@ -1772,6 +1873,7 @@ export default function SessionRecorderScreen() {
         exercises={state.session.exercises}
         renderSetHeader={({ exerciseIndex }) => (
           <View style={styles.setHeaderRow} testID={`exercise-${exerciseIndex + 1}-set-header`}>
+            <Text style={[styles.setHeaderLabel, styles.setHeaderTypeLabel]}>Type</Text>
             <Text style={[styles.setHeaderLabel, styles.setHeaderInputLabel]}>Weight</Text>
             <Text style={[styles.setHeaderLabel, styles.setHeaderInputLabel]}>Reps</Text>
             <View style={styles.setHeaderDeleteSpacer} />
@@ -1779,6 +1881,33 @@ export default function SessionRecorderScreen() {
         )}
         renderSetRow={({ exercise, exerciseIndex, set, setIndex }) => (
           <View style={styles.setRow}>
+            <Pressable
+              accessibilityLabel={`Set type for exercise ${exerciseIndex + 1} set ${setIndex + 1}: ${getSetTypeAccessibilityLabel(
+                normalizeSessionSetType(set.setType)
+              )}`}
+              accessibilityHint="Double tap to cycle set type. Long press to choose from all options."
+              style={styles.setTypeButton}
+              testID={`set-type-button-${exerciseIndex + 1}-${setIndex + 1}`}
+              onPress={() => {
+                if (suppressSetTypeCyclePressRef.current) {
+                  suppressSetTypeCyclePressRef.current = false;
+                  return;
+                }
+                cycleSetType(exercise.id, set.id, set.setType);
+              }}
+              onLongPress={() => {
+                suppressSetTypeCyclePressRef.current = true;
+                openSetTypePicker({
+                  exerciseId: exercise.id,
+                  setId: set.id,
+                  exerciseIndex,
+                  setIndex,
+                });
+              }}>
+              <Text style={styles.setTypeButtonText}>
+                {getSetTypeButtonLabel(normalizeSessionSetType(set.setType))}
+              </Text>
+            </Pressable>
             <TextInput
               accessibilityLabel={`Weight for exercise ${exerciseIndex + 1} set ${setIndex + 1}`}
               inputMode="decimal"
@@ -1911,6 +2040,50 @@ export default function SessionRecorderScreen() {
               <Pressable style={styles.confirmationSecondaryButton} onPress={cancelSubmitCleanup}>
                 <Text style={styles.confirmationSecondaryButtonText}>Go back to edit session</Text>
               </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={Boolean(activeSetTypePicker)}
+        onRequestClose={dismissSetTypePicker}>
+        <View style={styles.modalContainer}>
+          <Pressable
+            accessibilityLabel="Dismiss set type modal overlay"
+            style={styles.modalBackdrop}
+            onPress={dismissSetTypePicker}
+          />
+          <View style={styles.setTypeModalCard}>
+            <View style={styles.modalList}>
+              {SET_TYPE_CYCLE_ORDER.map((setTypeOption) => {
+                const normalizedOption = normalizeSessionSetType(setTypeOption);
+                const isSelected = selectedSetTypeInPicker === normalizedOption;
+                return (
+                  <Pressable
+                    key={setTypeOption ?? 'none'}
+                    accessibilityLabel={`Choose ${getSetTypeMenuLabel(normalizedOption)} set type`}
+                    style={[
+                      styles.setTypePickerOption,
+                      isSelected ? styles.setTypePickerOptionSelected : null,
+                    ]}
+                    onPress={() => selectSetTypeFromPicker(normalizedOption)}>
+                    <Text style={styles.setTypePickerCode}>
+                      {getSetTypeButtonLabel(normalizedOption)}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.setTypePickerLabel,
+                        isSelected ? styles.setTypePickerLabelSelected : null,
+                      ]}>
+                      {getSetTypeMenuLabel(normalizedOption)}
+                    </Text>
+                    <Text style={styles.setTypePickerSelectionMark}>{isSelected ? '✓' : ''}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         </View>
@@ -2599,6 +2772,10 @@ const styles = StyleSheet.create({
   setHeaderInputLabel: {
     flex: 1,
   },
+  setHeaderTypeLabel: {
+    width: 36,
+    textAlign: 'left',
+  },
   setHeaderDeleteSpacer: {
     width: 28,
   },
@@ -2611,6 +2788,22 @@ const styles = StyleSheet.create({
   setRowInput: {
     flex: 1,
     paddingVertical: 8,
+  },
+  setTypeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: uiColors.borderDefault,
+    backgroundColor: uiColors.surfaceDefault,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setTypeButtonText: {
+    fontSize: 12,
+    lineHeight: 14,
+    fontWeight: '700',
+    color: uiColors.textPrimary,
   },
   inputInvalid: {
     borderColor: uiColors.actionDangerSubtleBorder,
@@ -2731,6 +2924,52 @@ const styles = StyleSheet.create({
   },
   tagModalCard: {
     height: '80%',
+  },
+  setTypeModalCard: {
+    borderRadius: 12,
+    backgroundColor: uiColors.surfaceDefault,
+    padding: 16,
+    gap: 10,
+  },
+  setTypePickerOption: {
+    borderWidth: 1,
+    borderColor: uiColors.borderDefault,
+    borderRadius: 8,
+    backgroundColor: uiColors.surfaceDefault,
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  setTypePickerOptionSelected: {
+    borderColor: uiColors.actionPrimary,
+    backgroundColor: uiColors.actionPrimarySubtleBg,
+  },
+  setTypePickerCode: {
+    width: 26,
+    fontSize: 12,
+    lineHeight: 14,
+    fontWeight: '700',
+    color: uiColors.actionPrimary,
+    textAlign: 'center',
+  },
+  setTypePickerLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: uiColors.textPrimary,
+    fontWeight: '600',
+  },
+  setTypePickerLabelSelected: {
+    color: uiColors.textAccentStrong,
+  },
+  setTypePickerSelectionMark: {
+    width: 14,
+    fontSize: 14,
+    lineHeight: 16,
+    fontWeight: '700',
+    color: uiColors.actionPrimary,
+    textAlign: 'center',
   },
   confirmationModalCard: {
     borderRadius: 12,

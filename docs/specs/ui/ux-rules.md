@@ -89,7 +89,9 @@ Document app-specific UI semantics and guardrails for the current mobile app.
 8. The M11 profile sign-in form performs basic client-side email-shape validation before attempting the auth request.
 9. The signed-in profile route defaults to a view-only summary with row-based account values and one bottom action row (`Edit` + danger-styled `Sign Out`), with no extra title/help copy.
 10. Entering profile edit mode reveals `username`, `new email`, and `new password` fields plus a single `Update` submit action; update failures stay inline and successful updates return to view mode.
-11. In `session-recorder`, logged sets render as in-card rows with a header row (`Weight`, `Reps`) instead of per-set subcards, and set numeric validation uses visual cues only (no inline validation text):
+11. In `session-recorder`, logged sets render as in-card rows with a header row (`Type`, `Weight`, `Reps`) instead of per-set subcards, and set numeric validation uses visual cues only (no inline validation text):
+    - The left square `Type` button cycles set type on tap in this order: `None -> WU -> R0 -> R1 -> R2 -> None`.
+    - Long-pressing the `Type` button opens an in-route modal picker with explicit options (`None`, `Warm-up`, `RIR 0`, `RIR 1`, `RIR 2`).
     - `Weight` accepts decimal numeric input and must be a positive number.
     - `Reps` accepts integer numeric input and must be a positive integer.
 

@@ -106,7 +106,7 @@ const buildCompletedEditSnapshot = (overrides: Partial<any> = {}) => ({
       machineName: null,
       originScopeId: 'private',
       originSourceId: 'local',
-      sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
+      sets: [{ id: 'set-1', repsValue: '5', weightValue: '225', setType: null }],
     },
   ],
   ...overrides,
@@ -160,7 +160,7 @@ describe('SessionRecorderScreen persistence wiring', () => {
         exercises: [
           expect.objectContaining({
             name: 'Barbell Squat',
-            sets: [expect.objectContaining({ repsValue: '', weightValue: '' })],
+            sets: [expect.objectContaining({ repsValue: '', weightValue: '', setType: null })],
           }),
         ],
       })
@@ -187,7 +187,28 @@ describe('SessionRecorderScreen persistence wiring', () => {
         sessionId: 'persisted-session-1',
         exercises: [
           expect.objectContaining({
-            sets: [expect.objectContaining({ weightValue: '225' })],
+            sets: [expect.objectContaining({ weightValue: '225', setType: null })],
+          }),
+        ],
+      })
+    );
+
+    mockPersistSessionDraftSnapshot.mockClear();
+
+    fireEvent.press(screen.getByTestId('set-type-button-1-1'));
+
+    await act(async () => {
+      jest.advanceTimersByTime(3_000);
+      await flushMicrotasks();
+    });
+
+    expect(mockPersistSessionDraftSnapshot).toHaveBeenCalledTimes(1);
+    expect(mockPersistSessionDraftSnapshot.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        sessionId: 'persisted-session-1',
+        exercises: [
+          expect.objectContaining({
+            sets: [expect.objectContaining({ setType: 'warm_up' })],
           }),
         ],
       })
@@ -231,7 +252,7 @@ describe('SessionRecorderScreen persistence wiring', () => {
         sessionId: 'persisted-session-1',
         exercises: [
           expect.objectContaining({
-            sets: [expect.objectContaining({ repsValue: '5' })],
+            sets: [expect.objectContaining({ repsValue: '5', setType: null })],
           }),
         ],
       })

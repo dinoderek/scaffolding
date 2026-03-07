@@ -1,7 +1,10 @@
+import type { SessionSetTypeValue } from '@/src/data/set-types';
+
 export type SessionSet = {
   id: string;
   reps: string;
   weight: string;
+  setType: SessionSetTypeValue;
 };
 
 export type SessionExerciseTag = {

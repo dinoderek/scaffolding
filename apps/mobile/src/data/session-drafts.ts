@@ -54,6 +54,7 @@ export type SessionDraftSetSnapshot = {
   id: string;
   repsValue: string;
   weightValue: string;
+  setType: SessionSetTypeValue;
 };
 
 export type SessionDraftExerciseSnapshot = {
@@ -312,6 +313,7 @@ const mapDraftSnapshot = (graph: StoredDraftGraph): SessionDraftSnapshot => ({
       id: set.id,
       repsValue: set.repsValue,
       weightValue: set.weightValue,
+      setType: set.setType,
     })),
   })),
 });
@@ -337,6 +339,7 @@ const mapSessionGraphSnapshot = (graph: StoredDraftGraph): SessionGraphSnapshot 
       id: set.id,
       repsValue: set.repsValue,
       weightValue: set.weightValue,
+      setType: set.setType,
     })),
   })),
 });

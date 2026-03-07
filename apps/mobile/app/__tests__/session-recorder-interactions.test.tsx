@@ -409,6 +409,32 @@ describe('SessionRecorderScreen exercise interactions', () => {
     expect(screen.getByDisplayValue('5')).toBeTruthy();
   });
 
+  it('cycles set type from the row button and supports long-press selection modal', async () => {
+    render(<SessionRecorderScreen />);
+
+    fireEvent.press(screen.getByText('Log new exercise'));
+    fireEvent.press(await screen.findByLabelText('Select exercise Barbell Squat'));
+
+    const setTypeButton = screen.getByTestId('set-type-button-1-1');
+    expect(screen.getByText('•')).toBeTruthy();
+
+    fireEvent.press(setTypeButton);
+    expect(screen.getByText('WU')).toBeTruthy();
+    fireEvent.press(setTypeButton);
+    expect(screen.getByText('R0')).toBeTruthy();
+    fireEvent.press(setTypeButton);
+    expect(screen.getByText('R1')).toBeTruthy();
+    fireEvent.press(setTypeButton);
+    expect(screen.getByText('R2')).toBeTruthy();
+    fireEvent.press(setTypeButton);
+    expect(screen.getByText('•')).toBeTruthy();
+
+    fireEvent(setTypeButton, 'onLongPress');
+    expect(screen.getByLabelText('Choose RIR 1 set type')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Choose RIR 1 set type'));
+    expect(screen.getByText('R1')).toBeTruthy();
+  });
+
   it('constrains set inputs and uses visual-only invalid cues for non-positive values', async () => {
     render(<SessionRecorderScreen />);
 
@@ -716,6 +742,28 @@ describe('SessionRecorderScreen exercise interactions', () => {
       });
       expect(screen.getByText('Cable Fly')).toBeTruthy();
     });
+  });
+
+  it('supports set-type cycle and modal selection in completed-edit mode', async () => {
+    mockSearchParams = { mode: 'completed-edit', sessionId: 'completed-edit-1' };
+    mockLoadSessionSnapshotById.mockResolvedValue(buildCompletedEditSnapshot());
+
+    render(<SessionRecorderScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Save Changes')).toBeTruthy();
+      expect(screen.getByText('Bench Press')).toBeTruthy();
+    });
+
+    const setTypeButton = screen.getByTestId('set-type-button-1-1');
+
+    fireEvent.press(setTypeButton);
+    expect(screen.getByText('WU')).toBeTruthy();
+
+    fireEvent(setTypeButton, 'onLongPress');
+    expect(screen.getByLabelText('Choose None set type')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Choose None set type'));
+    expect(screen.getByText('•')).toBeTruthy();
   });
 
   it('supports tag attach/remove in completed-edit mode', async () => {
