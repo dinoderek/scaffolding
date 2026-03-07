@@ -208,6 +208,14 @@ Source-of-truth implementation files:
 - `apps/mobile/app/__tests__/settings-profile-navigation.test.tsx`
 - coverage: signed-in profile sync section render, toggle wiring, and inline blocked-failure messaging.
 
+8. Reinstall restore-parity proof lane
+- `apps/mobile/app/__tests__/sync-reinstall-restore-parity.test.ts`
+- dedicated Jest config: `apps/mobile/jest.integration.config.js`
+- command wrapper: `apps/mobile/scripts/test-sync-reinstall-restore-parity.sh`
+- npm script: `npm run test:sync:reinstall-parity` (run from `apps/mobile`)
+- coverage: deterministic M13 full-scope fixture (`gyms`, `sessions`, `session_exercises`, `exercise_sets`, `exercise_definitions`, `exercise_muscle_mappings`, `exercise_tag_definitions`, `session_exercise_tags`), real outbox -> local Supabase ingest delivery, reinstall simulation (fresh local state + fresh sync device state), post-login bootstrap/merge + convergence, and scoped pre-sync vs post-restore parity assertion.
+- snapshot boundary rule in this lane: parity compares only M13 user-domain entities; auth/session credentials, smoke artifacts, and sync runtime/outbox metadata are intentionally excluded.
+
 ## Maintenance rule for follow-up tasks
 
 Tasks `M13-T03`, `M13-T04`, and `M13-T05` must update this document in the same session when they change:

@@ -117,7 +117,12 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - `apps/mobile/app/__tests__/sync-runtime-bootstrap.test.ts` (first-enable trigger and logged-out-then-login bootstrap trigger),
   - `apps/mobile/app/__tests__/sync-outbox-engine.test.ts` (batch response semantics, including retry scheduling and blocked failure mapping),
   - `apps/mobile/app/__tests__/sync-profile-status.test.ts` (profile-facing sync status mapping, including blocked and retry-scheduled states),
-  - `apps/mobile/app/__tests__/settings-profile-navigation.test.tsx` (profile sync section render + toggle + inline blocked-failure messaging).
+  - `apps/mobile/app/__tests__/settings-profile-navigation.test.tsx` (profile sync section render + toggle + inline blocked-failure messaging),
+  - `apps/mobile/app/__tests__/sync-reinstall-restore-parity.test.ts` (M13 reinstall restore-parity proof: real outbox delivery to local Supabase ingest + reinstall bootstrap/merge parity assertion for all M13 data-scope entities).
+- Local command wrapper for the restore-parity lane:
+  - `apps/mobile/scripts/test-sync-reinstall-restore-parity.sh`
+  - `npm run test:sync:reinstall-parity` (from `apps/mobile`)
+  - behavior: enforces local Supabase runtime baseline, injects `EXPO_PUBLIC_SUPABASE_URL`/`EXPO_PUBLIC_SUPABASE_ANON_KEY` from local runtime status, and runs the dedicated Jest integration config (`apps/mobile/jest.integration.config.js`) targeting this suite.
 
 ## Maestro contract ownership (M10)
 
