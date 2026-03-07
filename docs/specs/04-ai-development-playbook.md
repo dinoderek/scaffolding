@@ -15,6 +15,7 @@ Define the minimum scaffolding required before feature development, and standard
    - `docs/specs/09-project-structure.md`
    - `docs/specs/08-ux-delivery-standard.md` (required for UI tasks)
    - `docs/specs/ui/README.md` (required for UI tasks; load relevant bundle docs from there)
+   - `RUNBOOK.md` (human run/test/debug entrypoint; must stay current)
 2. This playbook exists and is followed.
 3. (If executing a task) A milestone spec exists for the active milestone.
 4. (If executing a task) A task card exists for the active coding session.
@@ -51,11 +52,20 @@ When a task materially changes cross-cutting behavior, update the relevant proje
   - for schema/entity ownership changes, sync-scope boundary changes, or updated data-model invariants
 - `docs/specs/06-testing-strategy.md`
   - for new test layers, changed verification expectations, or changed sync/offline/auth coverage requirements
+- `RUNBOOK.md`
+  - for any change to local run/build/test/debug workflows, script command surfaces, simulator/dev-client setup, Supabase local-runtime/reset steps, test fixture login instructions, or log/artifact access paths
 
 Rule:
 
 - do not leave the authoritative description of significant sync/auth/offline behavior only in milestone/task docs;
 - promote stable behavior and verification expectations into the project-level docs above.
+
+## RUNBOOK maintenance rule (mandatory)
+
+- `RUNBOOK.md` is the human-facing local operations guide for this repo.
+- Every implementation session must review `RUNBOOK.md`.
+- If the session changes any local operator behavior (run/build/test/debug commands, setup/reset paths, credentials, or log locations), update `RUNBOOK.md` in the same session before handoff.
+- If behavior did not change, record `RUNBOOK.md reviewed (no changes required)` in the task completion note.
 
 ## Data-model change sync gate (mandatory)
 
@@ -135,6 +145,7 @@ Rule: task cards must list the exact gate commands they require; this section on
    - fill task `Completion note`
    - update milestone `Status` and task breakdown item states
    - update decision log entries when decisions changed
+   - update `RUNBOOK.md` when operator-facing workflows/commands changed
 6. If a task introduces a new runtime, deployment surface, or test layer, or materially changes cross-cutting architecture/runtime behavior (for example sync/auth/offline/conflict semantics):
    - update `docs/specs/06-testing-strategy.md`,
    - update `docs/specs/03-technical-architecture.md`,
@@ -215,6 +226,7 @@ Provide these references at execution start:
 10. `docs/specs/10-api-authn-authz-guidelines.md` (for backend API/auth work and API-consuming integration tasks)
 11. `supabase/session-sync-api-contract.md` (for session sync API work and FE/backend sync integration tasks, when present)
 12. `docs/specs/11-maestro-runtime-and-testing-conventions.md` (required for tasks that touch `apps/mobile/.maestro/**`, `apps/mobile/scripts/maestro*`, the Maestro harness/runtime helpers, or that require real iOS simulator smoke validation)
+13. `RUNBOOK.md` (always load; update in-session when local operator workflow changes)
 
 Recommended bootstrap helper (optional but preferred when available):
 
@@ -335,6 +347,7 @@ Before ending any implementation session, AI must update both:
 Rule: do not consider a task done if code is complete but status fields were not updated.
 Rule: if a task makes significant project-structure changes (for example adds/moves/removes top-level folders, moves canonical test locations, introduces a new workspace, or changes path conventions), update `docs/specs/09-project-structure.md` in the same session and summarize the change in the task completion note.
 Rule: run `./scripts/task-closeout-check.sh <task-card-path>` before handoff when the helper is available, or document why it was `N/A`.
+Rule: confirm `RUNBOOK.md` was reviewed in every implementation session, and update it in-session when operator-facing behavior changed.
 
 ## Automated feedback loops (before human review)
 

@@ -152,14 +152,15 @@ Rules:
   - successful runtime artifacts under `apps/mobile/artifacts/maestro/ad-hoc/20260301-191439-59787/`
   - successful runtime artifacts under `apps/mobile/artifacts/maestro/ad-hoc/20260301-191537-60914/`
 
-### Current documentation gaps
+### Current documentation status
 
-- `apps/mobile/README-maestro.md` is not authoritative and hardcodes an outdated workspace path: `/Users/dinohughes/Projects/scaffolding/apps/mobile`.
-- `apps/mobile/README_HUMAN_TESTING.md` also hardcodes an outdated workspace path: `/Users/dinohughes/Projects/scaffolding-quality/apps/mobile`.
-- Neither runbook defines a canonical config file, shared dev-build contract, runtime state file, or reset taxonomy.
+- `apps/mobile/README-maestro.md` and `apps/mobile/README_HUMAN_TESTING.md` are operational runbooks and no longer hardcode stale workspace paths.
+- The full Maestro runtime/testing contract remains authoritative in this document; secondary runbooks should continue linking here instead of duplicating the full policy.
+- Cross-component local operator instructions live in the repo-root `RUNBOOK.md`.
 - Verified against:
-  - `apps/mobile/README-maestro.md:12-17`
-  - `apps/mobile/README_HUMAN_TESTING.md:41-44`
+  - `apps/mobile/README-maestro.md`
+  - `apps/mobile/README_HUMAN_TESTING.md`
+  - `RUNBOOK.md`
 
 ## Locked M10 target contract
 
