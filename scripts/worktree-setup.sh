@@ -238,7 +238,7 @@ remove_current_path_registrations_except() {
 }
 
 ensure_slot() {
-  local existing_slot used_file selected_slot tmp_file
+  local existing_slot used_file selected_slot selected_project_id tmp_file
 
   if [[ -f "$SLOT_FILE" ]]; then
     existing_slot="$(boga_read_slot_file "$REPO_ROOT")"
@@ -265,8 +265,10 @@ ensure_slot() {
   printf '%s\n' "$selected_slot" >"$tmp_file"
   mv "$tmp_file" "$SLOT_FILE"
   remove_current_path_registrations_except "$selected_slot"
+  selected_project_id="$(boga_project_id_for_slot "$selected_slot" "$REPO_ROOT")"
   {
     printf 'slot=%s\n' "$selected_slot"
+    printf 'project_id=%s\n' "$selected_project_id"
     printf 'path=%s\n' "$(boga_abs_dir "$REPO_ROOT")"
     printf 'common_git_dir=%s\n' "$(boga_common_git_dir "$REPO_ROOT")"
     printf 'updated_at=%s\n' "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -285,7 +287,7 @@ generate_supabase_config() {
   export PROJECT_ID
   export API_PORT DB_PORT SHADOW_PORT STUDIO_PORT INBUCKET_PORT ANALYTICS_PORT POOLER_PORT INSPECTOR_PORT
 
-  PROJECT_ID="$(boga_project_id_for_slot "$slot")"
+  PROJECT_ID="$(boga_project_id_for_slot "$slot" "$REPO_ROOT")"
   API_PORT="$(boga_port_for_slot api "$slot")"
   DB_PORT="$(boga_port_for_slot db "$slot")"
   SHADOW_PORT="$(boga_port_for_slot shadow "$slot")"
@@ -418,7 +420,7 @@ print_summary() {
 [worktree-setup] ready
   root:       $REPO_ROOT
   slot:       $slot
-  project_id: $(boga_project_id_for_slot "$slot")
+  project_id: $(boga_project_id_for_slot "$slot" "$REPO_ROOT")
   supabase:   api=$(boga_port_for_slot api "$slot") db=$(boga_port_for_slot db "$slot") studio=$(boga_port_for_slot studio "$slot")
   expo:       $(boga_port_for_slot expo "$slot")
   doctor:     ./scripts/worktree-doctor.sh

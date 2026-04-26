@@ -191,7 +191,7 @@ Coverage includes success read/write flows, validation failures, unauthenticated
 
 Parallel-run note:
 
-- each initialized BOGA worktree gets slot-derived Supabase ports, `project_id`, containers, and database volume.
+- each initialized BOGA worktree gets readable Supabase `project_id`, slot-derived ports, containers, and database volume.
 - the sync/auth contract suites use per-run unique record IDs, so repeated runs in one slot do not collide.
 - tests require the deterministic fixture baseline to exist but do not require empty app tables.
 - run `./scripts/worktree-doctor.sh` when a backend suite appears to hit another worktree's local runtime.

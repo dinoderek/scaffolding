@@ -83,7 +83,7 @@ else
   fi
 fi
 
-echo "  expected project_id: $(boga_project_id_for_slot "$slot")"
+echo "  expected project_id: $(boga_project_id_for_slot "$slot" "$REPO_ROOT")"
 echo "  expected ports:"
 echo "    supabase api: $(boga_port_for_slot api "$slot")"
 echo "    supabase db: $(boga_port_for_slot db "$slot")"
@@ -98,7 +98,7 @@ if [[ -f "$CONFIG_FILE" ]]; then
   db_port="$(toml_value db port "$CONFIG_FILE")"
   studio_port="$(toml_value studio port "$CONFIG_FILE")"
 
-  [[ "$project_id" == "$(boga_project_id_for_slot "$slot")" ]] \
+  [[ "$project_id" == "$(boga_project_id_for_slot "$slot" "$REPO_ROOT")" ]] \
     && ok "supabase project_id matches slot" \
     || fail "supabase project_id '$project_id' does not match slot $slot"
   [[ "$api_port" == "$(boga_port_for_slot api "$slot")" ]] \

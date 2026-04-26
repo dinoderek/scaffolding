@@ -79,7 +79,7 @@ Machine-global shape:
     env.shared
   worktrees/
     slots/
-      <slot>                 # slot registry metadata
+      <slot>                 # slot, project_id, path, common_git_dir, updated_at
     slot-allocation.lock/
     runtime-locks/
       <slot>.lock/           # cleanup safety lock
@@ -111,7 +111,8 @@ Supported range:
 0..99
 ```
 
-Slot `0` preserves the original local Supabase port block and project id for the main checkout. Higher slots offset local ports and project ids.
+Slot `0` preserves the original local Supabase port block for the main checkout and uses project id `BOGA`.
+Higher slots offset local ports and use readable project ids derived from the worktree directory name.
 
 Port formulas:
 
@@ -130,15 +131,19 @@ EXPO_DEV_PORT  = 8082  + slot
 Project id:
 
 ```text
-slot 0: scaffolding
-slot N: scaffolding-wt<N>
+slot 0: BOGA
+slot N: BOGA-<worktree-directory-name>-wt<N>
 ```
+
+The worktree directory name is sanitized to letters, numbers, and hyphens before use.
+The slot suffix keeps Docker labels, containers, and volumes unique even when two
+worktree roots share a similar human-readable name.
 
 Isolation outcomes:
 
 | Resource | Isolation mechanism |
 | --- | --- |
-| Supabase containers | Slot-specific `project_id` |
+| Supabase containers | Slot/worktree-specific `project_id` |
 | Supabase ports | Slot-derived ports in generated `supabase/config.toml` |
 | Supabase data | Separate Docker volumes per `project_id` |
 | Edge Function serve state | Worktree-local `supabase/.temp` plus slot-derived API/inspector ports |
@@ -251,7 +256,7 @@ If a registered path still exists and still looks like a valid BOGA checkout fro
 Cleanup scope:
 
 - `scripts/worktree-sweep.sh` scans completed slots and calls `scripts/worktree-clean.sh`.
-- `scripts/worktree-clean.sh --supabase` removes Docker containers, volumes, and networks labelled with the slot's Supabase project id.
+- `scripts/worktree-clean.sh --supabase` removes Docker containers, volumes, and networks labelled with the registry-recorded Supabase project id, plus the legacy `scaffolding[-wtN]` id for older local state.
 - `scripts/worktree-clean.sh --remove-registry` removes the completed slot registry file after cleanup.
 - Cleanup never targets the current slot unless explicitly forced in the manual cleaner.
 - Slot runtime locks under `~/.config/boga/worktrees/runtime-locks/` prevent concurrent cleanup attempts for the same slot.

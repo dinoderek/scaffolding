@@ -172,7 +172,7 @@ Reason: keeps FE/backend integration test expectations explicit without forcing 
   - baseline rows must exist, but extra rows are allowed.
   - test suites must not assume empty tables beyond the baseline.
 - Parallel-run contract (same machine):
-  - each initialized BOGA worktree has its own slot-derived Supabase `project_id`, port block, containers, and database volume.
+  - each initialized BOGA worktree has its own readable Supabase `project_id`, slot-derived port block, containers, and database volume.
   - runtime bootstrap remains serialized per worktree via a lock in `ensure-local-runtime-baseline.sh` to avoid startup/reset races within the same slot.
   - backend contract suites must use per-run unique entity IDs so repeated runs in one slot do not collide.
   - avoid manual destructive operations (`db reset`, stack restart) in a worktree while another suite is actively using that same worktree slot.

@@ -152,13 +152,56 @@ boga_worktree_slot_or_default() {
   printf '0\n'
 }
 
+boga_project_id_fragment() {
+  local raw="$1"
+  local sanitized
+
+  sanitized="$(printf '%s' "$raw" | tr -c 'A-Za-z0-9-' '-')"
+  while [[ "$sanitized" == *--* ]]; do
+    sanitized="${sanitized//--/-}"
+  done
+  sanitized="${sanitized##-}"
+  sanitized="${sanitized%%-}"
+  [[ -n "$sanitized" ]] || sanitized="worktree"
+
+  printf '%s\n' "$sanitized"
+}
+
 boga_project_id_for_slot() {
+  local slot="$1"
+  local repo_root="${2:-}"
+  local worktree_name
+
+  if [[ "$slot" == "0" ]]; then
+    printf 'BOGA\n'
+  else
+    if [[ -n "$repo_root" ]]; then
+      worktree_name="$(basename "$(boga_abs_dir "$repo_root")")"
+    else
+      worktree_name="worktree"
+    fi
+    printf 'BOGA-%s-wt%s\n' "$(boga_project_id_fragment "$worktree_name")" "$slot"
+  fi
+}
+
+boga_legacy_project_id_for_slot() {
   local slot="$1"
   if [[ "$slot" == "0" ]]; then
     printf 'scaffolding\n'
   else
     printf 'scaffolding-wt%s\n' "$slot"
   fi
+}
+
+boga_registry_project_id_from_file() {
+  local registry_file="$1"
+  local value
+
+  [[ -f "$registry_file" ]] || return 1
+
+  value="$(awk -F= '$1 == "project_id" { print substr($0, index($0, "=") + 1); exit }' "$registry_file")"
+  [[ -n "$value" ]] || return 1
+  printf '%s\n' "$value"
 }
 
 boga_port_for_slot() {

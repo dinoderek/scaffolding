@@ -77,8 +77,24 @@ if [[ "$SLOT" == "$CURRENT_SLOT" && "$FORCE" != "1" ]]; then
   exit 1
 fi
 
-PROJECT_ID="$(boga_project_id_for_slot "$SLOT")"
 CONFIG_ROOT="$(boga_config_root)"
+REGISTRY_FILE="$CONFIG_ROOT/worktrees/slots/$SLOT"
+PROJECT_IDS=()
+if PROJECT_ID="$(boga_registry_project_id_from_file "$REGISTRY_FILE" 2>/dev/null)"; then
+  :
+else
+  REGISTRY_PATH="$(boga_registry_path_from_file "$REGISTRY_FILE" 2>/dev/null || true)"
+  if [[ -n "$REGISTRY_PATH" && -d "$REGISTRY_PATH" ]]; then
+    PROJECT_ID="$(boga_project_id_for_slot "$SLOT" "$REGISTRY_PATH")"
+  else
+    PROJECT_ID="$(boga_project_id_for_slot "$SLOT" "$REPO_ROOT")"
+  fi
+fi
+PROJECT_IDS+=("$PROJECT_ID")
+LEGACY_PROJECT_ID="$(boga_legacy_project_id_for_slot "$SLOT")"
+if [[ "$LEGACY_PROJECT_ID" != "$PROJECT_ID" ]]; then
+  PROJECT_IDS+=("$LEGACY_PROJECT_ID")
+fi
 LOCK_DIR="$CONFIG_ROOT/worktrees/runtime-locks/$SLOT.lock"
 LOCK_TIMEOUT_SECONDS="${BOGA_CLEAN_LOCK_TIMEOUT_SECONDS:-30}"
 
@@ -135,6 +151,7 @@ docker_available() {
 }
 
 cleanup_supabase() {
+  local project_id
   local containers=()
   local volumes=()
   local networks=()
@@ -145,38 +162,40 @@ cleanup_supabase() {
     return 0
   fi
 
-  containers=()
-  while IFS= read -r container_id; do
-    [[ -n "$container_id" ]] && containers+=("$container_id")
-  done < <(docker ps -aq --filter "label=com.supabase.cli.project=$PROJECT_ID")
-  if (( ${#containers[@]} > 0 )); then
-    echo "[worktree-clean] removing Supabase containers for $PROJECT_ID: ${containers[*]}"
-    run_or_print docker rm -f "${containers[@]}"
-  else
-    echo "[worktree-clean] no Supabase containers found for $PROJECT_ID"
-  fi
+  for project_id in "${PROJECT_IDS[@]}"; do
+    containers=()
+    while IFS= read -r container_id; do
+      [[ -n "$container_id" ]] && containers+=("$container_id")
+    done < <(docker ps -aq --filter "label=com.supabase.cli.project=$project_id")
+    if (( ${#containers[@]} > 0 )); then
+      echo "[worktree-clean] removing Supabase containers for $project_id: ${containers[*]}"
+      run_or_print docker rm -f "${containers[@]}"
+    else
+      echo "[worktree-clean] no Supabase containers found for $project_id"
+    fi
 
-  volumes=()
-  while IFS= read -r volume_name; do
-    [[ -n "$volume_name" ]] && volumes+=("$volume_name")
-  done < <(docker volume ls -q --filter "label=com.supabase.cli.project=$PROJECT_ID")
-  if (( ${#volumes[@]} > 0 )); then
-    echo "[worktree-clean] removing Supabase volumes for $PROJECT_ID: ${volumes[*]}"
-    run_or_print docker volume rm -f "${volumes[@]}"
-  else
-    echo "[worktree-clean] no Supabase volumes found for $PROJECT_ID"
-  fi
+    volumes=()
+    while IFS= read -r volume_name; do
+      [[ -n "$volume_name" ]] && volumes+=("$volume_name")
+    done < <(docker volume ls -q --filter "label=com.supabase.cli.project=$project_id")
+    if (( ${#volumes[@]} > 0 )); then
+      echo "[worktree-clean] removing Supabase volumes for $project_id: ${volumes[*]}"
+      run_or_print docker volume rm -f "${volumes[@]}"
+    else
+      echo "[worktree-clean] no Supabase volumes found for $project_id"
+    fi
 
-  networks=()
-  while IFS= read -r network_id; do
-    [[ -n "$network_id" ]] && networks+=("$network_id")
-  done < <(docker network ls -q --filter "label=com.supabase.cli.project=$PROJECT_ID")
-  if (( ${#networks[@]} > 0 )); then
-    echo "[worktree-clean] removing Supabase networks for $PROJECT_ID: ${networks[*]}"
-    run_or_print docker network rm "${networks[@]}"
-  else
-    echo "[worktree-clean] no Supabase networks found for $PROJECT_ID"
-  fi
+    networks=()
+    while IFS= read -r network_id; do
+      [[ -n "$network_id" ]] && networks+=("$network_id")
+    done < <(docker network ls -q --filter "label=com.supabase.cli.project=$project_id")
+    if (( ${#networks[@]} > 0 )); then
+      echo "[worktree-clean] removing Supabase networks for $project_id: ${networks[*]}"
+      run_or_print docker network rm "${networks[@]}"
+    else
+      echo "[worktree-clean] no Supabase networks found for $project_id"
+    fi
+  done
 }
 
 acquire_lock
@@ -186,7 +205,6 @@ if [[ "$SUPABASE" == "1" ]]; then
 fi
 
 if [[ "$REMOVE_REGISTRY" == "1" ]]; then
-  REGISTRY_FILE="$CONFIG_ROOT/worktrees/slots/$SLOT"
   if [[ -f "$REGISTRY_FILE" ]]; then
     if [[ "$DRY_RUN" == "1" ]]; then
       run_or_print rm -f "$REGISTRY_FILE"
