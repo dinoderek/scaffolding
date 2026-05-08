@@ -176,6 +176,7 @@ Source: `supabase/scripts/auth-fixture-constants.sh`
 ### App logs
 
 - Expo/dev-client logs: terminal where `npm run start:ios:dev-client` or `npx expo start --dev-client` is running.
+- Production diagnostic rows: Supabase Dashboard / SQL Editor query against `public.app_logs`. Mobile clients can insert rows only; use operator credentials for inspection.
 - Maestro run artifacts/logs:
   - root: `apps/mobile/artifacts/maestro/<task-id-or-ad-hoc>/<timestamp>/`
   - key files: `runtime.env`, `provision.log`, `launch.log`, `teardown.log`, `expo-start.log`, `simulator-system.log`, `maestro-junit.xml`

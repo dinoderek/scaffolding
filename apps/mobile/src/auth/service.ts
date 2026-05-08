@@ -6,6 +6,7 @@ import {
   __resetSupabaseMobileClientForTests,
 } from './supabase';
 import { __resetAuthStorageAdapterForTests } from './storage';
+import { logEvent } from '@/src/logging';
 
 export type AuthBootstrapStatus = 'idle' | 'restoring' | 'ready';
 
@@ -152,6 +153,12 @@ export const bootstrapAuthState = async () => {
       .getSession()
       .then(({ data, error }) => {
         if (error) {
+          void logEvent({
+            level: 'error',
+            source: 'auth',
+            event: 'auth.restore_failed',
+            message: error.message,
+          });
           setAuthSnapshot({
             status: 'ready',
             session: null,
@@ -196,6 +203,16 @@ export const signInWithPassword = async ({ email, password }: SignInWithPassword
   });
 
   if (error) {
+    void logEvent({
+      level: 'warn',
+      source: 'auth',
+      event: 'auth.sign_in_failed',
+      message: error.message,
+      context: {
+        status: 'status' in error ? error.status : undefined,
+        name: error.name,
+      },
+    });
     setAuthSnapshot({
       status: 'ready',
       session: null,
