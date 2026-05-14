@@ -23,8 +23,6 @@ type MergeWriteTx = Pick<LocalDatabase, 'delete' | 'insert' | 'select' | 'update
 type GymRow = {
   id: string;
   name: string;
-  originScopeId: string;
-  originSourceId: string;
   deletedAtMs: number | null;
   createdAtMs: number;
   updatedAtMs: number;
@@ -49,8 +47,6 @@ type SessionExerciseRow = {
   orderIndex: number;
   name: string;
   machineName: string | null;
-  originScopeId: string;
-  originSourceId: string;
   deletedAtMs: number | null;
   createdAtMs: number;
   updatedAtMs: number;
@@ -219,8 +215,6 @@ const normalizeDurationSec = (value: unknown): number | null => {
 const parseRemoteGym = (row: Record<string, unknown>): GymRow => ({
   id: normalizeString(row.id, 'gyms.id'),
   name: normalizeString(row.name, 'gyms.name'),
-  originScopeId: normalizeOptionalString(row.origin_scope_id) ?? 'private',
-  originSourceId: normalizeOptionalString(row.origin_source_id) ?? 'local',
   deletedAtMs: normalizeOptionalEpochMs(row.deleted_at, 'gyms.deleted_at'),
   createdAtMs: normalizeEpochMs(row.created_at, 'gyms.created_at'),
   updatedAtMs: normalizeEpochMs(row.updated_at, 'gyms.updated_at'),
@@ -245,8 +239,6 @@ const parseRemoteSessionExercise = (row: Record<string, unknown>): SessionExerci
   orderIndex: Math.max(0, Math.floor(Number(row.order_index) || 0)),
   name: normalizeString(row.name, 'session_exercises.name'),
   machineName: normalizeOptionalString(row.machine_name),
-  originScopeId: normalizeOptionalString(row.origin_scope_id) ?? 'private',
-  originSourceId: normalizeOptionalString(row.origin_source_id) ?? 'local',
   deletedAtMs: normalizeOptionalEpochMs(row.deleted_at, 'session_exercises.deleted_at'),
   createdAtMs: normalizeEpochMs(row.created_at, 'session_exercises.created_at'),
   updatedAtMs: normalizeEpochMs(row.updated_at, 'session_exercises.updated_at'),
@@ -372,7 +364,7 @@ export const fetchRemoteSyncProjectionState = async (client: SupabaseClient): Pr
       selectRows(
         appPublicClient
           .from('gyms')
-          .select('id,name,origin_scope_id,origin_source_id,deleted_at,created_at,updated_at'),
+          .select('id,name,deleted_at,created_at,updated_at'),
         'gyms'
       ),
       selectRows(
@@ -385,7 +377,7 @@ export const fetchRemoteSyncProjectionState = async (client: SupabaseClient): Pr
         appPublicClient
           .from('session_exercises')
           .select(
-            'id,session_id,exercise_definition_id,order_index,name,machine_name,origin_scope_id,origin_source_id,deleted_at,created_at,updated_at'
+            'id,session_id,exercise_definition_id,order_index,name,machine_name,deleted_at,created_at,updated_at'
           ),
         'session_exercises'
       ),
@@ -456,8 +448,6 @@ const readLocalProjectionState = (tx: MergeReadTx): ProjectionState => ({
     .map((row) => ({
       id: row.id,
       name: row.name,
-      originScopeId: row.originScopeId,
-      originSourceId: row.originSourceId,
       deletedAtMs: null,
       createdAtMs: row.createdAt.getTime(),
       updatedAtMs: row.updatedAt.getTime(),
@@ -488,8 +478,6 @@ const readLocalProjectionState = (tx: MergeReadTx): ProjectionState => ({
       orderIndex: row.orderIndex,
       name: row.name,
       machineName: row.machineName ?? null,
-      originScopeId: row.originScopeId,
-      originSourceId: row.originSourceId,
       deletedAtMs: null,
       createdAtMs: row.createdAt.getTime(),
       updatedAtMs: row.updatedAt.getTime(),
@@ -904,8 +892,6 @@ const buildConvergenceEvents = (state: ProjectionState): QueuedSyncEventInput[] 
       payload: {
         id: row.id,
         name: row.name,
-        origin_scope_id: row.originScopeId,
-        origin_source_id: row.originSourceId,
         created_at_ms: row.createdAtMs,
         updated_at_ms: row.updatedAtMs,
       },
@@ -952,8 +938,6 @@ const buildConvergenceEvents = (state: ProjectionState): QueuedSyncEventInput[] 
         order_index: row.orderIndex,
         name: row.name,
         machine_name: row.machineName,
-        origin_scope_id: row.originScopeId,
-        origin_source_id: row.originSourceId,
         created_at_ms: row.createdAtMs,
         updated_at_ms: row.updatedAtMs,
       },
@@ -1017,8 +1001,6 @@ const applyMergePlanTx = (tx: MergeWriteTx, input: { mergePlan: MergePlan; now: 
         mergedState.gyms.map((row) => ({
           id: row.id,
           name: row.name,
-          originScopeId: row.originScopeId,
-          originSourceId: row.originSourceId,
           createdAt: new Date(row.createdAtMs),
           updatedAt: new Date(row.updatedAtMs),
         }))
@@ -1068,8 +1050,6 @@ const applyMergePlanTx = (tx: MergeWriteTx, input: { mergePlan: MergePlan; now: 
           orderIndex: row.orderIndex,
           name: row.name,
           machineName: row.machineName,
-          originScopeId: row.originScopeId,
-          originSourceId: row.originSourceId,
           createdAt: new Date(row.createdAtMs),
           updatedAt: new Date(row.updatedAtMs),
         }))

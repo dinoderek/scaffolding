@@ -52,8 +52,6 @@ type ScopedSnapshot = {
   gyms: {
     id: string;
     name: string;
-    originScopeId: string;
-    originSourceId: string;
     createdAtMs: number;
     updatedAtMs: number;
   }[];
@@ -75,8 +73,6 @@ type ScopedSnapshot = {
     orderIndex: number;
     name: string;
     machineName: string | null;
-    originScopeId: string;
-    originSourceId: string;
     createdAtMs: number;
     updatedAtMs: number;
   }[];
@@ -189,8 +185,6 @@ const captureScopedSnapshot = (state: FakeState): ScopedSnapshot => ({
     state.gyms.map((row) => ({
       id: row.id,
       name: row.name,
-      originScopeId: row.originScopeId,
-      originSourceId: row.originSourceId,
       createdAtMs: row.createdAt.getTime(),
       updatedAtMs: row.updatedAt.getTime(),
     }))
@@ -216,8 +210,6 @@ const captureScopedSnapshot = (state: FakeState): ScopedSnapshot => ({
       orderIndex: row.orderIndex,
       name: row.name,
       machineName: row.machineName,
-      originScopeId: row.originScopeId,
-      originSourceId: row.originSourceId,
       createdAtMs: row.createdAt.getTime(),
       updatedAtMs: row.updatedAt.getTime(),
     }))
@@ -506,8 +498,6 @@ const seedFixtureState = async (state: FakeState, runTag: string, now: Date): Pr
   state.gyms.push({
     id: gymId,
     name: `${runTag} Gym`,
-    originScopeId: 'private',
-    originSourceId: 'local',
     createdAt: now,
     updatedAt: now,
   });
@@ -531,8 +521,6 @@ const seedFixtureState = async (state: FakeState, runTag: string, now: Date): Pr
     orderIndex: 0,
     name: `${runTag} Bench Press`,
     machineName: 'Rack',
-    originScopeId: 'private',
-    originSourceId: 'local',
     createdAt: now,
     updatedAt: now,
   });
@@ -600,8 +588,6 @@ const seedFixtureState = async (state: FakeState, runTag: string, now: Date): Pr
       payload: {
         id: gymId,
         name: `${runTag} Gym`,
-        origin_scope_id: 'private',
-        origin_source_id: 'local',
         created_at_ms: baseMs,
         updated_at_ms: baseMs,
       },
@@ -637,8 +623,6 @@ const seedFixtureState = async (state: FakeState, runTag: string, now: Date): Pr
         order_index: 0,
         name: `${runTag} Bench Press`,
         machine_name: 'Rack',
-        origin_scope_id: 'private',
-        origin_source_id: 'local',
         created_at_ms: baseMs,
         updated_at_ms: baseMs,
       },

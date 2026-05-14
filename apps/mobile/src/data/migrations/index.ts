@@ -72,6 +72,12 @@ export const localRuntimeMigrations: RuntimeMigrationConfig = {
         tag: '0010_sync_runtime_attempt',
         breakpoints: true,
       },
+      {
+        idx: 11,
+        when: 1778790600000,
+        tag: '0011_drop_origin_columns',
+        breakpoints: true,
+      },
     ],
   },
   migrations: {
@@ -299,5 +305,10 @@ CREATE INDEX \`sync_outbox_events_created_at_idx\` ON \`sync_outbox_events\` (\`
 );`,
     m0009: `ALTER TABLE \`exercise_sets\` ADD \`set_type\` text;`,
     m0010: `ALTER TABLE \`sync_runtime_state\` ADD \`last_bootstrap_attempt_at\` integer;`,
+    m0011: `DROP INDEX IF EXISTS \`gyms_origin_scope_id_idx\`;--> statement-breakpoint
+ALTER TABLE \`gyms\` DROP COLUMN \`origin_scope_id\`;--> statement-breakpoint
+ALTER TABLE \`gyms\` DROP COLUMN \`origin_source_id\`;--> statement-breakpoint
+ALTER TABLE \`session_exercises\` DROP COLUMN \`origin_scope_id\`;--> statement-breakpoint
+ALTER TABLE \`session_exercises\` DROP COLUMN \`origin_source_id\`;`,
   },
 };

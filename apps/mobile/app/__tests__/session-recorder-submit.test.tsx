@@ -109,8 +109,6 @@ const buildCompletedEditSnapshot = (overrides: Partial<any> = {}) => ({
       exerciseDefinitionId: 'sys_barbell_bench_press',
       name: 'Bench Press',
       machineName: 'Flat Bench',
-      originScopeId: 'private',
-      originSourceId: 'local',
       sets: [{ id: 'set-1', repsValue: '5', weightValue: '225' }],
     },
   ],
@@ -293,8 +291,6 @@ describe('SessionRecorderScreen submit cleanup flow', () => {
             exerciseDefinitionId: 'sys_barbell_bench_press',
             name: 'Bench Press',
             machineName: 'Flat Bench',
-            originScopeId: 'private',
-            originSourceId: 'local',
             sets: [
               { id: 'set-1', repsValue: '5', weightValue: '225' },
               { id: 'set-2', repsValue: '', weightValue: '205' },

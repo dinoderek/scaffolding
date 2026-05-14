@@ -495,8 +495,6 @@ describe('CompletedSessionDetailRoute', () => {
           exerciseDefinitionId: 'sys_barbell_back_squat',
           name: 'Back Squat',
           machineName: 'Rack',
-          originScopeId: 'private',
-          originSourceId: 'local',
           sets: [
             { id: 'set-1', repsValue: '5', weightValue: '225' },
             { id: 'set-2', repsValue: '5', weightValue: '225' },
