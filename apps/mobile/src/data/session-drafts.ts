@@ -19,8 +19,6 @@ export type SessionDraftExerciseInput = {
   exerciseDefinitionId: string;
   name: string;
   machineName?: string | null;
-  originScopeId?: string;
-  originSourceId?: string;
   sets: SessionDraftSetInput[];
 };
 
@@ -62,8 +60,6 @@ export type SessionDraftExerciseSnapshot = {
   exerciseDefinitionId: string;
   name: string;
   machineName: string | null;
-  originScopeId: string;
-  originSourceId: string;
   sets: SessionDraftSetSnapshot[];
 };
 
@@ -156,8 +152,6 @@ type StoredDraftExerciseRecord = {
   orderIndex: number;
   name: string;
   machineName: string | null;
-  originScopeId: string;
-  originSourceId: string;
 };
 
 type StoredSessionExerciseTagRecord = {
@@ -307,8 +301,6 @@ const mapDraftSnapshot = (graph: StoredDraftGraph): SessionDraftSnapshot => ({
     exerciseDefinitionId: exercise.exerciseDefinitionId,
     name: exercise.name,
     machineName: exercise.machineName,
-    originScopeId: exercise.originScopeId,
-    originSourceId: exercise.originSourceId,
     sets: exercise.sets.map((set) => ({
       id: set.id,
       repsValue: set.repsValue,
@@ -333,8 +325,6 @@ const mapSessionGraphSnapshot = (graph: StoredDraftGraph): SessionGraphSnapshot 
     exerciseDefinitionId: exercise.exerciseDefinitionId,
     name: exercise.name,
     machineName: exercise.machineName,
-    originScopeId: exercise.originScopeId,
-    originSourceId: exercise.originSourceId,
     sets: exercise.sets.map((set) => ({
       id: set.id,
       repsValue: set.repsValue,
@@ -396,8 +386,6 @@ const loadDraftGraphBySessionId = (database: LocalDatabase, sessionId: string): 
         orderIndex: exercise.orderIndex,
         name: exercise.name,
         machineName: exercise.machineName,
-        originScopeId: exercise.originScopeId,
-        originSourceId: exercise.originSourceId,
         sets: setsByExerciseId.get(exercise.id) ?? [],
       };
     }),
@@ -492,8 +480,6 @@ const replaceSessionExerciseGraph = (
         orderIndex: exerciseIndex,
         name: exercise.name,
         machineName: exercise.machineName ?? null,
-        originScopeId: exercise.originScopeId ?? 'private',
-        originSourceId: exercise.originSourceId ?? 'local',
         createdAt: input.now,
         updatedAt: input.now,
       })
@@ -511,8 +497,6 @@ const replaceSessionExerciseGraph = (
         order_index: exerciseIndex,
         name: exercise.name,
         machine_name: exercise.machineName ?? null,
-        origin_scope_id: exercise.originScopeId ?? 'private',
-        origin_source_id: exercise.originSourceId ?? 'local',
         created_at_ms: input.now.getTime(),
         updated_at_ms: input.now.getTime(),
       },

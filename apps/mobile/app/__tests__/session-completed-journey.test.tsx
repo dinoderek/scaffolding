@@ -194,8 +194,6 @@ jest.mock('@/src/data', () => ({
         exerciseDefinitionId: exercise.exerciseDefinitionId,
         name: exercise.name,
         machineName: exercise.machineName,
-        originScopeId: 'private',
-        originSourceId: 'local',
         sets: exercise.sets.map((set) => ({
           id: set.id,
           repsValue: set.repsValue,
@@ -225,8 +223,6 @@ jest.mock('@/src/data', () => ({
         exerciseDefinitionId: exercise.exerciseDefinitionId,
         name: exercise.name,
         machineName: exercise.machineName,
-        originScopeId: 'private',
-        originSourceId: 'local',
         sets: exercise.sets.map((set) => ({
           id: set.id,
           repsValue: set.repsValue,

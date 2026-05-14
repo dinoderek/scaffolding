@@ -21,8 +21,6 @@ describe('sync bootstrap merge determinism', () => {
     local.gyms.push({
       id: 'gym-local',
       name: 'Local Gym',
-      originScopeId: 'private',
-      originSourceId: 'local',
       deletedAtMs: null,
       createdAtMs: 1_000,
       updatedAtMs: 9_000,
@@ -32,8 +30,6 @@ describe('sync bootstrap merge determinism', () => {
       {
         id: 'gym-local',
         name: 'Remote Older Gym',
-        originScopeId: 'private',
-        originSourceId: 'local',
         deletedAtMs: null,
         createdAtMs: 1_000,
         updatedAtMs: 8_000,
@@ -41,8 +37,6 @@ describe('sync bootstrap merge determinism', () => {
       {
         id: 'gym-remote',
         name: 'Remote Gym',
-        originScopeId: 'private',
-        originSourceId: 'local',
         deletedAtMs: null,
         createdAtMs: 1_100,
         updatedAtMs: 1_100,
@@ -50,8 +44,6 @@ describe('sync bootstrap merge determinism', () => {
       {
         id: 'gym-remote-deleted',
         name: 'Deleted Remote Gym',
-        originScopeId: 'private',
-        originSourceId: 'local',
         deletedAtMs: 2_000,
         createdAtMs: 1_200,
         updatedAtMs: 2_000,

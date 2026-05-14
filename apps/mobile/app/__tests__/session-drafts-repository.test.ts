@@ -139,8 +139,6 @@ describe('session draft repository', () => {
           orderIndex: 0,
           name: 'Bench Press',
           machineName: 'Flat Bench',
-          originScopeId: 'private',
-          originSourceId: 'local',
           sets: [
             {
               id: 'set-1',
@@ -191,8 +189,6 @@ describe('session draft repository', () => {
           orderIndex: 0,
           name: 'Bench Press',
           machineName: 'Flat Bench',
-          originScopeId: 'private',
-          originSourceId: 'local',
           sets: [
             {
               id: 'set-1',
@@ -219,8 +215,6 @@ describe('session draft repository', () => {
           orderIndex: 1,
           name: 'Incline DB Press',
           machineName: null,
-          originScopeId: 'private',
-          originSourceId: 'local',
           sets: [
             {
               id: 'set-3',

@@ -42,8 +42,6 @@ export const upsertLocalGym = async (input: UpsertLocalGymInput) => {
             payload: {
               id: input.id,
               name: input.name,
-              origin_scope_id: existing.originScopeId,
-              origin_source_id: existing.originSourceId,
               created_at_ms: existing.createdAt.getTime(),
               updated_at_ms: now.getTime(),
             },
@@ -58,8 +56,6 @@ export const upsertLocalGym = async (input: UpsertLocalGymInput) => {
       .values({
         id: input.id,
         name: input.name,
-        originScopeId: 'private',
-        originSourceId: 'local',
         createdAt: now,
         updatedAt: now,
       })
@@ -76,8 +72,6 @@ export const upsertLocalGym = async (input: UpsertLocalGymInput) => {
           payload: {
             id: input.id,
             name: input.name,
-            origin_scope_id: 'private',
-            origin_source_id: 'local',
             created_at_ms: now.getTime(),
             updated_at_ms: now.getTime(),
           },

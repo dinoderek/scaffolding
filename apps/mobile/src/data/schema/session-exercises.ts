@@ -20,8 +20,6 @@ export const sessionExercises = sqliteTable(
     orderIndex: integer('order_index').notNull(),
     name: text('name').notNull(),
     machineName: text('machine_name'),
-    originScopeId: text('origin_scope_id').notNull().default('private'),
-    originSourceId: text('origin_source_id').notNull().default('local'),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .notNull()
       .default(sql`(unixepoch() * 1000)`),
