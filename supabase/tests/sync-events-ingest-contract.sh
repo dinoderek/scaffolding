@@ -534,4 +534,103 @@ postgrest_select "exercise_definitions" "id=eq.${EXDEF_ID}&select=id" "${USER_B_
 assert_status "200" "user_b projection read"
 assert_json_expr 'length == 0' "user_b denied from user_a projection row"
 
+# -----------------------------------------------------------------------------
+# T5 — composite-PK positive coverage.
+#
+# Under the T1 redesign, sync-domain tables use a composite primary key
+# `(id, owner_user_id)`, so two users can each own a row with the same `id`
+# without conflict. The six "<entity> id <id> belongs to a different owner"
+# exception branches in `sync_apply_projection_event` were removed because the
+# collision they guarded against is impossible by construction.
+#
+# This block proves the projection-via-event path honours that contract: both
+# users ingest an `upsert` event for `exercise_definitions(id=SHARED_EXDEF_ID)`
+# and both succeed; each side reads back their own row via PostgREST (RLS
+# scopes the read to the owner). If anyone re-introduces a cross-owner
+# rejection branch this test will fail loudly.
+#
+# Each user runs through its own device id so per-device sequence counters do
+# not collide.
+# -----------------------------------------------------------------------------
+echo "[sync-ingest] shared id across two owners projects independently"
+SHARED_EXDEF_ID="sync-shared-exdef-${RUN_TAG}"
+SHARED_DEVICE_A="sync-shared-device-a-${RUN_TAG}"
+SHARED_DEVICE_B="sync-shared-device-b-${RUN_TAG}"
+SHARED_EVENT_A="event-shared-a-${RUN_TAG}"
+SHARED_EVENT_B="event-shared-b-${RUN_TAG}"
+SHARED_BATCH_A="batch-shared-a-${RUN_TAG}"
+SHARED_BATCH_B="batch-shared-b-${RUN_TAG}"
+
+build_shared_event() {
+  local event_id="$1"
+  local exdef_name="$2"
+  local ts="$3"
+  jq -nc \
+    --arg event_id "${event_id}" \
+    --arg exdef_id "${SHARED_EXDEF_ID}" \
+    --arg name "${exdef_name}" \
+    --argjson ts "${ts}" \
+    '[
+      {
+        event_id: $event_id,
+        sequence_in_device: 1,
+        occurred_at_ms: $ts,
+        entity_type: "exercise_definitions",
+        entity_id: $exdef_id,
+        event_type: "upsert",
+        payload: {
+          id: $exdef_id,
+          name: $name,
+          deleted_at_ms: null,
+          created_at_ms: $ts,
+          updated_at_ms: $ts
+        }
+      }
+    ]'
+}
+
+SHARED_EVENTS_A="$(build_shared_event "${SHARED_EVENT_A}" "Bench Press" "$((BASE_MS + 300))")"
+REQUEST_SHARED_A="$(jq -nc \
+  --arg device_id "${SHARED_DEVICE_A}" \
+  --arg batch_id "${SHARED_BATCH_A}" \
+  --argjson sent_at_ms "$((BASE_MS + 300))" \
+  --argjson events "${SHARED_EVENTS_A}" \
+  '{device_id: $device_id, batch_id: $batch_id, sent_at_ms: $sent_at_ms, events: $events}')"
+rpc_sync_events_ingest "${USER_A_TOKEN}" "${REQUEST_SHARED_A}"
+assert_status "200" "user_a shared-id ingest status"
+assert_json_expr '.status == "SUCCESS"' "user_a shared-id ingest envelope"
+
+SHARED_EVENTS_B="$(build_shared_event "${SHARED_EVENT_B}" "Bench Press" "$((BASE_MS + 301))")"
+REQUEST_SHARED_B="$(jq -nc \
+  --arg device_id "${SHARED_DEVICE_B}" \
+  --arg batch_id "${SHARED_BATCH_B}" \
+  --argjson sent_at_ms "$((BASE_MS + 301))" \
+  --argjson events "${SHARED_EVENTS_B}" \
+  '{device_id: $device_id, batch_id: $batch_id, sent_at_ms: $sent_at_ms, events: $events}')"
+rpc_sync_events_ingest "${USER_B_TOKEN}" "${REQUEST_SHARED_B}"
+assert_status "200" "user_b shared-id ingest status"
+assert_json_expr '.status == "SUCCESS"' "user_b shared-id ingest envelope"
+
+# Each user reads back their own copy. RLS scopes the read to the owner, so the
+# composite-PK guarantee shows up here as "each side sees exactly one row, and
+# that row carries the name they sent" — cross-owner overwrite would surface as
+# the wrong name on one side.
+postgrest_select "exercise_definitions" "id=eq.${SHARED_EXDEF_ID}&select=id,name" "${USER_A_TOKEN}"
+assert_status "200" "user_a shared-id projection read"
+assert_json_expr --arg id "${SHARED_EXDEF_ID}" 'length == 1 and .[0].id == $id and .[0].name == "Bench Press"' "user_a sees own shared-id row"
+
+postgrest_select "exercise_definitions" "id=eq.${SHARED_EXDEF_ID}&select=id,name" "${USER_B_TOKEN}"
+assert_status "200" "user_b shared-id projection read"
+assert_json_expr --arg id "${SHARED_EXDEF_ID}" 'length == 1 and .[0].id == $id and .[0].name == "Bench Press"' "user_b sees own shared-id row"
+
+# RLS still hides each owner's row from the other; the composite PK does not
+# weaken row-level isolation.
+postgrest_select "sync_ingested_events" "device_id=eq.${SHARED_DEVICE_A}&select=event_id" "${USER_B_TOKEN}"
+assert_status "200" "user_b cross-device ingest metadata read"
+assert_json_expr 'length == 0' "user_b denied from user_a shared-id ingest metadata"
+
+postgrest_select "sync_ingested_events" "device_id=eq.${SHARED_DEVICE_B}&select=event_id" "${USER_A_TOKEN}"
+assert_status "200" "user_a cross-device ingest metadata read"
+assert_json_expr 'length == 0' "user_a denied from user_b shared-id ingest metadata"
+
 echo "[sync-ingest] sync ingest contract checks passed"
