@@ -18,10 +18,14 @@ module.exports = defineConfig([
       ],
     },
     rules: {
-      'no-restricted-syntax': [
+      // `__DEV__` is declared as a `readonly` global by `eslint-config-expo`,
+      // so `no-restricted-globals` reliably matches variable reads of it
+      // without firing on property keys (`{ __DEV__: ... }`) or non-computed
+      // member accesses (`obj.__DEV__`).
+      'no-restricted-globals': [
         'error',
         {
-          selector: "Identifier[name='__DEV__']",
+          name: '__DEV__',
           message: NO_DEV_GLOBAL_MESSAGE,
         },
       ],
@@ -29,9 +33,10 @@ module.exports = defineConfig([
   },
   {
     // The utility itself is the one place where `__DEV__` is legitimate.
-    files: ['src/utils/isDevMode.ts'],
+    // Use `**/` so the exemption matches regardless of the eslint CWD.
+    files: ['**/src/utils/isDevMode.ts'],
     rules: {
-      'no-restricted-syntax': 'off',
+      'no-restricted-globals': 'off',
     },
   },
 ]);
