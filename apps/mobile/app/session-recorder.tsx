@@ -49,16 +49,9 @@ import {
   type SessionGraphSnapshot,
 } from '@/src/data';
 import { SESSION_SET_TYPES, normalizeSessionSetType, type SessionSetType, type SessionSetTypeValue } from '@/src/data/set-types';
-import {
-  listExerciseCatalogExercises,
-  listExerciseCatalogMuscleGroups,
-  type ExerciseCatalogMuscleGroup,
-  type ExerciseCatalogExercise,
-} from '@/src/data/exercise-catalog';
-import {
-  filterExerciseCatalogExercises,
-  indexExerciseCatalogMuscleGroupsById,
-} from '@/src/exercise-catalog/search';
+import { type ExerciseCatalogExercise } from '@/src/data/exercise-catalog';
+import { useExerciseCatalog } from '@/src/exercise-catalog/cache';
+import { filterIndexedExerciseCatalogExercises } from '@/src/exercise-catalog/search';
 import { logEvent } from '@/src/logging';
 import { createDraftAutosaveController, type DraftAutosaveController } from '@/src/session-recorder/draft-autosave';
 import { createSessionRecorderLifecycleHelpers } from '@/src/session-recorder/lifecycle-helpers';
@@ -492,13 +485,18 @@ export default function SessionRecorderScreen() {
   const [completedEditStartTouched, setCompletedEditStartTouched] = useState(false);
   const [completedEditEndTouched, setCompletedEditEndTouched] = useState(false);
   const [completedEditSubmitAttempted, setCompletedEditSubmitAttempted] = useState(false);
-  const [exercisePickerOptions, setExercisePickerOptions] = useState<ExerciseCatalogExercise[]>([]);
   const [exercisePickerSearchValue, setExercisePickerSearchValue] = useState('');
-  const [exercisePickerMuscleGroupsById, setExercisePickerMuscleGroupsById] = useState<
-    Record<string, ExerciseCatalogMuscleGroup>
-  >({});
-  const [isExerciseCatalogLoading, setIsExerciseCatalogLoading] = useState(false);
-  const [exerciseCatalogLoadError, setExerciseCatalogLoadError] = useState<string | null>(null);
+  const exerciseCatalog = useExerciseCatalog();
+  const isExerciseCatalogLoading =
+    exerciseCatalog.status === 'idle' || exerciseCatalog.status === 'loading';
+  const exerciseCatalogLoadError =
+    exerciseCatalog.status === 'error'
+      ? exerciseCatalog.lastError ?? 'Unable to load exercises right now.'
+      : null;
+  const exercisePickerOptions = useMemo(
+    () => exerciseCatalog.exercises.filter((exercise) => !exercise.deletedAt),
+    [exerciseCatalog.exercises]
+  );
   const [isExerciseCreateModalVisible, setIsExerciseCreateModalVisible] = useState(false);
   const [isTagModalVisible, setIsTagModalVisible] = useState(false);
   const [tagModalMode, setTagModalMode] = useState<TagModalMode>('picker');
@@ -747,68 +745,21 @@ export default function SessionRecorderScreen() {
     };
   }, [autosaveController, lifecycleHelpers]);
 
-  const reloadExercisePickerOptions = useCallback(async () => {
-    setIsExerciseCatalogLoading(true);
-    setExerciseCatalogLoadError(null);
-
-    try {
-      const [loadedExercises, loadedMuscleGroups] = await Promise.all([
-        listExerciseCatalogExercises(),
-        listExerciseCatalogMuscleGroups(),
-      ]);
-      setExercisePickerOptions(loadedExercises);
-      setExercisePickerMuscleGroupsById(indexExerciseCatalogMuscleGroupsById(loadedMuscleGroups));
-    } catch {
-      setExerciseCatalogLoadError('Unable to load exercises right now.');
-    } finally {
-      setIsExerciseCatalogLoading(false);
-    }
-  }, []);
-
   useFocusEffect(
     useCallback(() => {
-      let cancelled = false;
+      if (pendingExercisePickerRestoreTargetRef.current === undefined) {
+        return;
+      }
 
-      void (async () => {
-        setIsExerciseCatalogLoading(true);
-        setExerciseCatalogLoadError(null);
-
-        try {
-          const [loadedExercises, loadedMuscleGroups] = await Promise.all([
-            listExerciseCatalogExercises(),
-            listExerciseCatalogMuscleGroups(),
-          ]);
-          if (cancelled) {
-            return;
-          }
-          setExercisePickerOptions(loadedExercises);
-          setExercisePickerMuscleGroupsById(indexExerciseCatalogMuscleGroupsById(loadedMuscleGroups));
-        } catch {
-          if (cancelled) {
-            return;
-          }
-          setExerciseCatalogLoadError('Unable to load exercises right now.');
-        } finally {
-          if (!cancelled) {
-            setIsExerciseCatalogLoading(false);
-            if (pendingExercisePickerRestoreTargetRef.current !== undefined) {
-              const selectionTargetId = pendingExercisePickerRestoreTargetRef.current;
-              pendingExercisePickerRestoreTargetRef.current = undefined;
-              setState((current) => ({
-                ...current,
-                exercisePickerVisible: true,
-                exerciseSelectionTargetId: selectionTargetId ?? null,
-                exerciseActionMenuVisible: false,
-                activeExerciseActionId: null,
-              }));
-            }
-          }
-        }
-      })();
-
-      return () => {
-        cancelled = true;
-      };
+      const selectionTargetId = pendingExercisePickerRestoreTargetRef.current;
+      pendingExercisePickerRestoreTargetRef.current = undefined;
+      setState((current) => ({
+        ...current,
+        exercisePickerVisible: true,
+        exerciseSelectionTargetId: selectionTargetId ?? null,
+        exerciseActionMenuVisible: false,
+        activeExerciseActionId: null,
+      }));
     }, [])
   );
 
@@ -848,8 +799,8 @@ export default function SessionRecorderScreen() {
     [state.locations, state.showArchivedInManager]
   );
   const filteredExercisePickerOptions = useMemo(
-    () => filterExerciseCatalogExercises(exercisePickerOptions, exercisePickerMuscleGroupsById, exercisePickerSearchValue),
-    [exercisePickerMuscleGroupsById, exercisePickerOptions, exercisePickerSearchValue]
+    () => filterIndexedExerciseCatalogExercises(exercisePickerOptions, exercisePickerSearchValue),
+    [exercisePickerOptions, exercisePickerSearchValue]
   );
   const exerciseIdsKey = useMemo(
     () => state.session.exercises.map((exercise) => exercise.id).join('|'),
@@ -1161,7 +1112,6 @@ export default function SessionRecorderScreen() {
       activeExerciseActionId: null,
     }));
     setExercisePickerSearchValue('');
-    void reloadExercisePickerOptions();
   };
 
   const dismissExerciseModal = () => {
@@ -1250,10 +1200,6 @@ export default function SessionRecorderScreen() {
   };
 
   const handleInlineExerciseCreated = async (exercise: ExerciseCatalogExercise) => {
-    setExercisePickerOptions((current) => {
-      const withoutSaved = current.filter((option) => option.id !== exercise.id);
-      return [...withoutSaved, exercise].sort((left, right) => left.name.localeCompare(right.name));
-    });
     setIsExerciseCreateModalVisible(false);
     applySelectedExerciseSelection(exercise.id, exercise.name);
   };

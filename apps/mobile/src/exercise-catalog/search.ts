@@ -15,7 +15,11 @@ export const indexExerciseCatalogMuscleGroupsById = (
     return indexed;
   }, {});
 
-const buildExerciseCatalogSearchText = (
+export type IndexedExerciseCatalogExercise = ExerciseCatalogExercise & {
+  searchText: string;
+};
+
+export const buildExerciseCatalogSearchText = (
   exercise: ExerciseCatalogExercise,
   muscleGroupsById: Record<string, ExerciseCatalogMuscleGroup>
 ): string => {
@@ -49,4 +53,18 @@ export const filterExerciseCatalogExercises = (
     const searchText = buildExerciseCatalogSearchText(exercise, muscleGroupsById);
     return searchWords.every((searchWord) => searchText.includes(searchWord));
   });
+};
+
+export const filterIndexedExerciseCatalogExercises = <T extends IndexedExerciseCatalogExercise>(
+  indexed: T[],
+  query: string
+): T[] => {
+  const searchWords = normalizeExerciseSearchWords(query);
+  if (searchWords.length === 0) {
+    return indexed;
+  }
+
+  return indexed.filter((exercise) =>
+    searchWords.every((searchWord) => exercise.searchText.includes(searchWord))
+  );
 };

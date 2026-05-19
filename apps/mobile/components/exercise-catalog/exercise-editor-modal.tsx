@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useExerciseCatalog } from '@/src/exercise-catalog/cache';
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -14,7 +15,6 @@ import {
 
 import { uiColors } from '@/components/ui';
 import {
-  listExerciseCatalogMuscleGroups,
   saveExerciseCatalogExercise,
   type ExerciseCatalogExercise,
   type ExerciseCatalogExerciseMuscleMapping,
@@ -37,7 +37,6 @@ type MuscleSelectorMode = 'primary' | 'secondary' | null;
 type ExerciseEditorModalProps = {
   visible: boolean;
   editingExercise: ExerciseCatalogExercise | null;
-  muscleGroups?: ExerciseCatalogMuscleGroup[];
   onRequestClose: () => void;
   onSaved: (exercise: ExerciseCatalogExercise) => void;
 };
@@ -94,14 +93,10 @@ const buildEditorMuscleSelectionsFromExercise = (
 export function ExerciseEditorModal({
   visible,
   editingExercise,
-  muscleGroups: providedMuscleGroups,
   onRequestClose,
   onSaved,
 }: ExerciseEditorModalProps) {
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoadingMuscleGroups, setIsLoadingMuscleGroups] = useState(false);
-  const [muscleGroupLoadError, setMuscleGroupLoadError] = useState<string | null>(null);
-  const [loadedMuscleGroups, setLoadedMuscleGroups] = useState<ExerciseCatalogMuscleGroup[]>([]);
   const [muscleSelectorMode, setMuscleSelectorMode] = useState<MuscleSelectorMode>(null);
   const [exerciseName, setExerciseName] = useState('');
   const [primaryMuscleGroupId, setPrimaryMuscleGroupId] = useState<string | null>(null);
@@ -109,42 +104,17 @@ export function ExerciseEditorModal({
   const [validation, setValidation] = useState<EditorValidationState>(createBlankValidationState);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const muscleGroups = providedMuscleGroups ?? loadedMuscleGroups;
+  const catalog = useExerciseCatalog();
+  const muscleGroups = catalog.muscleGroups;
+  const isLoadingMuscleGroups = catalog.status === 'idle' || catalog.status === 'loading';
+  const muscleGroupLoadError =
+    catalog.status === 'error'
+      ? catalog.lastError ?? 'Unable to load muscle groups right now.'
+      : null;
   const muscleGroupById = useMemo(
     () => new Map(muscleGroups.map((muscleGroup) => [muscleGroup.id, muscleGroup])),
     [muscleGroups]
   );
-
-  useEffect(() => {
-    if (!visible || providedMuscleGroups) {
-      return;
-    }
-
-    let cancelled = false;
-    setIsLoadingMuscleGroups(true);
-    setMuscleGroupLoadError(null);
-
-    void (async () => {
-      try {
-        const nextMuscleGroups = await listExerciseCatalogMuscleGroups();
-        if (!cancelled) {
-          setLoadedMuscleGroups(nextMuscleGroups);
-        }
-      } catch {
-        if (!cancelled) {
-          setMuscleGroupLoadError('Unable to load muscle groups right now.');
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingMuscleGroups(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [providedMuscleGroups, visible]);
 
   useEffect(() => {
     if (!visible) {
