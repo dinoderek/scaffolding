@@ -2,6 +2,7 @@ import { asc, eq, inArray, isNull } from 'drizzle-orm';
 
 import { bootstrapLocalDataLayer, type LocalDatabase } from './bootstrap';
 import { exerciseDefinitions, exerciseMuscleMappings, muscleGroups } from './schema';
+import { invalidateExerciseCatalogCache } from '@/src/exercise-catalog/cache';
 import { enqueueSyncEventsTx } from '@/src/sync';
 
 export type ExerciseCatalogMuscleGroup = {
@@ -459,7 +460,28 @@ const defaultExerciseCatalogRepository = createExerciseCatalogRepository();
 
 export const listExerciseCatalogMuscleGroups = defaultExerciseCatalogRepository.listMuscleGroups;
 export const listExerciseCatalogExercises = defaultExerciseCatalogRepository.listExercises;
-export const saveExerciseCatalogExercise = defaultExerciseCatalogRepository.saveExercise;
-export const setExerciseCatalogExerciseDeletedState = defaultExerciseCatalogRepository.setExerciseDeletedState;
-export const deleteExerciseCatalogExercise = defaultExerciseCatalogRepository.deleteExercise;
-export const undeleteExerciseCatalogExercise = defaultExerciseCatalogRepository.undeleteExercise;
+
+export const saveExerciseCatalogExercise = async (
+  input: SaveExerciseCatalogExerciseInput
+): Promise<ExerciseCatalogExercise> => {
+  const saved = await defaultExerciseCatalogRepository.saveExercise(input);
+  invalidateExerciseCatalogCache();
+  return saved;
+};
+
+export const setExerciseCatalogExerciseDeletedState = async (
+  input: SetExerciseCatalogExerciseDeletedStateInput
+): Promise<void> => {
+  await defaultExerciseCatalogRepository.setExerciseDeletedState(input);
+  invalidateExerciseCatalogCache();
+};
+
+export const deleteExerciseCatalogExercise = async (id: string, now?: Date): Promise<void> => {
+  await defaultExerciseCatalogRepository.deleteExercise(id, now);
+  invalidateExerciseCatalogCache();
+};
+
+export const undeleteExerciseCatalogExercise = async (id: string, now?: Date): Promise<void> => {
+  await defaultExerciseCatalogRepository.undeleteExercise(id, now);
+  invalidateExerciseCatalogCache();
+};

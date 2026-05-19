@@ -17,6 +17,7 @@ import {
 import { runSyncBootstrapMerge, type SyncBootstrapMergeResult } from './bootstrap';
 import { clearSyncRetryState, resetSyncStreamForBootstrap } from './outbox';
 import type { SyncIngestResponse } from './types';
+import { invalidateExerciseCatalogCache } from '@/src/exercise-catalog/cache';
 
 type RuntimeStateTx = Pick<LocalDatabase, 'insert' | 'select' | 'update'>;
 
@@ -272,6 +273,8 @@ const runBootstrapForSession = async (client: SupabaseClient, session: Session):
         client,
         now,
       });
+
+      invalidateExerciseCatalogCache();
 
       const convergenceResult = await flushSyncOutboxUntilSettled();
 

@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View, type ListRenderItem } from 'react-native';
 
 import { ExerciseEditorModal } from '@/components/exercise-catalog/exercise-editor-modal';
@@ -7,16 +7,12 @@ import { TopLevelTabs } from '@/components/navigation/top-level-tabs';
 import { uiColors } from '@/components/ui';
 import {
   deleteExerciseCatalogExercise,
-  listExerciseCatalogExercises,
-  listExerciseCatalogMuscleGroups,
   undeleteExerciseCatalogExercise,
   type ExerciseCatalogExercise,
   type ExerciseCatalogMuscleGroup,
 } from '@/src/data/exercise-catalog';
-import {
-  filterExerciseCatalogExercises,
-  indexExerciseCatalogMuscleGroupsById,
-} from '@/src/exercise-catalog/search';
+import { useExerciseCatalog } from '@/src/exercise-catalog/cache';
+import { filterIndexedExerciseCatalogExercises } from '@/src/exercise-catalog/search';
 
 const coerceRouteParam = (value: string | string[] | undefined): string | null => {
   if (Array.isArray(value)) {
@@ -132,7 +128,6 @@ export default function ExerciseCatalogScreen() {
   const routeIntent = coerceRouteParam(params.intent);
   const isFromSessionRecorder = routeSource === 'session-recorder';
 
-  const [isLoading, setIsLoading] = useState(true);
   const [isEditorModalVisible, setIsEditorModalVisible] = useState(false);
   const [isCatalogOptionsMenuVisible, setIsCatalogOptionsMenuVisible] = useState(false);
   const [showDeletedExercises, setShowDeletedExercises] = useState(false);
@@ -140,69 +135,14 @@ export default function ExerciseCatalogScreen() {
   const [exerciseActionMenuTarget, setExerciseActionMenuTarget] = useState<ExerciseCatalogExercise | null>(null);
   const [editorExerciseTarget, setEditorExerciseTarget] = useState<ExerciseCatalogExercise | null>(null);
   const [exerciseSearchValue, setExerciseSearchValue] = useState('');
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const [muscleGroups, setMuscleGroups] = useState<ExerciseCatalogMuscleGroup[]>([]);
-  const [exercises, setExercises] = useState<ExerciseCatalogExercise[]>([]);
-
-  const reloadCatalog = useCallback(async (options: { includeDeleted: boolean }) => {
-    setIsLoading(true);
-    setLoadError(null);
-
-    try {
-      const [loadedMuscleGroups, loadedExercises] = await Promise.all([
-        listExerciseCatalogMuscleGroups(),
-        listExerciseCatalogExercises({ includeDeleted: options.includeDeleted }),
-      ]);
-      setMuscleGroups(loadedMuscleGroups);
-      setExercises(loadedExercises);
-    } catch {
-      setLoadError('Unable to load exercise catalog. Try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false;
-
-      void (async () => {
-        setIsLoading(true);
-        setLoadError(null);
-
-        try {
-          const [loadedMuscleGroups, loadedExercises] = await Promise.all([
-            listExerciseCatalogMuscleGroups(),
-            listExerciseCatalogExercises({ includeDeleted: showDeletedExercises }),
-          ]);
-
-          if (cancelled) {
-            return;
-          }
-
-          setMuscleGroups(loadedMuscleGroups);
-          setExercises(loadedExercises);
-        } catch {
-          if (cancelled) {
-            return;
-          }
-
-          setLoadError('Unable to load exercise catalog. Try again.');
-        } finally {
-          if (!cancelled) {
-            setIsLoading(false);
-          }
-        }
-      })();
-
-      return () => {
-        cancelled = true;
-      };
-    }, [showDeletedExercises])
-  );
+  const catalog = useExerciseCatalog();
+  const isLoading = catalog.status === 'idle' || catalog.status === 'loading';
+  const loadError = catalog.status === 'error' ? catalog.lastError ?? 'Unable to load exercise catalog. Try again.' : null;
+  const exercises = catalog.exercises;
+  const muscleGroups = catalog.muscleGroups;
 
   const debouncedExerciseSearchValue = useDebouncedValue(exerciseSearchValue, SEARCH_DEBOUNCE_MS);
 
@@ -210,13 +150,13 @@ export default function ExerciseCatalogScreen() {
     () => new Map(muscleGroups.map((muscleGroup) => [muscleGroup.id, muscleGroup])),
     [muscleGroups]
   );
-  const muscleGroupsByIdRecord = useMemo(
-    () => indexExerciseCatalogMuscleGroupsById(muscleGroups),
-    [muscleGroups]
+  const visibleExercises = useMemo(
+    () => (showDeletedExercises ? exercises : exercises.filter((exercise) => !exercise.deletedAt)),
+    [exercises, showDeletedExercises]
   );
   const filteredExercises = useMemo(
-    () => filterExerciseCatalogExercises(exercises, muscleGroupsByIdRecord, debouncedExerciseSearchValue),
-    [exercises, muscleGroupsByIdRecord, debouncedExerciseSearchValue]
+    () => filterIndexedExerciseCatalogExercises(visibleExercises, debouncedExerciseSearchValue),
+    [visibleExercises, debouncedExerciseSearchValue]
   );
 
   const openEditorForExercise = useCallback((exercise: ExerciseCatalogExercise) => {
@@ -279,12 +219,8 @@ export default function ExerciseCatalogScreen() {
     setExerciseActionMenuTarget(null);
   };
 
-  const handleEditorSaved = (savedExercise: ExerciseCatalogExercise) => {
+  const handleEditorSaved = () => {
     const wasEditing = editorExerciseTarget !== null;
-    setExercises((current) => {
-      const withoutSaved = current.filter((exercise) => exercise.id !== savedExercise.id);
-      return [...withoutSaved, savedExercise].sort((left, right) => left.name.localeCompare(right.name));
-    });
     setSaveFeedback(wasEditing ? 'Exercise updated.' : 'Exercise created.');
     setIsEditorModalVisible(false);
     setEditorExerciseTarget(null);
@@ -298,7 +234,6 @@ export default function ExerciseCatalogScreen() {
   const deleteExercise = async (exercise: ExerciseCatalogExercise) => {
     try {
       await deleteExerciseCatalogExercise(exercise.id);
-      await reloadCatalog({ includeDeleted: showDeletedExercises });
       setSaveFeedback('Exercise deleted.');
 
       if (editorExerciseTarget?.id === exercise.id) {
@@ -312,7 +247,6 @@ export default function ExerciseCatalogScreen() {
   const undeleteExercise = async (exercise: ExerciseCatalogExercise) => {
     try {
       await undeleteExerciseCatalogExercise(exercise.id);
-      await reloadCatalog({ includeDeleted: showDeletedExercises });
       setSaveFeedback('Exercise restored.');
       setExerciseActionMenuTarget(null);
     } catch (error) {

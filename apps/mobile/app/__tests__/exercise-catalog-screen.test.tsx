@@ -9,7 +9,12 @@ import {
   listExerciseCatalogMuscleGroups,
   saveExerciseCatalogExercise,
   undeleteExerciseCatalogExercise,
+  type ExerciseCatalogExercise,
 } from '@/src/data/exercise-catalog';
+import {
+  __resetExerciseCatalogCacheForTests,
+  invalidateExerciseCatalogCache,
+} from '@/src/exercise-catalog/cache';
 
 jest.mock('expo-router', () => ({
   useFocusEffect: (callback: () => void | (() => void)) => {
@@ -37,6 +42,11 @@ const mockSaveExercise = jest.mocked(saveExerciseCatalogExercise);
 const mockDeleteExercise = jest.mocked(deleteExerciseCatalogExercise);
 const mockUndeleteExercise = jest.mocked(undeleteExerciseCatalogExercise);
 
+const setExerciseListAndInvalidate = (next: ExerciseCatalogExercise[]) => {
+  mockListExercises.mockResolvedValue(next);
+  invalidateExerciseCatalogCache();
+};
+
 describe('ExerciseCatalogScreen', () => {
   beforeEach(() => {
     mockListMuscleGroups.mockReset();
@@ -44,6 +54,7 @@ describe('ExerciseCatalogScreen', () => {
     mockSaveExercise.mockReset();
     mockDeleteExercise.mockReset();
     mockUndeleteExercise.mockReset();
+    __resetExerciseCatalogCacheForTests();
 
     mockListMuscleGroups.mockResolvedValue([
       { id: 'chest', displayName: 'Chest', familyName: 'Chest', sortOrder: 0 },
@@ -60,7 +71,7 @@ describe('ExerciseCatalogScreen', () => {
 
   it('creates a new exercise with primary and secondary muscles', async () => {
     mockListExercises.mockResolvedValue([]);
-    mockSaveExercise.mockResolvedValue({
+    const savedExercise: ExerciseCatalogExercise = {
       id: 'custom-ex-1',
       name: 'Incline Press',
       deletedAt: null,
@@ -68,6 +79,10 @@ describe('ExerciseCatalogScreen', () => {
         { id: 'map-1', muscleGroupId: 'chest', weight: 1, role: 'primary' },
         { id: 'map-2', muscleGroupId: 'triceps', weight: 0.5, role: 'secondary' },
       ],
+    };
+    mockSaveExercise.mockImplementation(async () => {
+      setExerciseListAndInvalidate([savedExercise]);
+      return savedExercise;
     });
 
     render(<ExerciseCatalogScreen />);
@@ -115,7 +130,7 @@ describe('ExerciseCatalogScreen', () => {
         ],
       },
     ]);
-    mockSaveExercise.mockResolvedValue({
+    const updatedExercise: ExerciseCatalogExercise = {
       id: 'sys_barbell_bench_press',
       name: 'Bench Press',
       deletedAt: null,
@@ -123,6 +138,10 @@ describe('ExerciseCatalogScreen', () => {
         { id: 'map-chest', muscleGroupId: 'chest', weight: 1, role: 'primary' },
         { id: 'map-delts', muscleGroupId: 'delts_front', weight: 0.5, role: 'secondary' },
       ],
+    };
+    mockSaveExercise.mockImplementation(async () => {
+      setExerciseListAndInvalidate([updatedExercise]);
+      return updatedExercise;
     });
 
     render(<ExerciseCatalogScreen />);
@@ -233,7 +252,9 @@ describe('ExerciseCatalogScreen', () => {
         mappings: [{ id: 'map-1', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
       },
     ]);
-    mockDeleteExercise.mockResolvedValue(undefined);
+    mockDeleteExercise.mockImplementation(async () => {
+      setExerciseListAndInvalidate([]);
+    });
 
     render(<ExerciseCatalogScreen />);
 
@@ -247,47 +268,27 @@ describe('ExerciseCatalogScreen', () => {
   });
 
   it('shows deleted exercises and supports undelete', async () => {
-    mockListExercises.mockResolvedValueOnce([
-      {
-        id: 'exercise-active-1',
-        name: 'Bench Press',
-        deletedAt: null,
-        mappings: [{ id: 'map-a', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
-      },
-    ]);
-    mockListExercises.mockResolvedValueOnce([
-      {
-        id: 'exercise-active-1',
-        name: 'Bench Press',
-        deletedAt: null,
-        mappings: [{ id: 'map-a', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
-      },
-      {
-        id: 'exercise-deleted-1',
-        name: 'Old Fly',
-        deletedAt: new Date('2026-02-27T10:00:00.000Z'),
-        mappings: [{ id: 'map-b', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
-      },
-    ]);
-    mockListExercises.mockResolvedValueOnce([
-      {
-        id: 'exercise-active-1',
-        name: 'Bench Press',
-        deletedAt: null,
-        mappings: [{ id: 'map-a', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
-      },
-      {
-        id: 'exercise-deleted-1',
-        name: 'Old Fly',
-        deletedAt: null,
-        mappings: [{ id: 'map-b', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
-      },
-    ]);
-    mockUndeleteExercise.mockResolvedValue(undefined);
+    const activeExercise: ExerciseCatalogExercise = {
+      id: 'exercise-active-1',
+      name: 'Bench Press',
+      deletedAt: null,
+      mappings: [{ id: 'map-a', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
+    };
+    const deletedExercise: ExerciseCatalogExercise = {
+      id: 'exercise-deleted-1',
+      name: 'Old Fly',
+      deletedAt: new Date('2026-02-27T10:00:00.000Z'),
+      mappings: [{ id: 'map-b', muscleGroupId: 'chest', weight: 1, role: 'primary' }],
+    };
+    mockListExercises.mockResolvedValue([activeExercise, deletedExercise]);
+    mockUndeleteExercise.mockImplementation(async () => {
+      setExerciseListAndInvalidate([activeExercise, { ...deletedExercise, deletedAt: null }]);
+    });
 
     render(<ExerciseCatalogScreen />);
 
     await screen.findByText('Bench Press');
+    expect(mockListExercises).toHaveBeenCalledWith({ includeDeleted: true });
     expect(screen.queryByText('Old Fly')).toBeNull();
 
     fireEvent.press(screen.getByLabelText('Exercise catalog options'));
@@ -295,7 +296,6 @@ describe('ExerciseCatalogScreen', () => {
     fireEvent.press(screen.getByLabelText('Show deleted exercises'));
 
     await waitFor(() => {
-      expect(mockListExercises).toHaveBeenLastCalledWith({ includeDeleted: true });
       expect(screen.getByText('Old Fly')).toBeTruthy();
     });
 
