@@ -158,6 +158,35 @@ describe('exercise catalog cache', () => {
     expect(mockListExercises.mock.calls.length).toBeLessThanOrEqual(2);
   });
 
+  it('picks up a late invalidation that lands while the drain is winding down', async () => {
+    const firstSnapshot = [exerciseFixture()];
+    const lateSnapshot = [exerciseFixture({ id: 'late', name: 'Late Arrival' })];
+    let resolveFirst: ((value: ExerciseCatalogExercise[]) => void) | undefined;
+    mockListExercises
+      .mockImplementationOnce(
+        () =>
+          new Promise<ExerciseCatalogExercise[]>((resolve) => {
+            resolveFirst = resolve;
+          })
+      )
+      .mockResolvedValueOnce(lateSnapshot);
+
+    const loadPromise = ensureExerciseCatalogLoaded();
+
+    // The drain is parked on its first reload.
+    resolveFirst?.(firstSnapshot);
+    await loadPromise;
+
+    // At this point, drain has finished its while loop but the .finally
+    // hasn't necessarily cleared drainPromise yet. Fire an invalidate so
+    // it lands in the close-out window.
+    invalidateExerciseCatalogCache();
+    await new Promise<void>((resolve) => setImmediate(resolve));
+
+    expect(mockListExercises).toHaveBeenCalledTimes(2);
+    expect(getExerciseCatalogSnapshot().exercises[0].name).toBe('Late Arrival');
+  });
+
   it('surfaces a load error in the snapshot when the data layer throws', async () => {
     mockListExercises.mockRejectedValue(new Error('boom'));
 

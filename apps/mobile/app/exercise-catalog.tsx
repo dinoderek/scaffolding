@@ -373,7 +373,6 @@ export default function ExerciseCatalogScreen() {
       <ExerciseEditorModal
         visible={isEditorModalVisible}
         editingExercise={editorExerciseTarget}
-        muscleGroups={muscleGroups}
         onRequestClose={closeEditorModal}
         onSaved={handleEditorSaved}
       />

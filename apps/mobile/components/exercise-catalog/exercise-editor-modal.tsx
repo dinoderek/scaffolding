@@ -37,7 +37,6 @@ type MuscleSelectorMode = 'primary' | 'secondary' | null;
 type ExerciseEditorModalProps = {
   visible: boolean;
   editingExercise: ExerciseCatalogExercise | null;
-  muscleGroups?: ExerciseCatalogMuscleGroup[];
   onRequestClose: () => void;
   onSaved: (exercise: ExerciseCatalogExercise) => void;
 };
@@ -94,7 +93,6 @@ const buildEditorMuscleSelectionsFromExercise = (
 export function ExerciseEditorModal({
   visible,
   editingExercise,
-  muscleGroups: providedMuscleGroups,
   onRequestClose,
   onSaved,
 }: ExerciseEditorModalProps) {
@@ -107,12 +105,10 @@ export function ExerciseEditorModal({
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const catalog = useExerciseCatalog();
-  const muscleGroups = providedMuscleGroups ?? catalog.muscleGroups;
-  const isLoadingMuscleGroups =
-    providedMuscleGroups === undefined &&
-    (catalog.status === 'idle' || catalog.status === 'loading');
+  const muscleGroups = catalog.muscleGroups;
+  const isLoadingMuscleGroups = catalog.status === 'idle' || catalog.status === 'loading';
   const muscleGroupLoadError =
-    providedMuscleGroups === undefined && catalog.status === 'error'
+    catalog.status === 'error'
       ? catalog.lastError ?? 'Unable to load muscle groups right now.'
       : null;
   const muscleGroupById = useMemo(

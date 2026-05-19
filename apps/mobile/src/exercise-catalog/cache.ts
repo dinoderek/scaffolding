@@ -38,7 +38,7 @@ const listeners = new Set<Listener>();
 let snapshot: ExerciseCatalogCacheSnapshot = EMPTY_SNAPSHOT;
 let inFlightReload: Promise<void> | null = null;
 let pendingReload = false;
-let drainScheduled = false;
+let drainPromise: Promise<void> | null = null;
 
 const emit = () => {
   for (const listener of listeners) {
@@ -90,32 +90,33 @@ const reload = async (): Promise<void> => {
 };
 
 const drain = async (): Promise<void> => {
-  // Keep `drainScheduled` true while we own the reload loop so that
-  // invalidations arriving during an in-flight reload coalesce into the
-  // current drain's next iteration instead of spawning a concurrent drain.
-  try {
-    while (pendingReload) {
-      pendingReload = false;
-      inFlightReload = reload();
-      try {
-        await inFlightReload;
-      } finally {
-        inFlightReload = null;
-      }
+  while (pendingReload) {
+    pendingReload = false;
+    inFlightReload = reload();
+    try {
+      await inFlightReload;
+    } finally {
+      inFlightReload = null;
     }
-  } finally {
-    drainScheduled = false;
   }
 };
 
-const scheduleDrain = () => {
-  if (drainScheduled) {
-    return;
+const ensureDrain = (): Promise<void> => {
+  if (drainPromise) {
+    // A drain is already running; it will pick up the latest
+    // `pendingReload` on its next iteration. Callers can await this
+    // promise to know when the drain (and all its reloads) finishes.
+    return drainPromise;
   }
-  drainScheduled = true;
-  queueMicrotask(() => {
-    void drain();
+  drainPromise = drain().finally(() => {
+    drainPromise = null;
+    // A late invalidation may have landed between the while-loop exit
+    // and this finally. Kick off another drain so the flag isn't stranded.
+    if (pendingReload) {
+      void ensureDrain();
+    }
   });
+  return drainPromise;
 };
 
 export const getExerciseCatalogSnapshot = (): ExerciseCatalogCacheSnapshot => snapshot;
@@ -131,26 +132,13 @@ export const ensureExerciseCatalogLoaded = async (): Promise<void> => {
   if (snapshot.status === 'ready') {
     return;
   }
-  if (inFlightReload) {
-    return inFlightReload;
-  }
   pendingReload = true;
-  scheduleDrain();
-  // Wait for the drain to start the reload and resolve it.
-  await new Promise<void>((resolve) => {
-    queueMicrotask(() => {
-      if (inFlightReload) {
-        inFlightReload.then(resolve, () => resolve());
-      } else {
-        resolve();
-      }
-    });
-  });
+  await ensureDrain();
 };
 
 export const invalidateExerciseCatalogCache = (): void => {
   pendingReload = true;
-  scheduleDrain();
+  void ensureDrain();
 };
 
 export const __resetExerciseCatalogCacheForTests = (): void => {
@@ -158,7 +146,7 @@ export const __resetExerciseCatalogCacheForTests = (): void => {
   snapshot = EMPTY_SNAPSHOT;
   inFlightReload = null;
   pendingReload = false;
-  drainScheduled = false;
+  drainPromise = null;
 };
 
 export const useExerciseCatalog = (): ExerciseCatalogCacheSnapshot => {

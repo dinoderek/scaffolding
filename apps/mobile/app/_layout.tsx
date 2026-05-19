@@ -5,6 +5,7 @@ import 'react-native-reanimated';
 
 import { AuthProvider, bootstrapAuthState } from '@/src/auth';
 import { bootstrapLocalDataLayer } from '@/src/data';
+import { ensureExerciseCatalogLoaded } from '@/src/exercise-catalog/cache';
 import {
   setDefaultSyncCadenceContextFromPathname,
   startSyncRuntime,
@@ -19,6 +20,7 @@ export default function RootLayout() {
   useEffect(() => {
     void bootstrapLocalDataLayer();
     void bootstrapAuthState();
+    void ensureExerciseCatalogLoaded();
     startSyncRuntime();
     startDefaultSyncScheduler();
 
