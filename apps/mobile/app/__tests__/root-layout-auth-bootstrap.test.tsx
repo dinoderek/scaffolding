@@ -80,7 +80,8 @@ describe('RootLayout auth bootstrap wiring', () => {
     expect(mockStartDefaultSyncScheduler).toHaveBeenCalledTimes(1);
     expect(mockSetDefaultSyncCadenceContextFromPathname).toHaveBeenCalledWith('/session-list');
     expect(screen.getByTestId('root-stack')).toBeTruthy();
-    expect(screen.getByTestId('screen-settings')).toBeTruthy();
+    // Tab roots (incl. settings) live in the `(tabs)` group registered as a single screen
+    expect(screen.getByTestId('screen-(tabs)')).toBeTruthy();
     expect(screen.getByTestId('screen-profile')).toBeTruthy();
   });
 });

@@ -17,6 +17,8 @@ Brief entrypoint contract for current mobile routes, query/path params, and allo
 
 - Router system: `expo-router` (file-based routes in `apps/mobile/app/`)
 - Root stack/layout: `apps/mobile/app/_layout.tsx`
+- Tab roots live inside the `(tabs)` route group at `apps/mobile/app/(tabs)/` and share a tab layout at `apps/mobile/app/(tabs)/_layout.tsx`. The group name is parenthesised so it does not appear in URLs (e.g. `/session-recorder` resolves to `app/(tabs)/session-recorder.tsx`).
+- Tab roots have `headerShown: false`; detail screens (`session-list`, `exercise-history`, `profile`, `completed-session/[sessionId]`, `maestro-harness`) remain outside `(tabs)/` and keep their existing native header behavior.
 - Navigation is currently string-path based (no centralized typed route helper layer)
 
 ## Route + param summary (current)
@@ -26,7 +28,7 @@ Brief entrypoint contract for current mobile routes, query/path params, and allo
 - Params:
   - none
 - Behavior:
-  - re-exports `/session-list`
+  - renders an `expo-router` `Redirect` to `/stats-history`
 
 2. `/session-list`
 - File: `apps/mobile/app/session-list.tsx`
@@ -34,9 +36,24 @@ Brief entrypoint contract for current mobile routes, query/path params, and allo
   - none
 - Behavior:
   - focus refreshes data via local reload token
+  - this route is still live during the navigation redesign migration so the `session-list-decompose` task can extract reusable pieces; final retirement happens in `maestro-and-tests` once nothing still hits it
+
+2a. `/stats-history`
+- File: `apps/mobile/app/(tabs)/stats-history.tsx`
+- Params:
+  - none
+- Behavior:
+  - tab root inside the `(tabs)` group; renders the (legacy) Stats body verbatim until the `stats-history-tab` task layers the Stats↔History segmented toggle on top
+
+2b. `/stats` (redirect)
+- File: `apps/mobile/app/stats.tsx`
+- Params:
+  - none
+- Behavior:
+  - back-compat shim: renders an `expo-router` `Redirect` to `/stats-history`
 
 3. `/session-recorder`
-- File: `apps/mobile/app/session-recorder.tsx`
+- File: `apps/mobile/app/(tabs)/session-recorder.tsx`
 - Query params:
   - `mode` (optional; `completed-edit` enables completed-session edit flow)
   - `sessionId` (optional; used by completed-edit flow)
@@ -49,7 +66,7 @@ Brief entrypoint contract for current mobile routes, query/path params, and allo
     - if this route path/segment is renamed, update `apps/mobile/src/sync/scheduler.ts` (`SESSION_RECORDER_ROUTE_SEGMENT`) in the same task/session.
 
 4. `/exercise-catalog`
-- File: `apps/mobile/app/exercise-catalog.tsx`
+- File: `apps/mobile/app/(tabs)/exercise-catalog.tsx`
 - Query params:
   - `source` (optional; `session-recorder` enables recorder-return affordances)
   - `intent` (optional; `add` auto-opens create editor once on initial load)
@@ -57,7 +74,7 @@ Brief entrypoint contract for current mobile routes, query/path params, and allo
   - when opened from recorder, saving an exercise returns via `router.back()`
 
 5. `/settings`
-- File: `apps/mobile/app/settings.tsx`
+- File: `apps/mobile/app/(tabs)/settings.tsx`
 - Params:
   - none
 - Behavior:
@@ -96,8 +113,8 @@ Brief entrypoint contract for current mobile routes, query/path params, and allo
 
 ## Allowed route transitions (current high-level flows)
 
-1. `/` -> `/session-list`
-   - default route alias behavior
+1. `/` -> `/stats-history`
+   - root redirect (renders `<Redirect />`); replaces the previous `/session-list` alias
 2. `/session-list` -> `/session-recorder`
    - start/open active session
 3. `/session-list` -> `/completed-session/<sessionId>`
@@ -138,8 +155,8 @@ Note:
 
 ## Header titles (current, high level)
 
-- Static titles for `index`, `session-list`, `session-recorder`, `exercise-catalog` are set in `apps/mobile/app/_layout.tsx`
-- Static titles for `settings` and `profile` are also set in `apps/mobile/app/_layout.tsx`
+- Tab roots inside the `(tabs)` group (`stats-history`, `session-recorder`, `exercise-catalog`, `settings`) all run with `headerShown: false`; their per-screen titles in `apps/mobile/app/(tabs)/_layout.tsx` are only used by the system tab bar (currently hidden — the in-screen `TopLevelTabs` is the tab bar)
+- Detail screens registered in the root stack (`session-list`, `stats` redirect shim, `profile`, `maestro-harness`) keep their native stack header behavior; titles are declared in `apps/mobile/app/_layout.tsx`
 - `completed-session/[sessionId]` sets its title inside the route file (current title: `View Session`)
 - `exercise-history` sets its title inside the route file to the resolved exercise name (falls back to `Exercise History` when the summary is not yet available)
 

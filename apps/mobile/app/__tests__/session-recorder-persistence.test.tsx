@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
-import SessionRecorderScreen from '../session-recorder';
+import SessionRecorderScreen from '../(tabs)/session-recorder';
 
 let mockSearchParams: Record<string, string | undefined> = {};
 let mockBeforeRemoveListener: ((event: any) => void) | null = null;

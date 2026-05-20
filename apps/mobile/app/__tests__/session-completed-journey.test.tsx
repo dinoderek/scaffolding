@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 
 import CompletedSessionDetailRoute from '../completed-session/[sessionId]';
 import SessionListRoute from '../session-list';
-import SessionRecorderScreen from '../session-recorder';
+import SessionRecorderScreen from '../(tabs)/session-recorder';
 
 type MockSet = {
   id: string;

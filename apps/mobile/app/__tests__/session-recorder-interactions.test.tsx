@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { StyleSheet } from 'react-native';
 
 import { uiColors } from '@/components/ui';
-import SessionRecorderScreen from '../session-recorder';
+import SessionRecorderScreen from '../(tabs)/session-recorder';
 
 const mockPush = jest.fn();
 const mockLogEvent = jest.fn();
