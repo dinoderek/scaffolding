@@ -100,3 +100,22 @@ export {
   type StatsSummary,
   type StatsTotals,
 } from './stats';
+export {
+  aggregateExerciseHistory,
+  createDrizzleExerciseHistoryStore,
+  createExerciseHistoryRepository,
+  loadExercisePerformanceHistory,
+  type ExerciseHistoryAggregationInput,
+  type ExerciseHistoryBest,
+  type ExerciseHistoryDefinitionRow,
+  type ExerciseHistoryPeriod,
+  type ExerciseHistorySessionEntry,
+  type ExerciseHistorySessionRow,
+  type ExerciseHistorySetEntry,
+  type ExerciseHistorySetRow,
+  type ExerciseHistoryStore,
+  type ExerciseHistorySummary,
+  type ExerciseHistoryTagOption,
+  type ExerciseHistoryTagRow,
+  type LoadExercisePerformanceHistoryOptions,
+} from './exercise-history';
