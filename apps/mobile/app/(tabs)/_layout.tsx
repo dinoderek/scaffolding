@@ -1,5 +1,7 @@
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { useMemo } from 'react';
+import { StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomTray, TrayVisibilityProvider } from '@/components/navigation/bottom-tray';
 import { TopLevelTabs, type TopLevelTabKey } from '@/components/navigation/top-level-tabs';
@@ -43,15 +45,23 @@ function TabsBottomTray() {
 
 export default function TabsLayout() {
   return (
-    <TrayVisibilityProvider>
-      <Tabs
-        screenOptions={{ headerShown: false }}
-        tabBar={() => <TabsBottomTray />}>
-        <Tabs.Screen name="stats-history" options={{ title: 'Stats/History' }} />
-        <Tabs.Screen name="session-recorder" options={{ title: 'Session Recorder' }} />
-        <Tabs.Screen name="exercise-catalog" options={{ title: 'Exercise Catalog' }} />
-        <Tabs.Screen name="settings" options={{ title: 'Settings', href: null }} />
-      </Tabs>
-    </TrayVisibilityProvider>
+    <SafeAreaView edges={['top']} style={styles.safeArea}>
+      <TrayVisibilityProvider>
+        <Tabs
+          screenOptions={{ headerShown: false }}
+          tabBar={() => <TabsBottomTray />}>
+          <Tabs.Screen name="stats-history" options={{ title: 'History' }} />
+          <Tabs.Screen name="session-recorder" options={{ title: 'Session Recorder' }} />
+          <Tabs.Screen name="exercise-catalog" options={{ title: 'Exercise Catalog' }} />
+          <Tabs.Screen name="settings" options={{ title: 'Settings', href: null }} />
+        </Tabs>
+      </TrayVisibilityProvider>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+});

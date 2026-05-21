@@ -21,7 +21,7 @@ describe('UI primitives', () => {
       />
     );
 
-    const statsHistoryTab = screen.getByLabelText('Open Stats and History');
+    const statsHistoryTab = screen.getByLabelText('Open History');
     const logTab = screen.getByLabelText('Open Log');
     const exercisesTab = screen.getByLabelText('Open Exercises');
     const settingsButton = screen.getByLabelText('Open Settings');
