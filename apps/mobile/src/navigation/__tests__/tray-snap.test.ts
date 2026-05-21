@@ -2,7 +2,6 @@ import {
   TRAY_POSITION_THRESHOLD_RATIO,
   TRAY_VELOCITY_THRESHOLD,
   resolveTraySnap,
-  traySnapTranslateY,
 } from '../tray-snap';
 
 const TRAVEL = 100;
@@ -140,16 +139,3 @@ describe('resolveTraySnap — degenerate inputs', () => {
   });
 });
 
-describe('traySnapTranslateY', () => {
-  it('returns 0 for the expanded state', () => {
-    expect(traySnapTranslateY('expanded', 80)).toBe(0);
-  });
-
-  it('returns the travel distance for the collapsed state', () => {
-    expect(traySnapTranslateY('collapsed', 80)).toBe(80);
-  });
-
-  it('clamps a negative travel distance to zero', () => {
-    expect(traySnapTranslateY('collapsed', -10)).toBe(0);
-  });
-});

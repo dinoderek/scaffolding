@@ -30,10 +30,10 @@ export function TopLevelTabs({
     <UiSurface accessibilityRole="tablist" style={styles.shell} testID="top-level-bottom-tabs">
       <View style={styles.tabsRow}>
         <UiButton
-          accessibilityLabel="Open Stats and History"
+          accessibilityLabel="Open History"
           accessibilityRole="tab"
           active={activeTab === 'stats-history'}
-          label="Stats/History"
+          label="History"
           onPress={onPressStatsHistory}
           testID="top-level-tab-stats-history"
           variant="tab"

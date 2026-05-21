@@ -18,11 +18,7 @@ import {
 } from 'react-native';
 
 import { uiColors, uiRadius, uiSpace } from '@/components/ui';
-import {
-  resolveTraySnap,
-  traySnapTranslateY,
-  type TraySnapState,
-} from '@/src/navigation/tray-snap';
+import { resolveTraySnap, type TraySnapState } from '@/src/navigation/tray-snap';
 
 /**
  * Height of the always-visible "peek" strip when the tray is collapsed.
@@ -83,10 +79,10 @@ type BottomTrayProps = {
 };
 
 /**
- * Collapsible bottom navigation tray. Wraps its content in an
- * `Animated.View` whose `translateY` is driven by a `PanResponder` attached
- * to a small drag handle at the top. Releases past a threshold snap to either
- * the expanded or the collapsed (peek strip) position.
+ * Collapsible bottom navigation tray. Animates the container's `height`
+ * (with `overflow: hidden`) so the parent bottom-tab-bar slot actually
+ * shrinks when the tray collapses, freeing screen space for the active
+ * screen rather than just hiding the tray visually.
  *
  * State is held in `TrayVisibilityProvider` so screens can force expand /
  * collapse via `useTrayVisibility()`. Initial state is `expanded`; the tray
@@ -95,42 +91,45 @@ type BottomTrayProps = {
 export function BottomTray({ children }: BottomTrayProps) {
   const { state, expand, collapse } = useTrayVisibility();
 
-  // Content height drives the collapse travel distance. We measure on layout
-  // and keep it in a ref so the PanResponder closure always sees the latest
-  // value without re-creating itself.
+  // Natural (uncollapsed) inner-content height, measured via the inner
+  // wrapper's onLayout. Kept in a ref so the PanResponder closure always
+  // sees the latest value without re-creating itself.
   const contentHeightRef = useRef(0);
   const stateRef = useRef<TraySnapState>(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
-  const translateY = useRef(new Animated.Value(0)).current;
-  // Drag offsets that get layered on top of the snapped position while the
-  // user is actively pulling on the handle.
-  const dragOffset = useRef(new Animated.Value(0)).current;
+  const containerHeight = useRef(new Animated.Value(0)).current;
 
-  // Animate to the appropriate snap whenever `state` changes externally
+  const resolveTargetHeight = useCallback((target: TraySnapState) => {
+    if (target === 'collapsed') return PEEK_HEIGHT;
+    return contentHeightRef.current;
+  }, []);
+
+  // Animate to the appropriate height whenever `state` changes externally
   // (e.g. screen called `expand()` or initial mount with a non-zero height).
   useEffect(() => {
-    const travel = Math.max(0, contentHeightRef.current - PEEK_HEIGHT);
-    Animated.timing(translateY, {
-      toValue: traySnapTranslateY(state, travel),
+    Animated.timing(containerHeight, {
+      toValue: resolveTargetHeight(state),
       duration: COLLAPSE_DURATION_MS,
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
-  }, [state, translateY]);
+  }, [state, containerHeight, resolveTargetHeight]);
 
   const onContentLayout = useCallback(
     (event: LayoutChangeEvent) => {
       const height = event.nativeEvent.layout.height;
+      if (height === contentHeightRef.current) {
+        return;
+      }
       contentHeightRef.current = height;
-      // Re-pin to the current state's translate based on the freshly measured
-      // travel distance. Skip animation on first layout to avoid a visible
-      // bounce.
-      const travel = Math.max(0, height - PEEK_HEIGHT);
-      translateY.setValue(traySnapTranslateY(stateRef.current, travel));
+      // Re-pin to the current state's height based on the freshly measured
+      // natural content height. Skip animation on first layout to avoid a
+      // visible bounce.
+      containerHeight.setValue(resolveTargetHeight(stateRef.current));
     },
-    [translateY]
+    [containerHeight, resolveTargetHeight]
   );
 
   const panResponder = useMemo(
@@ -139,15 +138,15 @@ export function BottomTray({ children }: BottomTrayProps) {
         onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: (_event, gesture) =>
           Math.abs(gesture.dy) > 2,
-        onPanResponderGrant: () => {
-          dragOffset.setValue(0);
-        },
         onPanResponderMove: (_event, gesture) => {
-          const travel = Math.max(0, contentHeightRef.current - PEEK_HEIGHT);
-          const startY = traySnapTranslateY(stateRef.current, travel);
-          // Clamp drag so we never overshoot past either end.
-          const next = Math.min(travel, Math.max(0, startY + gesture.dy));
-          translateY.setValue(next);
+          const startHeight = resolveTargetHeight(stateRef.current);
+          // Downward drag (positive dy) shrinks height; upward grows it.
+          // Clamp so we never overshoot past either end.
+          const next = Math.min(
+            contentHeightRef.current,
+            Math.max(PEEK_HEIGHT, startHeight - gesture.dy)
+          );
+          containerHeight.setValue(next);
         },
         onPanResponderRelease: (_event, gesture) => {
           const travel = Math.max(0, contentHeightRef.current - PEEK_HEIGHT);
@@ -162,10 +161,10 @@ export function BottomTray({ children }: BottomTrayProps) {
             // Snap back to current — animate to make the spring back feel
             // intentional rather than rely on the parent state effect (which
             // wouldn't fire because the value didn't change).
-            Animated.timing(translateY, {
-              toValue: traySnapTranslateY(nextState, travel),
+            Animated.timing(containerHeight, {
+              toValue: resolveTargetHeight(nextState),
               duration: COLLAPSE_DURATION_MS,
-              useNativeDriver: true,
+              useNativeDriver: false,
             }).start();
             return;
           }
@@ -177,16 +176,14 @@ export function BottomTray({ children }: BottomTrayProps) {
           }
         },
         onPanResponderTerminate: () => {
-          // Treat termination like a release with no movement: snap back.
-          const travel = Math.max(0, contentHeightRef.current - PEEK_HEIGHT);
-          Animated.timing(translateY, {
-            toValue: traySnapTranslateY(stateRef.current, travel),
+          Animated.timing(containerHeight, {
+            toValue: resolveTargetHeight(stateRef.current),
             duration: COLLAPSE_DURATION_MS,
-            useNativeDriver: true,
+            useNativeDriver: false,
           }).start();
         },
       }),
-    [translateY, dragOffset, collapse, expand]
+    [containerHeight, collapse, expand, resolveTargetHeight]
   );
 
   const handleHandleTap = useCallback(() => {
@@ -202,24 +199,25 @@ export function BottomTray({ children }: BottomTrayProps) {
   return (
     <Animated.View
       pointerEvents="box-none"
-      style={[styles.root, { transform: [{ translateY }] }]}
-      testID="bottom-tray-root"
-      onLayout={onContentLayout}>
-      <View {...panResponder.panHandlers} style={styles.handleHitArea}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            state === 'expanded' ? 'Collapse navigation tray' : 'Expand navigation tray'
-          }
-          accessibilityState={{ expanded: state === 'expanded' }}
-          onPress={handleHandleTap}
-          style={styles.handlePressable}
-          testID="bottom-tray-handle">
-          <View style={styles.handleIndicator} />
-        </Pressable>
-      </View>
-      <View style={styles.body} testID="bottom-tray-body">
-        {children}
+      style={[styles.root, { height: containerHeight }]}
+      testID="bottom-tray-root">
+      <View onLayout={onContentLayout} style={styles.content}>
+        <View {...panResponder.panHandlers} style={styles.handleHitArea}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              state === 'expanded' ? 'Collapse navigation tray' : 'Expand navigation tray'
+            }
+            accessibilityState={{ expanded: state === 'expanded' }}
+            onPress={handleHandleTap}
+            style={styles.handlePressable}
+            testID="bottom-tray-handle">
+            <View style={styles.handleIndicator} />
+          </Pressable>
+        </View>
+        <View style={styles.body} testID="bottom-tray-body">
+          {children}
+        </View>
       </View>
     </Animated.View>
   );
@@ -227,9 +225,12 @@ export function BottomTray({ children }: BottomTrayProps) {
 
 const styles = StyleSheet.create({
   root: {
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+  },
+  content: {
     paddingHorizontal: uiSpace.xxl,
     paddingBottom: uiSpace.sm,
-    backgroundColor: 'transparent',
   },
   handleHitArea: {
     alignItems: 'center',

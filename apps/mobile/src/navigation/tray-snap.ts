@@ -78,14 +78,3 @@ export function resolveTraySnap(input: TraySnapInput): TraySnapState {
   return dy <= -positionThreshold ? 'expanded' : 'collapsed';
 }
 
-/**
- * Convert a tray snap state into the `translateY` (in pixels) to apply to the
- * `Animated.View` that wraps the tray. The expanded state sits at the natural
- * origin; the collapsed state slides down by `travelDistance`.
- */
-export function traySnapTranslateY(
-  state: TraySnapState,
-  travelDistance: number
-): number {
-  return state === 'expanded' ? 0 : Math.max(0, travelDistance);
-}

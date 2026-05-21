@@ -36,7 +36,7 @@ exports[`UI primitives matches the current top-level tabs snapshot after primiti
     }
   >
     <View
-      accessibilityLabel="Open Stats and History"
+      accessibilityLabel="Open History"
       accessibilityRole="tab"
       accessibilityState={
         {
@@ -107,7 +107,7 @@ exports[`UI primitives matches the current top-level tabs snapshot after primiti
           ]
         }
       >
-        Stats/History
+        History
       </Text>
     </View>
     <View
