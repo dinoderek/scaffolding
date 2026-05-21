@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
-import SessionRecorderScreen from '../session-recorder';
+import SessionRecorderScreen from '../(tabs)/session-recorder';
 
 let mockSearchParams: Record<string, string | undefined> = {};
 const mockLogEvent = jest.fn();
@@ -67,7 +67,7 @@ jest.mock('expo-router', () => {
   const mockDismissAll = jest.fn();
   return {
     useFocusEffect: (callback: () => void | (() => void)) => {
-      const React = require('react');
+      const React = jest.requireActual('react');
       React.useEffect(() => callback(), [callback]);
     },
     useLocalSearchParams: () => mockSearchParams,

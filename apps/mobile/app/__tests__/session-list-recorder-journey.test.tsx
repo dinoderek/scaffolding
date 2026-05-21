@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import SessionListRoute from '../session-list';
-import SessionRecorderScreen from '../session-recorder';
+import SessionRecorderScreen from '../(tabs)/session-recorder';
 
 type DraftStore = {
   sessionId: string;
@@ -137,7 +137,7 @@ jest.mock('expo-router', () => {
     useNavigation: () => ({ addListener: jest.fn(() => () => undefined), dispatch: jest.fn() }),
     useRouter: () => ({ push: mockPush, replace: jest.fn() }),
     useFocusEffect: (callback: () => void | (() => void)) => {
-      const React = require('react');
+      const React = jest.requireActual('react');
       React.useEffect(() => callback(), [callback]);
     },
     __mockPush: mockPush,

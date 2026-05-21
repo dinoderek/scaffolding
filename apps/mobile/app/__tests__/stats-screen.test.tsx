@@ -4,7 +4,7 @@ import {
   default as StatsRoute,
   StatsScreenShell,
   formatDelta,
-} from '../stats';
+} from '../(tabs)/stats-history';
 import type { StatsSummary } from '@/src/data';
 
 jest.mock('@/src/data', () => ({

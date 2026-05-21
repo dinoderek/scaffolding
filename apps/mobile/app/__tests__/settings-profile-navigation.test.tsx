@@ -37,7 +37,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { Alert } from 'react-native';
 
 import ProfileRoute from '../profile';
-import SettingsRoute from '../settings';
+import SettingsRoute from '../(tabs)/settings';
 
 type MockUseAuthValue = {
   clearAuthError: jest.Mock;

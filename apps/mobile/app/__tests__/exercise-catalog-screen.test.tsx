@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Keyboard, Platform } from 'react-native';
 
-import ExerciseCatalogScreen from '../exercise-catalog';
+import ExerciseCatalogScreen from '../(tabs)/exercise-catalog';
 
 import {
   deleteExerciseCatalogExercise,
